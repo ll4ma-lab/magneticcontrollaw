@@ -14,28 +14,37 @@ except:
     import time
     import tensorflow_probability as tfp
     import warnings
-   
     warnings.filterwarnings("ignore", category=PendingDeprecationWarning) 
     warnings.filterwarnings("ignore", category=DeprecationWarning) 
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
     
     sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,use_per_session_threads=True))
 
+from oct2py import octave
 
 imported = True
 
+def getAB(pose,magnets):
+    sigma_copper = 5.8E+07;
+    sigma_al = 3.77E+07;
+    sigma = sigma_copper;
+    do = 0.05;
+    allFT,A,B = octave.calcEddyInput(magnets,sigma,do,nout=3)
+    return A,B
 
+magnets = 0.001 * np.array([[-130, 0, 0],[ 0, 0, -130],
+                   [0, -130, 0],[ 0, 0, 130],
+                   [130, 0, 0],[ 0, 130, 0]])
+test_a,test_b = getAB(None,magnets)
 # y = Ax + B|x|
 
 #rewritten as 
 # y = (A+BS)x where s is identity matrix with some negative signs
-for n in [1,2,3,4,5,6]:
+for n in [3,4,5,6]:
     print('devices ',n)
     dims = 3*n
     
     A_np = np.random.random((6,dims))
-    #A_np = np.zeros((6,dims))
-    #A_np = np.identity(6)
     B_np = np.random.random((6,dims)) * 0.1
     Y_np = np.random.random((6,1))
     
@@ -64,13 +73,12 @@ for n in [1,2,3,4,5,6]:
     true_Xs = tf.boolean_mask(possible_Xs,reduced)
     start = time.clock()
     
-    experiments = 1000
+    experiments = 100
     success = {}
     for i in range(20):
         success[i] = 0
     for i in range(experiments):
-        A_np = np.random.random((6,dims))
-        B_np = np.random.random((6,dims)) * 0.1
+        A_np,B_np = getAB(None,magnets[:n])
         Y_np = np.random.random((6,1)) 
     
         #J = sess.run(jacobians,feed_dict={A:A_np,B:B_np,Y:Y_np})
