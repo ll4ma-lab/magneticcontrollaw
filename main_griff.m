@@ -6,13 +6,16 @@
 %       I think you will only need the AllFT_A and AllFT_B matrix for your
 %       solver 
 %
-
 % ------- CONSTANTS -------- %
+
 sigma_copper = 5.8E+07;
 sigma_al = 3.77E+07;
 sigma = sigma_copper;
 do = 0.05;
 % -------------------------- %
+
+
+
 
 % --- Omnimagnet Configurations --- %
 % Fully Surrounded Configuration 
@@ -28,14 +31,13 @@ check_wrench = zeros(6, 6);                             % checks of output gives
 errors = zeros(1, 6); 
 
 % Iterate through each isolating wrench
-for a = 1:size(y_des,1)
-    % Calculate required Eddy Current Input
-    [output_x, error, AllFT, AllFT_A, AllFT_B, success] = calcEddyInput(y_des, error_thresh, omnimagnets, sigma, do);
-    wrench_independence(:,a) = output_x; 
-    check_wrench(:,a) = AllFT_A*output_x + AllFT_B*abs(output_x); 
-    errors(:,a) = error; 
-    y_des = circshift(y_des,1);                         % shift the desired force/wrench to next one
-end 
+% Calculate required Eddy Current Input
+[AllFT, AllFT_A, AllFT_B] = calcEddyInput(omnimagnets, sigma, do);
+untitled2()
+%wrench_independence(:,a) = output_x; 
+%check_wrench(:,a) = AllFT_A*output_x + AllFT_B*abs(output_x); 
+%errors(:,a) = error; 
+y_des = circshift(y_des,1);                         % shift the desired force/wrench to next one
 
 
 
