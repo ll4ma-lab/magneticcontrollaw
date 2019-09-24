@@ -7,6 +7,7 @@ Created on Tue Sep  3 10:43:16 2019
 import numpy as np
 import time
 import BruteSolver
+import gurobi
 from oct2py import octave
 
 
@@ -26,16 +27,16 @@ test_a,test_b = getAB(None,magnets)
 
 #rewritten as 
 # y = (A+BS)x where s is identity matrix with some negative signs
-for n in [5,6]:
+for n in [1]:
     print('devices ',n)
     dims = 3*n
     solver = BruteSolver.BruteSolver(dims)
-
+    
+    secondSolver = gurobi.gurobiSolver(dims)
     start = time.clock()
     
     experiments = 10
 
-    success = {}
 
     A,B = getAB(None,magnets[:n])
     for i in range(experiments):
@@ -43,9 +44,13 @@ for n in [5,6]:
         B = np.random.random((6,dims)) * 0.1
         Y = np.random.random((6,1)) 
         output = solver.solve(A,B,Y)
+        if output is not None:
+            secondOutput = secondSolver.solve(A,B,Y)
+            print(output)
+            print(secondOutput)
+            
 
         
-    print('in %d random experiments each had n solutions %s'%(experiments ,str(success)))
     totalTime = time.clock() - start
 
 
