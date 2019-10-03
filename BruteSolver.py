@@ -53,8 +53,8 @@ class BruteSolver:
         self.true_Xs = tf.boolean_mask(possible_Xs,reduced)
     def solve(self,A_np,B_np,Y_np):
         output = self.sess.run(self.true_Xs,feed_dict={self.A:A_np,self.B:B_np,self.Y:Y_np})
-        print('found ' + str(output.shape[0]) + ' solutions')
         if(output.shape[0]>0):
+            print('found ' + str(output.shape[0]) + ' solutions')
             return output[0]
         else:
             return None
