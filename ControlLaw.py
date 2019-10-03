@@ -18,7 +18,11 @@ def getAB(pose,magnets):
     do = 0.05;
     allFT,A,B = octave.calcEddyInput(magnets,sigma,do,nout=3)
     return A,B
-
+def evaluate(X,A,B,Y):
+    YGivenX = np.add(np.matmul(A,X),np.matmul(B,np.abs(X)))
+    errorVector = np.subtract(Y,YGivenX)
+    error = np.dot(np.transpose(errorVector),errorVector)
+    return error[0,0]
 magnets = 0.001 * np.array([[-130, 0, 0],[ 0, 0, -130],
                    [0, -130, 0],[ 0, 0, 130],
                    [130, 0, 0],[ 0, 130, 0]])
@@ -27,38 +31,39 @@ test_a,test_b = getAB(None,magnets)
 
 #rewritten as 
 # y = (A+BS)x where s is identity matrix with some negative signs
-for n in [1]:
+random = False
+
+
+for n in [3,4,5]:
     print('devices ',n)
     dims = 3*n
     solver = BruteSolver.BruteSolver(dims)
     
     secondSolver = gurobi.gurobiSolver(dims)
-    start = time.clock()
     
-    experiments = 10
-
+    experiments = 12
+    if(not random):
+        Ys = []
+        for i in range(6):
+            currY = np.zeros((6,1))
+            currY[i] = 1
+            Ys.append(np.copy(currY))
+            currY[i] = -1
+            Ys.append(np.copy(currY))
+    else: 
+        Ys = (np.random.random((experiments,6,1)) -0.5)*2
 
     A,B = getAB(None,magnets[:n])
+    start = time.clock()
     for i in range(experiments):
-        A = np.random.random((6,dims))
-        B = np.random.random((6,dims)) * 0.1
-        Y = np.random.random((6,1)) 
+        Y = Ys[i]
         output = solver.solve(A,B,Y)
         if output is not None:
-            secondOutput = secondSolver.solve(A,B,Y)
-            print(output)
-            print(secondOutput)
-            
-
+            print('GPU ',evaluate(output,A,B,Y))
+        secondOutput = secondSolver.solve(A,B,Y,i+1)
+        print("gurobi " ,evaluate(secondOutput,A,B,Y))
         
     totalTime = time.clock() - start
-
-
-    #test AX + B|x|
-#    YGivenX = np.add(np.matmul(A_np,Xs[i,:]),np.matmul(B_np,np.abs(Xs[i,:])))
-#    error = np.sum(np.subtract(Y_np,YGivenX))
-#    if error > 0.1:
-#        print('FAILED: error is ',error)
     
     
     individualTime = totalTime / experiments
