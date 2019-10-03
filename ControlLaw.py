@@ -43,7 +43,7 @@ All_magnets = 0.001 * np.array([[-130, 0, 0],[ 0, 0, -130],
 random = False
 threshold = 0.1
 
-for n in [3,4,5,6]:
+for n in [1,2,3,4,5]:
     print('devices ',n)
     dims = 3*n
     solver = BruteSolver.BruteSolver(dims)
@@ -63,6 +63,8 @@ for n in [3,4,5,6]:
         Ys = (np.random.random((experiments,6,1)) -0.5)*2
     magnets = All_magnets[:n]
     A,B = getAB(None,magnets)
+    A=A[:,:dims]
+    B=B[:,:dims]
     
     
     results = []
@@ -71,13 +73,14 @@ for n in [3,4,5,6]:
         Y = Ys[i]
         secondOutput = secondSolver.solve(A,B,Y,i+1)
         error = evaluate(secondOutput,A,B,Y)
-        print("gurobi " ,error)
+        #print("gurobi " ,error)
         results.append(error)
     totalTime = time.clock() - start
     timeMath(totalTime,experiments)
     visualization.visualizeEverything(magnets,Ys,results,threshold,'gurobi')
     
-    
+    start = time.time()
+
     results = []
     print('gpu')
     for i in range(experiments):
@@ -85,8 +88,8 @@ for n in [3,4,5,6]:
         output = solver.solve(A,B,Y)
         error = evaluate(output,A,B,Y)
         results.append(error)
-        print('GPU ', error )
-    totalTime = time.clock() - start
+        #print('GPU ', error )
+    totalTime = time.time() - start
     timeMath(totalTime,experiments)
     visualization.visualizeEverything(magnets,Ys,results,threshold,'GPU')
 

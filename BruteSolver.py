@@ -36,7 +36,7 @@ class BruteSolver:
         #build batched S matrix
         choices = [(-1,1)]*dims
         all_permutations = list(np.diag(x) for x in itertools.product(*choices))
-        S_np = np.array(all_permutations[:100])
+        S_np = np.array(all_permutations)
         
         S = tf.constant(S_np,tf.float32)
         B_ = tf.tile(tf.expand_dims(self.B,0),[S_np.shape[0],1,1])
@@ -54,7 +54,7 @@ class BruteSolver:
     def solve(self,A_np,B_np,Y_np):
         output = self.sess.run(self.true_Xs,feed_dict={self.A:A_np,self.B:B_np,self.Y:Y_np})
         if(output.shape[0]>0):
-            print('found ' + str(output.shape[0]) + ' solutions')
+            #print('found ' + str(output.shape[0]) + ' solutions')
             return output[0]
         else:
             return None
