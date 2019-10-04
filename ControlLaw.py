@@ -41,8 +41,8 @@ All_magnets = 0.001 * np.array([[-130, 0, 0],[ 0, 0, -130],
 #rewritten as 
 # y = (A+BS)x where s is identity matrix with some negative signs
 random = False
-threshold = 0.1
-
+easy_threshold = 0.05
+hard_threshold = 10**-4
 for n in [1,2,3,4,5]:
     print('devices ',n)
     dims = 3*n
@@ -77,8 +77,9 @@ for n in [1,2,3,4,5]:
         results.append(error)
     totalTime = time.clock() - start
     timeMath(totalTime,experiments)
-    visualization.visualizeEverything(magnets,Ys,results,threshold,'gurobi')
-    
+    visualization.visualizeEverything(magnets,Ys,results,easy_threshold,'gurobi low bar')
+    visualization.visualizeEverything(magnets,Ys,results,hard_threshold,'gurobi high bar')
+
     start = time.time()
 
     results = []
@@ -91,7 +92,9 @@ for n in [1,2,3,4,5]:
         #print('GPU ', error )
     totalTime = time.time() - start
     timeMath(totalTime,experiments)
-    visualization.visualizeEverything(magnets,Ys,results,threshold,'GPU')
+    visualization.visualizeEverything(magnets,Ys,results,easy_threshold,'GPU low bar')
+    visualization.visualizeEverything(magnets,Ys,results,hard_threshold,'GPU high bar')
+
 
 
     
