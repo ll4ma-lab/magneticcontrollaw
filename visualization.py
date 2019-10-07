@@ -7,8 +7,7 @@ Created on Thu Oct  3 11:59:03 2019
 
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 def addCube(center,radius,ax):
     cube_definition = []
@@ -74,7 +73,7 @@ def plot_cube(cube_definition,colorinfo,ax):
     ax.set_aspect('equal')
 def drawArrows(vectors,errors,threshold,ax):
     ifSuccess = np.array(errors) < threshold
-    for i in range(len(vectors)):
+    for i in range(len(errors)):
         vector = vectors[i]
         if(ifSuccess[i]):
             drawArrow(vector,'green',ax)
@@ -84,9 +83,14 @@ def drawArrows(vectors,errors,threshold,ax):
 def drawArrow(vector,color,ax):
     ax.quiver(0,0,0,vector[0],vector[1],vector[2],color=color,alpha=0.8,lw=3)
 def visualizeEverything(magnets,vectors,errors,threshold,name):
+
+
       fig = plt.figure()
       fig.suptitle(name)
-      ax = fig.add_subplot(111, projection='3d')  
+      ax = fig.add_subplot(111, projection='3d')
+      ax.set_xlim(-1.5,1.5)
+      ax.set_ylim(-1.5,1.5)
+      ax.set_zlim(-1.5,1.5)
       drawCubes(magnets,ax)
       drawArrows(vectors,errors,threshold,ax)
       plt.show()

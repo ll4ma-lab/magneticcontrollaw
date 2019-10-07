@@ -21,14 +21,11 @@ def MM(a,b,AFirst = None,ASecond = None,BSecond = None,debug = False):
         for j in range(0,BSecond):
             s = 0
             for k in range(0,ASecond):
-                if(a[i,k] == 0):
-                    pass
-                else:
-                    s += a[i,k]*b[k,j]
-                    if(debug):                    
-                        print(a[i,k])
-                        print(b[k,j])
-                        print(a[i,k]*b[k,j])
+                s += a[i,k]*b[k,j]
+                if(debug):                    
+                    print(a[i,k])
+                    print(b[k,j])
+                    print(a[i,k]*b[k,j])
             if(debug):
                 print(s)
             temp.append(s)

@@ -10,8 +10,32 @@ import BruteSolver
 import gurobi
 import visualization
 from oct2py import octave
+import itertools
 
+def generateExperiments():
+    Ys = []
+    choices = [(-1,1)]*3
+    all_permutations = list([x for x in itertools.product(*choices)])
+    for coordinate in all_permutations:
+        currY = np.zeros((6,1))
+        for i in range(3):
+            currY[i] = coordinate[i]
+        normalized = currY*(1/np.linalg.norm(currY))
+        Ys.append(np.copy(currY))
+        
+    #unit directions
+    for i in range(3):
+        currY = np.zeros((6,1))
+        currY[i] = 1
+        Ys.append(np.copy(currY))
+        currY[i] = -1
+        Ys.append(np.copy(currY))
+        
+    return Ys
 
+def generateRandomExperiments(experiments):
+    Ys = (np.random.random((experiments,6,1)) -0.5)*2
+    return Ys
 def getAB(pose,magnets):
     sigma_copper = 5.8E+07;
     sigma_al = 3.77E+07;
@@ -43,28 +67,22 @@ All_magnets = 0.001 * np.array([[-130, 0, 0],[ 0, 0, -130],
 random = False
 easy_threshold = 0.05
 hard_threshold = 10**-4
-for n in [1,2,3,4,5]:
+for n in [1,2,3,4]:
     print('devices ',n)
     dims = 3*n
     solver = BruteSolver.BruteSolver(dims)
     secondSolver = gurobi.gurobiSolver(dims)
     
-    experiments = 12
-    #unit directions
-    if(not random):
-        Ys = []
-        for i in range(6):
-            currY = np.zeros((6,1))
-            currY[i] = 1
-            Ys.append(np.copy(currY))
-            currY[i] = -1
-            Ys.append(np.copy(currY))
-    else: 
-        Ys = (np.random.random((experiments,6,1)) -0.5)*2
+    
     magnets = All_magnets[:n]
     A,B = getAB(None,magnets)
     A=A[:,:dims]
     B=B[:,:dims]
+    
+    Ys = generateExperiments()
+    #Ys = generateRandomExperiments(10)
+    
+    experiments = len(Ys)
     
     
     results = []
@@ -73,12 +91,12 @@ for n in [1,2,3,4,5]:
         Y = Ys[i]
         secondOutput = secondSolver.solve(A,B,Y,i+1)
         error = evaluate(secondOutput,A,B,Y)
-        #print("gurobi " ,error)
+        print("gurobi " ,error)
         results.append(error)
     totalTime = time.clock() - start
     timeMath(totalTime,experiments)
     visualization.visualizeEverything(magnets,Ys,results,easy_threshold,'gurobi low bar')
-    visualization.visualizeEverything(magnets,Ys,results,hard_threshold,'gurobi high bar')
+    #visualization.visualizeEverything(magnets,Ys,results,hard_threshold,'gurobi high bar')
 
     start = time.time()
 
@@ -93,7 +111,7 @@ for n in [1,2,3,4,5]:
     totalTime = time.time() - start
     timeMath(totalTime,experiments)
     visualization.visualizeEverything(magnets,Ys,results,easy_threshold,'GPU low bar')
-    visualization.visualizeEverything(magnets,Ys,results,hard_threshold,'GPU high bar')
+    #visualization.visualizeEverything(magnets,Ys,results,hard_threshold,'GPU high bar')
 
 
 
