@@ -6,25 +6,25 @@ Created on Tue Sep  3 10:43:16 2019
 """
 import numpy as np
 import time
-import BruteSolver
 import gurobi
 import visualization
 from oct2py import octave
 import itertools
 
-def generateExperiments():
+def generateExperiments(use_diag = False):
     Ys = []
-    choices = [(-1,1)]*3
-    all_permutations = list([x for x in itertools.product(*choices)])
-    for coordinate in all_permutations:
-        currY = np.zeros((6,1))
-        for i in range(3):
-            currY[i] = coordinate[i]
-        normalized = currY*(1/np.linalg.norm(currY))
-        Ys.append(np.copy(currY))
+    if(use_diag):    
+        choices = [(-1,1)]*3
+        all_permutations = list([x for x in itertools.product(*choices)])
+        for coordinate in all_permutations:
+            currY = np.zeros((6,1))
+            for i in range(3):
+                currY[i] = coordinate[i]
+            normalized = currY*(1/np.linalg.norm(currY))
+            Ys.append(np.copy(currY))
         
     #unit directions
-    for i in range(3):
+    for i in [0,1,2]:
         currY = np.zeros((6,1))
         currY[i] = 1
         Ys.append(np.copy(currY))
@@ -64,22 +64,31 @@ All_magnets = 0.001 * np.array([[-130, 0, 0],[ 0, 0, -130],
 
 #rewritten as 
 # y = (A+BS)x where s is identity matrix with some negative signs
+
+
 random = False
+GPU = False
+if GPU:
+    import BruteSolver
+
+
+
 easy_threshold = 0.05
 hard_threshold = 10**-4
-for n in [1,2,3,4]:
+for n in [1,2,3]:
     print('devices ',n)
     dims = 3*n
-    solver = BruteSolver.BruteSolver(dims)
+    if(GPU):  
+        solver = BruteSolver.BruteSolver(dims)
     secondSolver = gurobi.gurobiSolver(dims)
     
     
     magnets = All_magnets[:n]
     A,B = getAB(None,magnets)
-    A=A[:,:dims]
-    B=B[:,:dims]
+    A=A[:,:dims] * 10**6
+    B=B[:,:dims] * 10**6
     
-    Ys = generateExperiments()
+    Ys = generateExperiments(True)
     #Ys = generateRandomExperiments(10)
     
     experiments = len(Ys)
@@ -99,19 +108,19 @@ for n in [1,2,3,4]:
     #visualization.visualizeEverything(magnets,Ys,results,hard_threshold,'gurobi high bar')
 
     start = time.time()
-
-    results = []
-    print('gpu')
-    for i in range(experiments):
-        Y = Ys[i]
-        output = solver.solve(A,B,Y)
-        error = evaluate(output,A,B,Y)
-        results.append(error)
-        #print('GPU ', error )
-    totalTime = time.time() - start
-    timeMath(totalTime,experiments)
-    visualization.visualizeEverything(magnets,Ys,results,easy_threshold,'GPU low bar')
-    #visualization.visualizeEverything(magnets,Ys,results,hard_threshold,'GPU high bar')
+    if(GPU):
+        results = []
+        print('gpu')
+        for i in range(experiments):
+            Y = Ys[i]
+            output = solver.solve(A,B,Y)
+            error = evaluate(output,A,B,Y)
+            results.append(error)
+            #print('GPU ', error )
+        totalTime = time.time() - start
+        timeMath(totalTime,experiments)
+        visualization.visualizeEverything(magnets,Ys,results,easy_threshold,'GPU low bar')
+        #visualization.visualizeEverything(magnets,Ys,results,hard_threshold,'GPU high bar')
 
 
 
