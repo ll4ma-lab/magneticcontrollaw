@@ -21,6 +21,8 @@ def MM(a,b,AFirst = None,ASecond = None,BSecond = None,debug = False):
         for j in range(0,BSecond):
             s = 0
             for k in range(0,ASecond):
+                if(a[i,k]==0):
+                    continue
                 s += a[i,k]*b[k,j]
                 if(debug):                    
                     print(a[i,k])
@@ -69,25 +71,24 @@ class gurobiSolver:
             bu = MM(B,u,None,None,1)
             m.update()
 
+            for i in range(dims):
+                m.getVars()[i].lb = -100000000.0
+
             # Set objective
             newY = MA(ax,bu,6)
             #print(newY)
             error = MA(newY,Y*-1,6) * scale
             #print(error)
-            #ob = error[1,0]*error[1,0] + error[0,0]*error[0,0] +  error[2,0]*error[2,0] + error[3,0]*error[3,0] + error[4,0]*error[4,0]
             ob = VD(error,error,6)
             #print(ob)
             m.setObjective(ob, GRB.MINIMIZE)
-           # print(ax)
 
             for i in range(dims):
-               # m.addConstr(u[i,0]<=x[i,0])
-                #continue
                 m.addConstr(u[i,0]==abs_(x[i,0]))
 #            p = m.presolve()
 #            p.printStats()
-            #m.tune()
-            #m.Params.Presolve = 0
+            m.Params.Presolve = 0
+
             m.optimize()
             
             best = np.array([v.x for v in m.getVars()])
@@ -101,10 +102,11 @@ class gurobiSolver:
 #                print('%s %g' % (v.varName, v.x))
         
             #print('Obj: %g' % m.objVal)
-        
+            bestX = np.reshape(best[:dims],(-1,1))
+            return bestX
         except GurobiError as e:
             print('Error code ' + str(e.errno) + ": " + str(e))
         
 #        except AttributeError:
 #            print('Encountered an attribute error')
-        return np.reshape(best[:dims],(-1,1))
+        
