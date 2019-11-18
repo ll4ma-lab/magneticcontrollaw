@@ -72,7 +72,9 @@ class gurobiSolver:
             m.update()
 
             for i in range(dims):
-                m.getVars()[i].lb = -100000000.0
+                m.getVars()[i].lb = -100.0
+                m.getVars()[i].ub = 100.0
+
 
             # Set objective
             newY = MA(ax,bu,6)
@@ -87,7 +89,7 @@ class gurobiSolver:
                 m.addConstr(u[i,0]==abs_(x[i,0]))
 #            p = m.presolve()
 #            p.printStats()
-            m.Params.Presolve = 0
+            #m.Params.Presolve = 0
 
             m.optimize()
             

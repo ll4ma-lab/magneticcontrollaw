@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
-def addCube(center,radius,ax):
+def addCube(center,radius,op,ax):
     cube_definition = []
     center = np.array(center)
     first = tuple(center - radius)
@@ -20,16 +20,19 @@ def addCube(center,radius,ax):
         nextPoint = tuple(center+offset)
         cube_definition.append(nextPoint)
     if(center[2] == 0):
-        color = (1,0,0,0.2)
+        color = (1,0,0,op)
     if(center[2] >0):
-        color = (0,1,0,0.2)
+        color = (0,1,0,op)
     if(center[2] <0):
-        color = (0,0,1,0.2)
+        color = (0,0,1,op)
     
     plot_cube(cube_definition,color,ax)
-def drawCubes(centers,ax):
-    for center in centers:
-        addCube(center*10,0.15,ax)
+def drawCubes(allMagnets,magnets,ax):
+    for magnet in allMagnets:
+        op = 0.2
+        if magnet in magnets:
+            op = 0.8
+        addCube(np.array(magnet)*10,0.15,op,ax)
     
 def plot_cube(cube_definition,colorinfo,ax):
     cube_definition_array = [
@@ -60,9 +63,10 @@ def plot_cube(cube_definition,colorinfo,ax):
         [points[0], points[2], points[4], points[1]],
         [points[3], points[6], points[7], points[5]]
     ]
-
-
-    faces = Poly3DCollection(edges, linewidths=1, edgecolors='k')
+    col = 'k'
+    if(colorinfo[3]<0.5):
+        col = 'w'
+    faces = Poly3DCollection(edges, linewidths=1, edgecolors=col)
     faces.set_facecolor(colorinfo)
 
     ax.add_collection3d(faces)
@@ -73,6 +77,9 @@ def plot_cube(cube_definition,colorinfo,ax):
     ax.set_aspect('equal')
 def drawArrows(vectors,errors,threshold,ax):
     ifSuccess = np.array(errors) < threshold
+    sucess = np.sum(ifSuccess)
+    print('succeeded on',sucess)
+    print('failed on',len(ifSuccess)-sucess)
     for i in range(len(errors)):
         vector = vectors[i]
         if(ifSuccess[i]):
@@ -82,7 +89,7 @@ def drawArrows(vectors,errors,threshold,ax):
 
 def drawArrow(vector,color,ax):
     ax.quiver(0,0,0,vector[0],vector[1],vector[2],color=color,alpha=0.8,lw=3)
-def visualizeEverything(magnets,vectors,errors,threshold,name):
+def visualizeEverything(allMagnets,magnets,vectors,errors,threshold,name):
 
 
       fig = plt.figure()
@@ -91,6 +98,6 @@ def visualizeEverything(magnets,vectors,errors,threshold,name):
       ax.set_xlim(-1.5,1.5)
       ax.set_ylim(-1.5,1.5)
       ax.set_zlim(-1.5,1.5)
-      drawCubes(magnets,ax)
+      drawCubes(allMagnets,magnets,ax)
       drawArrows(vectors,errors,threshold,ax)
       plt.show()

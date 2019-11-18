@@ -9,6 +9,8 @@ import time
 import gurobi
 import visualization
 from oct2py import octave
+import matplotlib.pyplot as plt
+
 import itertools
 
 def generateExperiments(use_diag = False):
@@ -24,7 +26,7 @@ def generateExperiments(use_diag = False):
             Ys.append(np.copy(currY))
         
     #unit directions
-    for i in [0,1,2]:
+    for i in range(6):
         currY = np.zeros((6,1))
         currY[i] = 1
         Ys.append(np.copy(currY))
@@ -56,10 +58,12 @@ def timeMath(totalTime,experiments):
     hz = 1.0/individualTime
     print('time per loop is ',individualTime)
     print('hertz of loop is ',hz)
+    return hz
     
-All_magnets = 0.001 * np.array([[-130, 0, 0],[ 0, 0, -130],
-                   [0, -130, 0],[ 0, 0, 130],
-                   [130, 0, 0],[ 0, 130, 0]])
+All_magnets = 0.001 * np.array([(-130, 0, 0),( 0, 0, -130),
+                   (0, -130, 0),( 0, 0, 130),
+                   (130, 0, 0),( 0, 130, 0)])
+All_magnets = All_magnets.tolist()
 # y = Ax + B|x|
 
 #rewritten as 
@@ -71,11 +75,13 @@ GPU = False
 if GPU:
     import BruteSolver
 
-
-
+gurobi_time = []
+GPU_time = []
 easy_threshold = 0.05
-hard_threshold = 10**-4
-for n in [1,2,3]:
+hard_threshold = 10**-6
+
+n_devices = [1,2,3,4,5]
+for n in n_devices:
     print('devices ',n)
     dims = 3*n
     if(GPU):  
@@ -88,7 +94,7 @@ for n in [1,2,3]:
     A=A[:,:dims] * 10**6
     B=B[:,:dims] * 10**6
     
-    Ys = generateExperiments(True)
+    Ys = generateExperiments(False)
     #Ys = generateRandomExperiments(10)
     
     experiments = len(Ys)
@@ -100,12 +106,12 @@ for n in [1,2,3]:
         Y = Ys[i]
         secondOutput = secondSolver.solve(A,B,Y,i+1)
         error = evaluate(secondOutput,A,B,Y)
-        print("gurobi " ,error)
+        #print("gurobi " ,error)
         results.append(error)
     totalTime = time.clock() - start
-    timeMath(totalTime,experiments)
-    visualization.visualizeEverything(magnets,Ys,results,easy_threshold,'gurobi low bar')
-    #visualization.visualizeEverything(magnets,Ys,results,hard_threshold,'gurobi high bar')
+    gurobi_time.append(timeMath(totalTime,experiments))
+    visualization.visualizeEverything(All_magnets,magnets,Ys,results,easy_threshold,'gurobi low bar')
+    visualization.visualizeEverything(All_magnets,magnets,Ys,results,hard_threshold,'gurobi high bar')
 
     start = time.time()
     if(GPU):
@@ -118,10 +124,10 @@ for n in [1,2,3]:
             results.append(error)
             #print('GPU ', error )
         totalTime = time.time() - start
-        timeMath(totalTime,experiments)
-        visualization.visualizeEverything(magnets,Ys,results,easy_threshold,'GPU low bar')
-        #visualization.visualizeEverything(magnets,Ys,results,hard_threshold,'GPU high bar')
+        GPU_time.append(timeMath(totalTime,experiments))
+        visualization.visualizeEverything(All_magnets,magnets,Ys,results,easy_threshold,'GPU low bar')
+        #visualization.visualizeEverything(All_magnets,magnets,Ys,results,hard_threshold,'GPU high bar')
 
 
-
+plt.plot(n_devices,gurobi_time)
     
