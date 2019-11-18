@@ -20,9 +20,9 @@ def addCube(center,radius,op,ax):
         nextPoint = tuple(center+offset)
         cube_definition.append(nextPoint)
     if(center[2] == 0):
-        color = (1,0,0,op)
+        color = (102/256.0,0,204/256.0,op)
     if(center[2] >0):
-        color = (0,1,0,op)
+        color = (1,0,1,op)
     if(center[2] <0):
         color = (0,0,1,op)
     
@@ -75,7 +75,7 @@ def plot_cube(cube_definition,colorinfo,ax):
     ax.scatter(points[:,0], points[:,1], points[:,2], s=0)
 
     ax.set_aspect('equal')
-def drawArrows(vectors,errors,threshold,ax):
+def drawArrows(vectors,errors,threshold,ax,torque = False):
     ifSuccess = np.array(errors) < threshold
     sucess = np.sum(ifSuccess)
     print('succeeded on',sucess)
@@ -83,13 +83,17 @@ def drawArrows(vectors,errors,threshold,ax):
     for i in range(len(errors)):
         vector = vectors[i]
         if(ifSuccess[i]):
-            drawArrow(vector,'green',ax)
+            drawArrow(vector,'green',ax,torque)
         else:
-            drawArrow(vector,'red',ax)
+            drawArrow(vector,'red',ax,torque)
 
-def drawArrow(vector,color,ax):
-    ax.quiver(0,0,0,vector[0],vector[1],vector[2],color=color,alpha=0.8,lw=3)
-def visualizeEverything(allMagnets,magnets,vectors,errors,threshold,name):
+def drawArrow(vector,color,ax,torque = False):
+    if(torque):
+        start_index = 3
+    else:
+        start_index = 0
+    ax.quiver(0,0,0,vector[0+start_index],vector[1+start_index],vector[2+start_index],color=color,alpha=0.8,lw=3)
+def visualizeEverything(allMagnets,magnets,vectors,errors,threshold,name,torque = False):
 
 
       fig = plt.figure()
@@ -99,5 +103,5 @@ def visualizeEverything(allMagnets,magnets,vectors,errors,threshold,name):
       ax.set_ylim(-1.5,1.5)
       ax.set_zlim(-1.5,1.5)
       drawCubes(allMagnets,magnets,ax)
-      drawArrows(vectors,errors,threshold,ax)
+      drawArrows(vectors,errors,threshold,ax,torque)
       plt.show()
