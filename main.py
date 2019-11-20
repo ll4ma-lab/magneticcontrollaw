@@ -29,31 +29,28 @@ magnets = [All_magnets[0],All_magnets[1],All_magnets[2]]
 
 model = matlabModel(magnets)
 solver = gurobi.gurobiSolver(len(magnets)*3)
-controller = PDController(startState,0.0001,0,7.0,0)
+controller = PDController(startState,0.0007,0.0000007,0.025,0.000025)
 simulator = exponentialSimulator(startState,dt,sphereProperties(8940,0.05)) #density, diamter
 
-kds = np.exp(np.linspace(-8,0,1))
-for kd in kds:
-    print(kd)
-    controller = PDController(startState,0.0007,0.0007,0.025,0.025)
-    state = np.copy(startState)
-    states = np.copy(state)
-    simulator.setState(state)
-    randShape = np.random.randint(0,2,(6))
-    start = time.time()
-    for i in range(1000):
-        #desired_wrench = randShape * np.cos(i*np.pi/50)/10
-        desired_wrench = controller.getDesiredWrench(state,desiredState)
-        A,B = model.getAB(state)
-        control =  solver.solve(A,B,desired_wrench)
-        trueWrench = model.forwardPass(state,control)
-        state = simulator.simulate(trueWrench)
-        states = np.concatenate((states,state),1)
-    runTime = time.time() - start
-    print(runTime)
-    for i in range(3):
-        plt.plot(states[i,:])
-    plt.show()
+
+state = np.copy(startState)
+states = np.copy(state)
+simulator.setState(state)
+randShape = np.random.randint(0,2,(6))
+start = time.time()
+for i in range(1000):
+    #desired_wrench = randShape * np.cos(i*np.pi/50)/10
+    desired_wrench = controller.getDesiredWrench(state,desiredState)
+    A,B = model.getAB(state)
+    control =  solver.solve(A,B,desired_wrench)
+    trueWrench = model.forwardPass(state,control)
+    state = simulator.simulate(trueWrench)
+    states = np.concatenate((states,state),1)
+runTime = time.time() - start
+print(runTime)
+for i in range(3):
+    plt.plot(states[i,:])
+plt.show()
 
 for i in range(3):
     plt.plot(states[3+i,:])

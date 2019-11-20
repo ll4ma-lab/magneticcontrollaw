@@ -24,7 +24,10 @@ class exponentialSimulator:
         Ac[:halfStateDims,halfStateDims:] = np.eye(halfStateDims) * 1/timestep
         
         Bc = np.zeros((stateDims,halfStateDims))
-        Bc[halfStateDims:,:halfStateDims] = np.eye(halfStateDims) * 1/timestep
+        Bc[halfStateDims:,:halfStateDims] = np.eye(halfStateDims) * 1/(timestep)
+        Bc[halfStateDims:halfStateDims + quarterDims,:quarterDims] *= (1.0/self.mass)
+        Bc[halfStateDims + quarterDims:,quarterDims:] *= (1.0/self.MOI)
+
         #Bc[halfStateDims:halfStateDims+quarterDims,:quarterDims] = np.eye(quarterDims) * 1.0/self.mass
         
         fullContinious = np.zeros((stateDims+halfStateDims,stateDims+halfStateDims))        
@@ -40,7 +43,7 @@ class exponentialSimulator:
         self.Ad =  fullDiscrete[:stateDims,:stateDims]
         self.Bd =  fullDiscrete[:stateDims,stateDims:]
         
-        self.Bd [halfStateDims:,:halfStateDims] *= 1.0/self.mass
+       # self.Bd [halfStateDims:,:halfStateDims] *= 1.0/self.mass
     def simulate(self,control):
         self.state = self.forwardPass(self.state,control)
         return self.state
