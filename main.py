@@ -32,13 +32,14 @@ solver = gurobi.gurobiSolver(len(magnets)*3)
 controller = PDController(startState,0.0007,0.0000007,0.025,0.000025)
 simulator = exponentialSimulator(startState,dt,sphereProperties(8940,0.05)) #density, diamter
 
+numControls = []
 
 state = np.copy(startState)
 states = np.copy(state)
 simulator.setState(state)
 randShape = np.random.randint(0,2,(6))
 start = time.time()
-for i in range(1000):
+for i in range(300):
     #desired_wrench = randShape * np.cos(i*np.pi/50)/10
     desired_wrench = controller.getDesiredWrench(state,desiredState)
     A,B = model.getAB(state)
@@ -46,8 +47,15 @@ for i in range(1000):
     trueWrench = model.forwardPass(state,control)
     state = simulator.simulate(trueWrench)
     states = np.concatenate((states,state),1)
+    
+    numControl = control>0.00001
+    numControl = numControl.sum()
+    numControls.append(numControl)
 runTime = time.time() - start
 print(runTime)
+
+fig = plt.figure()
+fig.suptitle('Position (m)')
 for i in range(3):
     plt.plot(states[i,:])
 plt.show()
@@ -55,3 +63,10 @@ plt.show()
 for i in range(3):
     plt.plot(states[3+i,:])
 plt.show()
+
+plt.hist(numControls)
+plt.show()
+fig = plt.figure()
+fig.suptitle('Non-zero control inputs')
+plt.ylim(0,9)
+plt.scatter(range(300),numControls)
