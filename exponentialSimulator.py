@@ -26,7 +26,7 @@ class exponentialSimulator:
         Bc = np.zeros((stateDims,halfStateDims))
         Bc[halfStateDims:,:halfStateDims] = np.eye(halfStateDims) * 1/(timestep)
         Bc[halfStateDims:halfStateDims + quarterDims,:quarterDims] *= (1.0/self.mass)
-        Bc[halfStateDims + quarterDims:,quarterDims:] *= (1.0/self.MOI)
+        Bc[halfStateDims + quarterDims:,quarterDims:] = np.linalg.inv(self.MOI)*1/timestep
 
         #Bc[halfStateDims:halfStateDims+quarterDims,:quarterDims] = np.eye(quarterDims) * 1.0/self.mass
         
@@ -56,5 +56,5 @@ def sphereProperties(density,diameter):
     radius = diameter / 2.0
     volume = 4.0/3 * np.pi*np.power(radius,3)
     mass = volume * density
-    I = (2.0/5) *mass * np.power(radius,2)
+    I = np.eye(3)*(2.0/5) *mass * np.power(radius,2)
     return mass, I
