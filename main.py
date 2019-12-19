@@ -12,7 +12,7 @@ from exponentialSimulator import exponentialSimulator, sphereProperties
 import matplotlib.pyplot as plt
 import time
  
- 
+magnetLimit = 9
 startState = np.zeros((12,1))
 desiredState = np.zeros((12,1))
 desiredState[:3,0] = [1,2,3]
@@ -28,7 +28,7 @@ magnets = [All_magnets[0],All_magnets[1],All_magnets[2]]
 
 
 model = matlabModel(magnets)
-solver = gurobi.gurobiSolver(len(magnets)*3)
+solver = gurobi.gurobiSolver(len(magnets)*3,magnetLimit)
 controller = PDController(startState,0.0007,0.0000007,0.025,0.000025)
 simulator = exponentialSimulator(startState,dt,sphereProperties(8940,0.05)) #density, diamter
 
@@ -48,7 +48,7 @@ for i in range(300):
     state = simulator.simulate(trueWrench)
     states = np.concatenate((states,state),1)
     
-    numControl = control>0.00001
+    numControl = abs(control)>0.000000000001
     numControl = numControl.sum()
     numControls.append(numControl)
 runTime = time.time() - start
@@ -64,8 +64,6 @@ for i in range(3):
     plt.plot(states[3+i,:])
 plt.show()
 
-plt.hist(numControls)
-plt.show()
 fig = plt.figure()
 fig.suptitle('Non-zero control inputs')
 plt.ylim(0,9)

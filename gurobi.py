@@ -53,22 +53,28 @@ def VD(a,b,length = None):
         else:
             workingSum += a[i,0] * b[i,0]
     return workingSum
-
+def vectorElementMult(a,b,length = None):
+    if(length == None):
+        length = len(a)
+    c = []
+    for i in range(0,length):
+        c.append(a[i,0]*b[i,0])
+    return np.reshape(np.array(c),(length,1))
 class gurobiSolver:
-    def __init__(self,dims):
-        pass
+    def __init__(self,dims,allowedDimsPerStep = 9):
+        self.allowedDims = allowedDimsPerStep
     def solve(self,A,B,Y,param = 0):
         dims = A.shape[1]
         try:
             m = Model("mip")
             scale = 10**4
             m.Params.OutputFlag = 0        
-            x = m.addVars(dims,1)#,lb = [-10]*dims,ub = [10]*dims)
-            u = m.addVars(dims,1)
+            u = m.addVars(dims,1)#,lb = [-10]*dims,ub = [10]*dims)
+            z = m.addVars(dims,1)
             m.update()
 
-            ax = MM(A,x,None,None,1)
-            bu = MM(B,u,None,None,1)
+            au = MM(A,u,None,None,1)
+            bz = MM(B,z,None,None,1)
             m.update()
 
             for i in range(dims):
@@ -76,8 +82,16 @@ class gurobiSolver:
                 m.getVars()[i].ub = 100.0
 
 
+            controlOnOff = m.addVars(dims,1, vtype=GRB.BINARY)
+            
+            u2 = vectorElementMult(controlOnOff,u,dims)
+            m.update()
+
+          #  z2 = vectorElementMult(controlOnOff,z,dims)
+
+
             # Set objective
-            newY = MA(ax,bu,6)
+            newY = MA(au,bz,6)
             #print(newY)
             error = MA(newY,Y*-1,6) * scale
             #print(error)
@@ -86,7 +100,13 @@ class gurobiSolver:
             m.setObjective(ob, GRB.MINIMIZE)
 
             for i in range(dims):
-                m.addConstr(u[i,0]==abs_(x[i,0]))
+                m.addConstr(z[i,0]==abs_(u[i,0]))
+                
+            for i in range(dims):
+                m.addConstr(u2[i,0]==u[i,0])
+                
+            numMagnetsOn = VD(np.ones([dims,1]),controlOnOff,dims)
+            m.addConstr(numMagnetsOn==self.allowedDims)
 #            p = m.presolve()
 #            p.printStats()
             #m.Params.Presolve = 0
@@ -94,18 +114,23 @@ class gurobiSolver:
             m.optimize()
             
             best = np.array([v.x for v in m.getVars()])
-            xnp = np.reshape(best[:dims],(-1,1))
-            unp = np.reshape(best[dims:],(-1,1))
+            unp = np.reshape(best[:dims],(-1,1))
+            znp = np.reshape(best[dims:dims*2],(-1,1))
 
-            newY = np.matmul(A,xnp) + np.matmul(B,unp) 
+            newY = np.matmul(A,unp) + np.matmul(B,znp) 
             #print('Y ',newY)
             
 #            for v in m.getVars():
-#                print('%s %g' % (v.varName, v.x))
+#                print('%s %g' % (v.varName, v.u))
         
             #print('Obj: %g' % m.objVal)
-            bestX = np.reshape(best[:dims],(-1,1))
-            return bestX
+            
+            bestU = np.reshape(best[:dims],(-1,1))
+            bestControlChoice = np.rint(best[dims*2:],)
+            chosenU = np.reshape(bestControlChoice,(-1,1))*bestU
+            
+
+            return chosenU
         except GurobiError as e:
             print('Error code ' + str(e.errno) + ": " + str(e))
         
