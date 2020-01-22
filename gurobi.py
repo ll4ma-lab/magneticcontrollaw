@@ -8,58 +8,6 @@ Created on Thu Sep 19 17:10:00 2019
 from gurobipy import *
 import numpy as np
 #matrix multiply
-def MM(a,b,AFirst = None,ASecond = None,BSecond = None,debug = False):
-    if(AFirst is None):
-        AFirst = len(a)
-    if(ASecond is None):
-        ASecond = len(a[0])
-    if(BSecond is None):
-        BSecond = len(b[0])
-    c = []
-    for i in range(0,AFirst):
-        temp=[]
-        for j in range(0,BSecond):
-            s = 0
-            for k in range(0,ASecond):
-                if(a[i,k]==0):
-                    continue
-                s += a[i,k]*b[k,j]
-                if(debug):                    
-                    print(a[i,k])
-                    print(b[k,j])
-                    print(a[i,k]*b[k,j])
-            if(debug):
-                print(s)
-            temp.append(s)
-        c.append(temp)
-    return np.array(c)
-#matrix add
-def MA(a,b,length = None):
-    if(length == None):
-        length = len(a)
-    c = []
-    for i in range(0,length):
-        c.append(a[i]+b[i])
-    return np.array(c)
-#vector dot
-def VD(a,b,length = None):
-    if(length ==None):
-        length = len(a)
-    first = True
-    for i in range(0,length):
-        if(first):
-            workingSum = a[i,0] * b[i,0]
-            first = False
-        else:
-            workingSum += a[i,0] * b[i,0]
-    return workingSum
-def vectorElementMult(a,b,length = None):
-    if(length == None):
-        length = len(a)
-    c = []
-    for i in range(0,length):
-        c.append(a[i,0]*b[i,0])
-    return np.reshape(np.array(c),(length,1))
 class gurobiSolver:
     def __init__(self,dims,allowedDimsPerStep = None):
         if allowedDimsPerStep == None:
@@ -90,8 +38,8 @@ class gurobiSolver:
 
 
             controlOnOff = m.addVars(dims,1, vtype=GRB.BINARY)
-            
-            u2 = vectorElementMult(controlOnOff,u,dims)
+            controlOnOff = np.array([[controlOnOff[i,0]] for i in range(dims)])
+            u2 = controlOnOff*u#u2 = vectorElementMult(controlOnOff,u,dims)
             m.update()
 
 
@@ -110,7 +58,7 @@ class gurobiSolver:
             for i in range(dims):
                 m.addConstr(u2[i,0]==u[i,0])
                 
-            numMagnetsOn = VD(np.ones([dims,1]),controlOnOff,dims)
+            numMagnetsOn = np.sum(controlOnOff) #VD(np.ones([dims,1]),controlOnOff,dims)
             m.addConstr(numMagnetsOn==self.allowedDims)
 #            p = m.presolve()
 #            p.printStats()
