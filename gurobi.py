@@ -61,8 +61,11 @@ def vectorElementMult(a,b,length = None):
         c.append(a[i,0]*b[i,0])
     return np.reshape(np.array(c),(length,1))
 class gurobiSolver:
-    def __init__(self,dims,allowedDimsPerStep = 9):
-        self.allowedDims = allowedDimsPerStep
+    def __init__(self,dims,allowedDimsPerStep = None):
+        if allowedDimsPerStep == None:
+            self.allowedDims = dims
+        else:
+            self.allowedDims = allowedDimsPerStep
     def solve(self,A,B,Y,param = 0):
         dims = A.shape[1]
         try:
@@ -72,10 +75,14 @@ class gurobiSolver:
             u = m.addVars(dims,1)#,lb = [-10]*dims,ub = [10]*dims)
             z = m.addVars(dims,1)
             m.update()
+            u = np.array([[u[i,0]] for i in range(dims)])
+            z = np.array([[z[i,0]] for i in range(dims)])
 
-            au = MM(A,u,None,None,1)
-            bz = MM(B,z,None,None,1)
-            m.update()
+            
+            #print(A.shape)
+            #print(u.shape)
+            au = np.dot(A,u) #MM(A,u,None,None,1)
+            bz = np.dot(B,z) #MM(B,z,None,None,1)
 
             for i in range(dims):
                 m.getVars()[i].lb = -100.0
@@ -87,17 +94,15 @@ class gurobiSolver:
             u2 = vectorElementMult(controlOnOff,u,dims)
             m.update()
 
-          #  z2 = vectorElementMult(controlOnOff,z,dims)
-
 
             # Set objective
-            newY = MA(au,bz,6)
+            newY = au + bz#MA(au,bz,6)
             #print(newY)
-            error = MA(newY,Y*-1,6) * scale
+            error = (newY - Y)*scale #MA(newY,Y*-1,6) * scale
             #print(error)
-            ob = VD(error,error,6)
-            #print(ob)
-            m.setObjective(ob, GRB.MINIMIZE)
+            ob = np.dot(np.transpose(error),error) #VD(error,error,6)
+            #print(ob.shape)
+            m.setObjective(ob[0,0], GRB.MINIMIZE)
 
             for i in range(dims):
                 m.addConstr(z[i,0]==abs_(u[i,0]))
@@ -112,7 +117,7 @@ class gurobiSolver:
             #m.Params.Presolve = 0
 
             m.optimize()
-            
+            #print(m.getVars())
             best = np.array([v.x for v in m.getVars()])
             unp = np.reshape(best[:dims],(-1,1))
             znp = np.reshape(best[dims:dims*2],(-1,1))

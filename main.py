@@ -12,7 +12,7 @@ from exponentialSimulator import exponentialSimulator, sphereProperties
 import matplotlib.pyplot as plt
 import time
  
-magnetLimit = 9
+magnetLimit = 1
 startState = np.zeros((12,1))
 desiredState = np.zeros((12,1))
 desiredState[:3,0] = [1,2,3]
