@@ -21,12 +21,12 @@ class exponentialSimulator:
         halfStateDims = stateDims/2
         quarterDims = halfStateDims/2
         Ac = np.zeros((stateDims,stateDims))
-        Ac[:halfStateDims,halfStateDims:] = np.eye(halfStateDims) * 1/timestep
+        Ac[:halfStateDims,halfStateDims:] = np.eye(halfStateDims) 
         
         Bc = np.zeros((stateDims,halfStateDims))
-        Bc[halfStateDims:,:halfStateDims] = np.eye(halfStateDims) * 1/(timestep)
+        Bc[halfStateDims:,:halfStateDims] = np.eye(halfStateDims)
         Bc[halfStateDims:halfStateDims + quarterDims,:quarterDims] *= (1.0/self.mass)
-        Bc[halfStateDims + quarterDims:,quarterDims:] = np.linalg.inv(self.MOI)*1/timestep
+        Bc[halfStateDims + quarterDims:,quarterDims:] = np.linalg.inv(self.MOI)
 
         #Bc[halfStateDims:halfStateDims+quarterDims,:quarterDims] = np.eye(quarterDims) * 1.0/self.mass
         

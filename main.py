@@ -17,7 +17,9 @@ startState = np.zeros((12,1))
 desiredState = np.zeros((12,1))
 desiredState[:3,0] = [1,2,3]
 desiredState = desiredState / 1000
-dt = 0.5
+runTime = 600
+dt = 0.1
+numSteps = int(runTime/dt)
 
 All_magnets = 0.001 * np.array([(-130, 0, 0),( 0, 0, -130),
                    (0, -130, 0),( 0, 0, 130),
@@ -29,7 +31,7 @@ magnets = [All_magnets[0],All_magnets[1],All_magnets[2]]
 
 model = matlabModel(magnets)
 solver = gurobi.gurobiSolver(len(magnets)*3,magnetLimit)
-controller = PDController(startState,0.0007,0.0000007,0.025,0.000025)
+controller = PDController(startState,0.0007,0.0000007,0.05,0.00005)
 simulator = exponentialSimulator(startState,dt,sphereProperties(8940,0.05)) #density, diamter
 
 numControls = []
@@ -39,7 +41,7 @@ states = np.copy(state)
 simulator.setState(state)
 randShape = np.random.randint(0,2,(6))
 start = time.time()
-for i in range(300):
+for i in range(numSteps):
     #desired_wrench = randShape * np.cos(i*np.pi/50)/10
     desired_wrench = controller.getDesiredWrench(state,desiredState)
     A,B = model.getAB(state)
@@ -67,4 +69,4 @@ plt.show()
 fig = plt.figure()
 fig.suptitle('Non-zero control inputs')
 plt.ylim(0,9)
-plt.scatter(range(300),numControls)
+plt.scatter(range(numSteps),numControls)
