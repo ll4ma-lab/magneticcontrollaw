@@ -48,7 +48,7 @@ class exponentialSimulator:
         self.state = self.forwardPass(self.state,control)
         return self.state
     def forwardPass(self,pose,control):
-        newPose = np.matmul(self.Ad, pose) + np.matmul(self.Bd,control)
+        newPose = np.dot(self.Ad, pose) + np.dot(self.Bd,control)
         return newPose
     def setState(self,state):
         self.state = np.copy(state)

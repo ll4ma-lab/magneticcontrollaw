@@ -18,7 +18,7 @@ desiredState = np.zeros((12,1))
 desiredState[:3,0] = [1,2,3]
 desiredState = desiredState / 1000
 runTime = 600
-dt = 0.1
+dt = 1
 numSteps = int(runTime/dt)
 
 All_magnets = 0.001 * np.array([(-130, 0, 0),( 0, 0, -130),
@@ -45,7 +45,7 @@ for i in range(numSteps):
     #desired_wrench = randShape * np.cos(i*np.pi/50)/10
     desired_wrench = controller.getDesiredWrench(state,desiredState)
     A,B = model.getAB(state)
-    control =  solver.solve(A,B,desired_wrench)
+    control =  solver.solveWrench(A,B,desired_wrench)
     trueWrench = model.forwardPass(state,control)
     state = simulator.simulate(trueWrench)
     states = np.concatenate((states,state),1)
