@@ -22,9 +22,9 @@ magnetLimit = 1
 startState = np.zeros((12,1))
 desiredState = np.zeros((12,1))
 desiredState[:3,0] = [1,2,3]
-desiredState = desiredState / 1000
+desiredState = desiredState / 10
 runTime = 120
-dt = 6
+dt = 20
 numSteps = int(runTime/dt)
 
 
@@ -79,6 +79,12 @@ fig = plt.figure()
 fig.suptitle('Position (m)')
 for i in range(3):
     plt.plot(states[i,:])
+plt.show()
+
+fig = plt.figure()
+fig.suptitle('Position plan(m)')
+for i in range(3):
+    plt.plot(plan_states[:,i,0])
 plt.show()
 
 for i in range(3):

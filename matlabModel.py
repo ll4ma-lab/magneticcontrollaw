@@ -21,9 +21,9 @@ class matlabModel:
         sigma_al = 3.77E+07;
         sigma = sigma_copper;
         do = 0.05;
-        allFT,A,B = octave.calcEddyInput(self.magnets,sigma,do,nout=3)
-        A=A[:,:self.dims] * 10**6
-        B=B[:,:self.dims] * 10**6
+        allFT,A,B = octave.calcEddyInput(self.magnets,sigma,do,15,nout=3)
+        A=A[:,:self.dims] #* 10**6
+        B=B[:,:self.dims] #* 10**6
         self.A = A
         self.B = B
         return A,B

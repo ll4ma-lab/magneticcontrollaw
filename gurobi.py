@@ -12,11 +12,11 @@ import time
 #matrix multiply
 class gurobiSolver:
     def __init__(self,dims,allowedDimsPerStep = None):
+        self.dims = dims
         if allowedDimsPerStep == None:
             self.allowedDims = self.dims
         else:
             self.allowedDims = allowedDimsPerStep
-        self.dims = dims
     def absSolverSetup(self,A,B,m):
             u = m.addVars(self.dims,1)#,lb = [-10]*self.dims,ub = [10]*self.dims)
             z = m.addVars(self.dims,1)
@@ -43,7 +43,6 @@ class gurobiSolver:
             m.update()
 
             newY = au + bz#MA(au,bz,6)
-            scale = 10**8
 
             for i in range(self.dims):
                 m.addConstr(z[i,0]==abs_(u[i,0]))
@@ -74,7 +73,7 @@ class gurobiSolver:
                 else:
                     j = j+1
     def equalityConstraint(self,m,a,b):
-        scale = 10**8
+        scale = 1#0**8
 
         for i in range(a.shape[0]):
             m.addConstr(scale*a[i,0]==scale*b[i,0])
@@ -92,8 +91,10 @@ class gurobiSolver:
         scale = 10**4
 
         m = Model("mip")
-        m.Params.PSDTol = 10**6
+        m.Params.NumericFocus = 3
+        #m.Params.PSDTol = 10**6
         m.Params.TimeLimit = 60 * 60 * 5
+        m.Params.FeasibilityTol = 10**-3
         state = simulator.state
         print('starting')
         A,B = model.getAB(state)
@@ -103,6 +104,7 @@ class gurobiSolver:
         info = []
         states = []
         states.append(simStartState)
+
         controls = []
         try:
             self.equalityConstraint(m,simStartState,state)
@@ -110,14 +112,19 @@ class gurobiSolver:
             for i in range(steps):
                 
                 newY,u,z,controlOnOff = self.absSolverSetup(A,B,m)
+                self.prune(newY)
+
                 controls.append([u[j,0] for j in range(self.dims)])
-                info.append((newY,u,controlOnOff,state))
                 
-                nextState = simulator.forwardPass(state,newY)                
+                nextState = simulator.forwardPass(state,newY)
+                
+                info.append((newY,u,controlOnOff,nextState,z))
+
                 self.prune(nextState)
 
                 state = self.constructNumpyVar(m,12)
                 states.append(state)
+
                 self.equalityConstraint(m,nextState,state)
 
                 print('setup ' + str(i))
@@ -134,7 +141,13 @@ class gurobiSolver:
             m.optimize()
         except GurobiError as e:
             print('Error code ' + str(e.errno) + ": " + str(e))
-        return m,info,states
+            
+        np_states = np.zeros((len(states),states[0].shape[0],states[0].shape[1]))
+        for j in range(np_states.shape[0]):
+            for k in range(np_states.shape[1]):
+                for l in range(np_states.shape[2]):
+                    np_states[j][k][l] = states[j][k][l].x
+        return m,info,np_states
     def solveWrench(self,A,B,Y,param = 0):
         try:
             m = Model("mip")

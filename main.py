@@ -12,7 +12,7 @@ from exponentialSimulator import exponentialSimulator, sphereProperties
 import matplotlib.pyplot as plt
 import time
  
-magnetLimit = 1
+magnetLimit = 9
 startState = np.zeros((12,1))
 desiredState = np.zeros((12,1))
 desiredState[:3,0] = [1,2,3]
@@ -31,7 +31,7 @@ magnets = [All_magnets[0],All_magnets[1],All_magnets[2]]
 
 model = matlabModel(magnets)
 solver = gurobi.gurobiSolver(len(magnets)*3,magnetLimit)
-controller = PDController(startState,0.0007,0.0000007,0.05,0.00005)
+controller = PDController(startState,0.0007,0.000007,0.08,0.0001)
 simulator = exponentialSimulator(startState,dt,sphereProperties(8940,0.05)) #density, diamter
 
 numControls = []
