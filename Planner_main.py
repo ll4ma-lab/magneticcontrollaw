@@ -23,8 +23,8 @@ startState = np.zeros((12,1))
 desiredState = np.zeros((12,1))
 desiredState[:3,0] = [1,2,3]
 desiredState = desiredState / 1000
-runTime = 20
-dt = 0.5
+runTime = 120
+dt = 6
 numSteps = int(runTime/dt)
 
 
@@ -48,17 +48,18 @@ simulator.setState(state)
 
 start = time.time()
 
-gurobi_model,info = solver.solvePlan(numSteps,model,desiredState,simulator)
+gurobi_model,info,plan_states = solver.solvePlan(numSteps,model,desiredState,simulator)
 controls = []
 for i in range(numSteps):
-    data = info[i][1]
-    control = np.zeros(data.shape)
-    for j in range(data.shape[0]):
-        control[j,0]=data[j,0].x
+    control_sym = info[i][1]
+    On_OFF_sym = info[i][2]
+
+    control = np.zeros(control_sym.shape)
+    for j in range(control_sym.shape[0]):
+        control[j,0]=control_sym[j,0].x * On_OFF_sym[j,0].x
     controls.append(control)
 
-runTime = time.time() - start
-print(runTime)
+
 
 state = np.copy(startState)
 states = np.copy(state)
@@ -66,15 +67,13 @@ simulator.setState(state)
 
 for i in range(numSteps):
     control = controls[i]
-    trueWrench = control#model.forwardPass(state,control)
+    trueWrench = model.forwardPass(state,control)
     state = simulator.simulate(trueWrench)
     states = np.concatenate((states,state),1)
     
     numControl = abs(control)>0.000000000001
     numControl = numControl.sum()
     numControls.append(numControl)
-runTime = time.time() - start
-print(runTime)
 
 fig = plt.figure()
 fig.suptitle('Position (m)')

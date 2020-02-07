@@ -32,9 +32,9 @@ class gurobiSolver:
 
 
             for i in range(self.dims):
-                u[i,0].lb = -1000.0
-                u[i,0].ub = 1000.0
-                z[i,0].ub = 1000.0
+                u[i,0].lb = -10.0
+                u[i,0].ub = 10.0
+                z[i,0].ub = 10.0
             m.update()
 
             controlOnOff = m.addVars(self.dims,1, vtype=GRB.BINARY)
@@ -43,22 +43,24 @@ class gurobiSolver:
             m.update()
 
             newY = au + bz#MA(au,bz,6)
+            scale = 10**8
+
             for i in range(self.dims):
                 m.addConstr(z[i,0]==abs_(u[i,0]))
-                
-            for i in range(self.dims):
-                m.addConstr(u2[i,0]==u[i,0])
+            self.equalityConstraint(m,u,u2)  
+            #for i in range(self.dims):
+            #    m.addConstr(u2[i,0]==u[i,0])
                 
             numMagnetsOn = np.sum(controlOnOff) #VD(np.ones([self.dims,1]),controlOnOff,self.dims)
             m.addConstr(numMagnetsOn==self.allowedDims)
-            return newY,u,z,numMagnetsOn  
+            return newY,u,z,controlOnOff  
     def dummySolverSetup(self,A,B,m):
         u = m.addVars(6,1)#,lb = [-10]*self.dims,ub = [10]*self.dims)
         m.update()
         u = np.array([[u[i,0]] for i in range(6)])
         for i in range(6):
-            u[i,0].lb = -1000.0
-            u[i,0].ub = 1000.0
+            u[i,0].lb = -0.1
+            u[i,0].ub = 0.1
         m.update()   
         return u,u,u,u        
     def prune(self,array):
@@ -71,51 +73,75 @@ class gurobiSolver:
                     size = array[i,0].size()
                 else:
                     j = j+1
+    def equalityConstraint(self,m,a,b):
+        scale = 10**8
+
+        for i in range(a.shape[0]):
+            m.addConstr(scale*a[i,0]==scale*b[i,0])
+    def constructNumpyVar(self,m,dims):
+        var = m.addVars(dims,1)
+        m.update()
+        npVar = np.array([[var[i,0]] for i in range(dims)])
+        for i in range(self.dims):
+            npVar[i,0].lb = -100.0
+            npVar[i,0].ub = 100.0
+        m.update()
+        return npVar
     def solvePlan(self,steps,model,X,simulator):
             
         scale = 10**4
 
         m = Model("mip")
-        m.Params.PSDTol = 10**5
+        m.Params.PSDTol = 10**6
+        m.Params.TimeLimit = 60 * 60 * 5
         state = simulator.state
         print('starting')
         A,B = model.getAB(state)
-
+        
+        simStartState = self.constructNumpyVar(m,12)
+        
         info = []
+        states = []
+        states.append(simStartState)
+        controls = []
         try:
-
+            self.equalityConstraint(m,simStartState,state)
+            state = simStartState
             for i in range(steps):
-                start = time.time()
-    
-                print('setting up step ' + str(i))
-    
-                newY,u,z,numMagnetsOn = self.dummySolverSetup(A,B,m)
-                print('define wrench')
-                info.append((newY,u,z,numMagnetsOn))
-                print('store data')
-    
-                state = simulator.forwardPass(state,newY)
-                self.prune(state)
-                print('set up step ' + str(i))
-                #print(state)
-                print(time.time() - start)
-    
-    
+                
+                newY,u,z,controlOnOff = self.absSolverSetup(A,B,m)
+                controls.append([u[j,0] for j in range(self.dims)])
+                info.append((newY,u,controlOnOff,state))
+                
+                nextState = simulator.forwardPass(state,newY)                
+                self.prune(nextState)
+
+                state = self.constructNumpyVar(m,12)
+                states.append(state)
+                self.equalityConstraint(m,nextState,state)
+
+                print('setup ' + str(i))
+            m.update()
+            controls = np.array(controls)
+
+            #self.equalityConstraint(m,X,state)
+            l2Control = np.sum(np.sum(np.multiply(controls,controls)))
             error = (state - X) *scale
-            #print(error)
-            ob = np.dot(np.transpose(error),error) #VD(error,error,6)
+            ob = np.dot(np.transpose(error),error) + l2Control
+
+            
             m.setObjective(ob[0,0], GRB.MINIMIZE)
             m.optimize()
         except GurobiError as e:
             print('Error code ' + str(e.errno) + ": " + str(e))
-        return m,info
+        return m,info,states
     def solveWrench(self,A,B,Y,param = 0):
         try:
             m = Model("mip")
             scale = 10**4
             m.Params.OutputFlag = 0        
             
-            newY,u,z,numMagnetsOn = self.absSolverSetup(A,B,m)
+            newY,u,z,controlOnOff = self.absSolverSetup(A,B,m)
  
             error = (newY - Y)*scale #MA(newY,Y*-1,6) * scale
             #print(error)
