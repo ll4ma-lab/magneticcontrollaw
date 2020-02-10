@@ -32,13 +32,13 @@ class gurobiSolver:
 
 
             for i in range(self.dims):
-                u[i,0].lb = -10.0
-                u[i,0].ub = 10.0
-                z[i,0].ub = 10.0
+                u[i,0].lb = -1000.0
+                u[i,0].ub = 1000.0
+                z[i,0].ub = 1000.0
             m.update()
-
-            controlOnOff = m.addVars(self.dims,1, vtype=GRB.BINARY)
-            controlOnOff = np.array([[controlOnOff[i,0]] for i in range(self.dims)])
+            if(controlOnOff is None):
+                controlOnOff = m.addVars(self.dims,1, vtype=GRB.BINARY)
+                controlOnOff = np.array([[controlOnOff[i,0]] for i in range(self.dims)])
             u2 = controlOnOff*u#u2 = vectorElementMult(controlOnOff,u,self.dims)
             m.update()
 

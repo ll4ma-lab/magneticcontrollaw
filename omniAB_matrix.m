@@ -20,7 +20,8 @@
 %                       configuration to the omni_pos location
 %
 
-function [omni_A, omni_B, omniFrame] = omniAB_matrix(omni_pos, sigma, Do, freq)
+
+function [omni_A, omni_B, omniFrame ] = omniAB_matrix(omni_pos, sigma, Do, freq)
 
 % check if pos is entered as omni_pos = [x, y, x] 
 if size(omni_pos,1) == 3
@@ -30,21 +31,18 @@ end
 mu = 4*pi*10^-7;            %Magnetic Permittivity of Free Space
 
 % Eddy Current Ansys Modeling 
-model_C = [ ...
-            % Off Axis Config (Xaxis)
-            1 -2.86 -0.236 -0.00137 -7.39 ;...
-            0 0 0 0 0;...
-            1 -2.452 -0.129 -0.009395 -7.30007;...
-            0 0 0 0 0;...
-            1 -2.725 -0.118 -0.0111 -6.434; ...
-            0 0 0 0 0;...
-            % On Axis Config (Yaxis)
-            0 0 0 0 0;...
-            1 -3.639 -0.2126 0.002 -6.552 ;...
-            0 0 0 0 0; ...
-            0 0 0 0 0;...
-            1 -3.353 -0.09175 -0.0012 -5.5076;...
-            0 0 0 0 0];
+    model_C = [ 1 -4.39 -0.230 0.00143 -7.38 ;...      % Xaxis: Fx
+                0 0 0 0 0;...                           % Xaxis: Fy = 0
+                1 -3.27 -0.141 -0.000796 -7.26;...  % Xaxis: Fz
+                0 0 0 0 0;...                           % Xaxis: Tx = 0
+                1 -3.59 -0.127 -0.00150 -6.27; ...     % Xaxis: Ty
+                0 0 0 0 0;...                           % Xaxis: Tz
+                0 0 0 0 0;...                           % Yaxis: Fx = 0
+                1 -4.97 -0.193 0.000377 -6.81 ;...  % Yaxis: Fy 
+                0 0 0 0 0; ...                          % Yaxis: Fz
+                0 0 0 0 0;...                           % Yaxis: Tx = 0
+                1 -4.13 -0.101 -0.000957 -5.64;...   % Yaxis: Ty
+                0 0 0 0 0];                             % Yaxis: Tz = 0
        
 % Organize for omnimagnet transformation 
 % Y-axis Modeling a (constant) and b (power) coefficients

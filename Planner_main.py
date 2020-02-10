@@ -23,8 +23,8 @@ startState = np.zeros((12,1))
 desiredState = np.zeros((12,1))
 desiredState[:3,0] = [1,2,3]
 desiredState = desiredState / 10
-runTime = 120
-dt = 20
+runTime = 30
+dt = 1
 numSteps = int(runTime/dt)
 
 
@@ -90,6 +90,13 @@ plt.show()
 for i in range(3):
     plt.plot(states[3+i,:])
 plt.show()
+
+np_controls = np.array(controls)
+fig.suptitle('')
+for i in range(3):
+    plt.plot(np_controls[:,i,0])
+plt.show()
+
 
 fig = plt.figure()
 fig.suptitle('Non-zero control inputs')
