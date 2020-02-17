@@ -11,12 +11,12 @@ from PDController import PDController
 from exponentialSimulator import exponentialSimulator, sphereProperties
 import matplotlib.pyplot as plt
 import time
- 
-magnetLimit = 1
+UnitConversionFactor = 10**6
+magnetLimit = 9
 startState = np.zeros((12,1))
 desiredState = np.zeros((12,1))
 desiredState[:3,0] = [1,2,3]
-desiredState = desiredState / 10
+desiredState = UnitConversionFactor*desiredState / 10
 runTime = 30
 dt = 1
 numSteps = int(runTime/dt)
@@ -31,8 +31,8 @@ magnets = [All_magnets[0],All_magnets[1],All_magnets[2]]
 
 model = matlabModel(magnets)
 solver = gurobi.gurobiSolver(len(magnets)*3,magnetLimit)
-controller = PDController(startState,0.06,0.000007,0.5,0.0001)
-simulator = exponentialSimulator(startState,dt,sphereProperties(8940,0.05)) #density, diamter
+controller = PDController(startState,0.06/UnitConversionFactor,0.000007/UnitConversionFactor,0.5/UnitConversionFactor,0.0001/UnitConversionFactor)
+simulator = exponentialSimulator(startState,dt,sphereProperties(8940,0.05),UnitConversionFactor) #density, diamter
 
 numControls = []
 controls = []
@@ -63,11 +63,11 @@ print(runTime)
 fig = plt.figure()
 fig.suptitle('Position (m)')
 for i in range(3):
-    plt.plot(states[i,:])
+    plt.plot(states[i,:]/UnitConversionFactor)
 plt.show()
 
 for i in range(3):
-    plt.plot(states[3+i,:])
+    plt.plot(states[3+i,:]/UnitConversionFactor)
 plt.show()
 
 fig = plt.figure()

@@ -7,13 +7,14 @@ Created on Mon Nov 18 15:57:35 2019
 
 import numpy as np
 class exponentialSimulator:
-    def __init__(self,state,timestep,object_properties,taylorDepth = 3):
+    def __init__(self,state,timestep,object_properties,unitConversionFactor = 1.0,taylorDepth = 3):
         (mass,MOI) = object_properties
         self.state = np.copy(state)
         self.t = timestep
         self.tayDepth = taylorDepth
         self.mass = mass
         self.MOI = MOI
+        self.unitFactor = unitConversionFactor
         self.matrixExponential(timestep)
         
     def matrixExponential(self,timestep):
@@ -25,8 +26,8 @@ class exponentialSimulator:
         
         Bc = np.zeros((stateDims,halfStateDims))
         Bc[halfStateDims:,:halfStateDims] = np.eye(halfStateDims)
-        Bc[halfStateDims:halfStateDims + quarterDims,:quarterDims] *= (1.0/self.mass)
-        Bc[halfStateDims + quarterDims:,quarterDims:] = np.linalg.inv(self.MOI)
+        Bc[halfStateDims:halfStateDims + quarterDims,:quarterDims] *= (self.unitFactor/self.mass)
+        Bc[halfStateDims + quarterDims:,quarterDims:] = self.unitFactor*np.linalg.inv(self.MOI)
 
         #Bc[halfStateDims:halfStateDims+quarterDims,:quarterDims] = np.eye(quarterDims) * 1.0/self.mass
         

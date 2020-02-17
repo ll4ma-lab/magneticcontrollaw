@@ -17,13 +17,13 @@ from matlabModel import matlabModel
 from exponentialSimulator import exponentialSimulator, sphereProperties
 import matplotlib.pyplot as plt
 import time
- 
+UnitConversionFactor = 10**6 # change length unit used internally. 1 being meters 10**3 being milimeters
 magnetLimit = 1
 startState = np.zeros((12,1))
 desiredState = np.zeros((12,1))
 desiredState[:3,0] = [1,2,3]
-desiredState = desiredState / 10
-runTime = 30
+desiredState = UnitConversionFactor*desiredState / 10
+runTime = 50
 dt = 1
 numSteps = int(runTime/dt)
 
@@ -40,15 +40,14 @@ model = matlabModel(magnets)
 
 solver = gurobi.gurobiSolver(len(magnets)*3,magnetLimit)
 
-simulator = exponentialSimulator(startState,dt,sphereProperties(8940,0.05)) #density, diamter
+simulator = exponentialSimulator(startState,dt,sphereProperties(8940,0.05),UnitConversionFactor) #density, diamter
 numControls = []
 
 state = np.copy(startState)
 simulator.setState(state)
-
 start = time.time()
 
-gurobi_model,info,plan_states = solver.solvePlan(numSteps,model,desiredState,simulator)
+gurobi_model,info,plan_states = solver.solvePlan(numSteps,model,desiredState,simulator,1)
 controls = []
 for i in range(numSteps):
     control_sym = info[i][1]
@@ -78,13 +77,13 @@ for i in range(numSteps):
 fig = plt.figure()
 fig.suptitle('Position (m)')
 for i in range(3):
-    plt.plot(states[i,:])
+    plt.plot(states[i,:]/UnitConversionFactor)
 plt.show()
 
 fig = plt.figure()
 fig.suptitle('Position plan(m)')
 for i in range(3):
-    plt.plot(plan_states[:,i,0])
+    plt.plot(plan_states[:,i,0]/UnitConversionFactor)
 plt.show()
 
 for i in range(3):

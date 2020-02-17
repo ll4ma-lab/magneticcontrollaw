@@ -17,7 +17,7 @@ class gurobiSolver:
             self.allowedDims = self.dims
         else:
             self.allowedDims = allowedDimsPerStep
-    def absSolverSetup(self,A,B,m):
+    def absSolverSetup(self,A,B,m,controlOnOff=None):
             u = m.addVars(self.dims,1)#,lb = [-10]*self.dims,ub = [10]*self.dims)
             z = m.addVars(self.dims,1)
             m.update()
@@ -82,19 +82,19 @@ class gurobiSolver:
         m.update()
         npVar = np.array([[var[i,0]] for i in range(dims)])
         for i in range(self.dims):
-            npVar[i,0].lb = -100.0
-            npVar[i,0].ub = 100.0
+            npVar[i,0].lb = -1000000.0
+            npVar[i,0].ub = 1000000.0
         m.update()
         return npVar
-    def solvePlan(self,steps,model,X,simulator):
+    def solvePlan(self,steps,model,X,simulator,keepControlSteps=1):
             
-        scale = 10**4
+        scale = 1#10**4
 
         m = Model("mip")
         m.Params.NumericFocus = 3
         #m.Params.PSDTol = 10**6
-        m.Params.TimeLimit = 60 * 60 * 5
-        m.Params.FeasibilityTol = 10**-3
+        m.Params.TimeLimit = 60 * 20
+        #m.Params.FeasibilityTol = 10**-3
         state = simulator.state
         print('starting')
         A,B = model.getAB(state)
@@ -110,18 +110,21 @@ class gurobiSolver:
             self.equalityConstraint(m,simStartState,state)
             state = simStartState
             for i in range(steps):
-                
-                newY,u,z,controlOnOff = self.absSolverSetup(A,B,m)
+                if(i%keepControlSteps==0):
+                    print('made new controlOnOff')
+                    newY,u,z,controlOnOff = self.absSolverSetup(A,B,m)
+                else:
+                    print('used old controlOnOff')
+                    newY,u,z,controlOnOff = self.absSolverSetup(A,B,m,controlOnOff)
+
                 self.prune(newY)
 
                 controls.append([u[j,0] for j in range(self.dims)])
-                
                 nextState = simulator.forwardPass(state,newY)
                 
                 info.append((newY,u,controlOnOff,nextState,z))
-
+                
                 self.prune(nextState)
-
                 state = self.constructNumpyVar(m,12)
                 states.append(state)
 
@@ -134,6 +137,9 @@ class gurobiSolver:
             #self.equalityConstraint(m,X,state)
             l2Control = np.sum(np.sum(np.multiply(controls,controls)))
             error = (state - X) *scale
+            error[3:6] = 0
+            error[9:12] = 0
+
             ob = np.dot(np.transpose(error),error) + l2Control
 
             
