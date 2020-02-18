@@ -74,7 +74,6 @@ class gurobiSolver:
                     j = j+1
     def equalityConstraint(self,m,a,b):
         scale = 1#0**8
-
         for i in range(a.shape[0]):
             m.addConstr(scale*a[i,0]==scale*b[i,0])
     def constructNumpyVar(self,m,dims):
@@ -86,14 +85,28 @@ class gurobiSolver:
             npVar[i,0].ub = 1000000.0
         m.update()
         return npVar
-    def solvePlan(self,steps,model,X,simulator,keepControlSteps=1):
-            
+    def buildQ(self,stateCostString):
+        activated = [0]*12
+        if("all" in stateCostString):
+            activated = [1]*12
+        letterOptions = ["x","y","z","r","p","t"]
+        for i in range(len(letterOptions)):
+            if(letterOptions[i] in stateCostString):
+                activated[i] = 1
+                activated[i+6] = 1
+        Q = np.diag(activated)
+        return Q
+        
+    def solvePlan(self,steps,model,X,simulator,stateCostString="all",keepControlSteps=1):
+        Q = self.buildQ(stateCostString)
+        print(stateCostString)
+        print(Q)
         scale = 1#10**4
 
         m = Model("mip")
         m.Params.NumericFocus = 3
         #m.Params.PSDTol = 10**6
-        m.Params.TimeLimit = 60 * 20
+        m.Params.TimeLimit = 60 * 5
         #m.Params.FeasibilityTol = 10**-3
         state = simulator.state
         print('starting')
@@ -137,11 +150,11 @@ class gurobiSolver:
             #self.equalityConstraint(m,X,state)
             l2Control = np.sum(np.sum(np.multiply(controls,controls)))
             error = (state - X) *scale
-            error[3:6] = 0
-            error[9:12] = 0
-
-            ob = np.dot(np.transpose(error),error) + l2Control
-
+            print(error)
+            ob = np.dot(np.dot(np.transpose(error),Q),error) + l2Control * 100
+            #print(ob)
+            self.prune(ob)
+            print(ob)
             
             m.setObjective(ob[0,0], GRB.MINIMIZE)
             m.optimize()

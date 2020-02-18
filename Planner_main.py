@@ -21,7 +21,7 @@ UnitConversionFactor = 10**6 # change length unit used internally. 1 being meter
 magnetLimit = 1
 startState = np.zeros((12,1))
 desiredState = np.zeros((12,1))
-desiredState[:3,0] = [1,2,3]
+desiredState[:3,0] = [1,2,0]
 desiredState = UnitConversionFactor*desiredState / 10
 runTime = 50
 dt = 1
@@ -47,7 +47,7 @@ state = np.copy(startState)
 simulator.setState(state)
 start = time.time()
 
-gurobi_model,info,plan_states = solver.solvePlan(numSteps,model,desiredState,simulator,1)
+gurobi_model,info,plan_states = solver.solvePlan(numSteps,model,desiredState,simulator,"xyt")
 controls = []
 for i in range(numSteps):
     control_sym = info[i][1]
@@ -78,6 +78,11 @@ fig = plt.figure()
 fig.suptitle('Position (m)')
 for i in range(3):
     plt.plot(states[i,:]/UnitConversionFactor)
+plt.show()
+
+fig = plt.figure()
+fig.suptitle('Path (m)')
+plt.plot(states[0,:]/UnitConversionFactor,states[1,:]/UnitConversionFactor)
 plt.show()
 
 fig = plt.figure()
