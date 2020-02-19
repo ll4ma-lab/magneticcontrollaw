@@ -161,11 +161,10 @@ class gurobiSolver:
         except GurobiError as e:
             print('Error code ' + str(e.errno) + ": " + str(e))
             
-        np_states = np.zeros((len(states),states[0].shape[0],states[0].shape[1]))
+        np_states = np.zeros((states[0].shape[0],len(states)))
         for j in range(np_states.shape[0]):
             for k in range(np_states.shape[1]):
-                for l in range(np_states.shape[2]):
-                    np_states[j][k][l] = states[j][k][l].x
+                np_states[j][k] = states[k][j][0].x
         return m,info,np_states
     def solveWrench(self,A,B,Y,param = 0):
         try:

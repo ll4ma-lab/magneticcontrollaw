@@ -17,13 +17,14 @@ from matlabModel import matlabModel
 from exponentialSimulator import exponentialSimulator, sphereProperties
 import matplotlib.pyplot as plt
 import time
+import visualization
 UnitConversionFactor = 10**6 # change length unit used internally. 1 being meters 10**3 being milimeters
 magnetLimit = 1
 startState = np.zeros((12,1))
 desiredState = np.zeros((12,1))
-desiredState[:3,0] = [1,2,0]
-desiredState = UnitConversionFactor*desiredState / 10
-runTime = 50
+desiredState[:3,0] = [3,-1,0]
+desiredState = UnitConversionFactor*desiredState
+runTime = 100
 dt = 1
 numSteps = int(runTime/dt)
 
@@ -74,35 +75,15 @@ for i in range(numSteps):
     numControl = numControl.sum()
     numControls.append(numControl)
 
-fig = plt.figure()
-fig.suptitle('Position (m)')
-for i in range(3):
-    plt.plot(states[i,:]/UnitConversionFactor)
-plt.show()
 
+Plots = {'Position (m)':states[:3,:]/UnitConversionFactor,
+         'Position plan (m)':plan_states[:3,:]/UnitConversionFactor,
+         'Velocity (m/s)':states[6:9,:]/UnitConversionFactor,
+         "Control Values":np.transpose(np.array(controls)[:,:,0])}
+
+visualization.plotStuff(Plots)
 fig = plt.figure()
 fig.suptitle('Path (m)')
 plt.plot(states[0,:]/UnitConversionFactor,states[1,:]/UnitConversionFactor)
 plt.show()
 
-fig = plt.figure()
-fig.suptitle('Position plan(m)')
-for i in range(3):
-    plt.plot(plan_states[:,i,0]/UnitConversionFactor)
-plt.show()
-
-for i in range(3):
-    plt.plot(states[3+i,:])
-plt.show()
-
-np_controls = np.array(controls)
-fig.suptitle('')
-for i in range(3):
-    plt.plot(np_controls[:,i,0])
-plt.show()
-
-
-fig = plt.figure()
-fig.suptitle('Non-zero control inputs')
-plt.ylim(0,9)
-plt.scatter(range(numSteps),numControls)

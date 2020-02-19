@@ -11,6 +11,7 @@ from PDController import PDController
 from exponentialSimulator import exponentialSimulator, sphereProperties
 import matplotlib.pyplot as plt
 import time
+import visualization
 UnitConversionFactor = 10**6
 magnetLimit = 1
 startState = np.zeros((12,1))
@@ -60,29 +61,9 @@ for i in range(numSteps):
 runTime = time.time() - start
 print(runTime)
 
-fig = plt.figure()
-fig.suptitle('Position (m)')
-for i in range(3):
-    plt.plot(states[i,:]/UnitConversionFactor)
-plt.show()
+Plots = {'Position (m)':states[:3,:]/UnitConversionFactor,
+         'Velocity (m/s)':states[6:9,:]/UnitConversionFactor,
+         "Control Values":np.transpose(np.array(controls)[:,:,0])}
 
-fig = plt.figure()
-fig.suptitle('Path (m)')
-plt.plot(states[0,:]/UnitConversionFactor,states[1,:]/UnitConversionFactor)
-plt.show()
+visualization.plotStuff(Plots)
 
-for i in range(3):
-    plt.plot(states[3+i,:]/UnitConversionFactor)
-plt.show()
-
-fig = plt.figure()
-fig.suptitle('Non-zero control inputs')
-plt.ylim(0,9)
-plt.scatter(range(numSteps),numControls)
-plt.show()
-
-np_controls = np.array(controls)
-fig.suptitle('')
-for i in range(9):
-    plt.plot(np_controls[:,i,0])
-plt.show()

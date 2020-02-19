@@ -86,7 +86,17 @@ def drawArrows(vectors,errors,threshold,ax,torque = False):
             drawArrow(vector,'green',ax,torque)
         else:
             drawArrow(vector,'red',ax,torque)
-
+def visualize2DPath():
+    pass
+def plotStuff(dataDict):
+    for key in dataDict.keys():
+        fig = plt.figure()
+        fig.suptitle(key)
+        data = dataDict[key]
+        print(data.shape)
+        for i in range(data.shape[0]):
+            plt.plot(data[i,:])
+        plt.show()
 def drawArrow(vector,color,ax,torque = False):
     if(torque):
         start_index = 3
