@@ -15,55 +15,32 @@ import numpy as np
 import gurobi
 from matlabModel import matlabModel
 from exponentialSimulator import exponentialSimulator, sphereProperties
+from environments import PlanarProblem
 import matplotlib.pyplot as plt
 import time
 import visualization
-UnitConversionFactor = 10**6 # change length unit used internally. 1 being meters 10**3 being milimeters
-magnetLimit = 1
-startState = np.zeros((12,1))
-desiredState = np.zeros((12,1))
-desiredState[:3,0] = [3,-1,0]
-desiredState = UnitConversionFactor*desiredState
-runTime = 100
-dt = 1
+magnetLimit = 9
+dt = 5
+runTime = 1200
 numSteps = int(runTime/dt)
 
 
-All_magnets = 0.001 * np.array([(-130, 0, 0),( 0, 0, -130),
-                   (0, -130, 0),( 0, 0, 130),
-                   (130, 0, 0),( 0, 130, 0)])
-All_magnets = All_magnets.tolist()
+env = PlanarProblem()
+model = matlabModel(env.magnets)
+solver = gurobi.gurobiSolver(len(env.magnets)*3,magnetLimit)
+simulator = exponentialSimulator(env.startState,dt,sphereProperties(8940,0.05)) #density, diamter
 
-magnets = [All_magnets[0],All_magnets[1],All_magnets[2]]
-
-
-model = matlabModel(magnets)
-
-solver = gurobi.gurobiSolver(len(magnets)*3,magnetLimit)
-
-simulator = exponentialSimulator(startState,dt,sphereProperties(8940,0.05),UnitConversionFactor) #density, diamter
 numControls = []
 
-state = np.copy(startState)
+state = np.copy(env.startState)
 simulator.setState(state)
 start = time.time()
 
-gurobi_model,info,plan_states = solver.solvePlan(numSteps,model,desiredState,simulator,"xyt")
-controls = []
-for i in range(numSteps):
-    control_sym = info[i][1]
-    On_OFF_sym = info[i][2]
-
-    control = np.zeros(control_sym.shape)
-    for j in range(control_sym.shape[0]):
-        control[j,0]=control_sym[j,0].x * On_OFF_sym[j,0].x
-    controls.append(control)
+gurobi_model,info,plan_states,controls = solver.solvePlan(numSteps,model,env.desiredState,simulator,"xyt")
 
 
 
-state = np.copy(startState)
-states = np.copy(state)
-simulator.setState(state)
+states = np.copy(env.startState)
 
 for i in range(numSteps):
     control = controls[i]
@@ -76,14 +53,15 @@ for i in range(numSteps):
     numControls.append(numControl)
 
 
-Plots = {'Position (m)':states[:3,:]/UnitConversionFactor,
-         'Position plan (m)':plan_states[:3,:]/UnitConversionFactor,
-         'Velocity (m/s)':states[6:9,:]/UnitConversionFactor,
+Plots = {'Position (m)':states[:3,:],
+         'Orientation (m)':states[3:6,:],
+         'Position plan (m)':plan_states[:3,:],
+         'Velocity (m/s)':states[6:9,:],
          "Control Values":np.transpose(np.array(controls)[:,:,0])}
 
 visualization.plotStuff(Plots)
 fig = plt.figure()
 fig.suptitle('Path (m)')
-plt.plot(states[0,:]/UnitConversionFactor,states[1,:]/UnitConversionFactor)
+plt.plot(states[0,:],states[1,:])
 plt.show()
 

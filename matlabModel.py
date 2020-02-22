@@ -13,10 +13,10 @@ class matlabModel:
         self.A = None
         self.B = None
         self.fast = fast
-        pass
     def getAB(self,pose):
         if(self.fast and self.A is not None):
             return self.A,self.B
+        
         sigma_copper = 5.8E+07;
         sigma_al = 3.77E+07;
         sigma = sigma_copper;

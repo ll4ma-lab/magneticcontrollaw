@@ -102,7 +102,13 @@ class gurobiSolver:
         print(stateCostString)
         print(Q)
         scale = 1#10**4
+        UnitConversionFactor = 10**6 # change length unit used internally. 1 being meters 10**3 being milimeters
 
+        #scale units inside plan 
+        simulator = simulator.getScaledSimulator(UnitConversionFactor)
+        X = X * UnitConversionFactor
+        
+        
         m = Model("mip")
         m.Params.NumericFocus = 3
         #m.Params.PSDTol = 10**6
@@ -142,6 +148,7 @@ class gurobiSolver:
                 states.append(state)
 
                 self.equalityConstraint(m,nextState,state)
+                A,B = model.getAB(state/UnitConversionFactor)
 
                 print('setup ' + str(i))
             m.update()
@@ -151,7 +158,7 @@ class gurobiSolver:
             l2Control = np.sum(np.sum(np.multiply(controls,controls)))
             error = (state - X) *scale
             print(error)
-            ob = np.dot(np.dot(np.transpose(error),Q),error) + l2Control * 100
+            ob = np.dot(np.dot(np.transpose(error),Q),error) #+ l2Control * 100
             #print(ob)
             self.prune(ob)
             print(ob)
@@ -164,8 +171,19 @@ class gurobiSolver:
         np_states = np.zeros((states[0].shape[0],len(states)))
         for j in range(np_states.shape[0]):
             for k in range(np_states.shape[1]):
-                np_states[j][k] = states[k][j][0].x
-        return m,info,np_states
+                np_states[j][k] = states[k][j][0].x / UnitConversionFactor
+                
+        controls = []
+        for i in range(steps):
+            control_sym = info[i][1]
+            On_OFF_sym = info[i][2]
+        
+            control = np.zeros(control_sym.shape)
+            for j in range(control_sym.shape[0]):
+                control[j,0]=control_sym[j,0].x * On_OFF_sym[j,0].x
+            controls.append(control)
+
+        return m,info,np_states,controls
     def solveWrench(self,A,B,Y,param = 0):
         try:
             m = Model("mip")

@@ -93,7 +93,6 @@ def plotStuff(dataDict):
         fig = plt.figure()
         fig.suptitle(key)
         data = dataDict[key]
-        print(data.shape)
         for i in range(data.shape[0]):
             plt.plot(data[i,:])
         plt.show()

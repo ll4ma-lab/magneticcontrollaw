@@ -16,7 +16,9 @@ class exponentialSimulator:
         self.MOI = MOI
         self.unitFactor = unitConversionFactor
         self.matrixExponential(timestep)
-        
+    def getScaledSimulator(self,scale):
+        newSim = exponentialSimulator(self.state*scale,self.t,(self.mass,self.MOI),self.unitFactor*scale,self.tayDepth)
+        return newSim
     def matrixExponential(self,timestep):
         stateDims = len(self.state)
         halfStateDims = stateDims/2
