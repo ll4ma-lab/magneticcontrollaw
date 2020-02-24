@@ -85,20 +85,23 @@ class gurobiSolver:
             npVar[i,0].ub = 1000000.0
         m.update()
         return npVar
-    def buildQ(self,stateCostString):
-        activated = [0]*12
+    def buildQ(self,stateCostString,loops = 1):
+        
+        activated = [0]*(loops * 6)
         if("all" in stateCostString):
-            activated = [1]*12
+            activated = [1]*(loops * 6)
         letterOptions = ["x","y","z","r","p","t"]
-        for i in range(len(letterOptions)):
-            if(letterOptions[i] in stateCostString):
-                activated[i] = 1
-                activated[i+6] = 1
+        for j in range(loops):
+            for i in range(len(letterOptions)):
+                if(letterOptions[i] in stateCostString):
+                    index = j*6+i
+                    #print(index)
+                    activated[index] = 1
         Q = np.diag(activated)
         return Q
         
     def solvePlan(self,steps,model,X,simulator,stateCostString="all",keepControlSteps=1):
-        Q = self.buildQ(stateCostString)
+        Q = self.buildQ(stateCostString,2)
         print(stateCostString)
         print(Q)
         scale = 1#10**4
@@ -184,8 +187,13 @@ class gurobiSolver:
             controls.append(control)
 
         return m,info,np_states,controls
-    def solveWrench(self,A,B,Y,param = 0):
+    def solveWrench(self,A,B,Y,stateCostString="all",param = 0):
         try:
+            Q = self.buildQ(stateCostString)
+            #print('loop')
+            #print(Y)
+            Y = np.dot(Q,Y)
+            #print(Y)
             m = Model("mip")
             scale = 10**4
             m.Params.OutputFlag = 0        
@@ -215,11 +223,14 @@ class gurobiSolver:
             bestControlChoice = np.rint(best[self.dims*2:],)
             chosenU = np.reshape(bestControlChoice,(-1,1))*bestU
             
-
+            #print(chosenU.shape)
             return chosenU
         except GurobiError as e:
             print('Error code ' + str(e.errno) + ": " + str(e))
         
-#        except AttributeError:
-#            print('Encountered an attribute error')
+        except AttributeError:
+            print('Encountered an attribute error')
+            #chosenU = np.reshape(bestControlChoice,(-1,1))*bestU
+
+            return np.reshape(np.array([0]*self.dims),(-1,1))
         

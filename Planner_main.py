@@ -36,7 +36,7 @@ state = np.copy(env.startState)
 simulator.setState(state)
 start = time.time()
 
-gurobi_model,info,plan_states,controls = solver.solvePlan(numSteps,model,env.desiredState,simulator,"xyt")
+gurobi_model,info,plan_states,controls = solver.solvePlan(numSteps,model,env.desiredState,simulator,env.trajectoryDimensions)
 
 
 
