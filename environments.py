@@ -17,10 +17,11 @@ class PlanarProblem:
                ,(-length/2,length/2)
                ,(-height/2,height/2)]
         
-        yOffset = 0.075
         xOffset = -0.05
-        magnets = np.array([(-width/2 -xOffset, -length/2-yOffset, 0),(width/2 +xOffset, -length/2-yOffset, 0),
-                   (-width/2 -xOffset, length/2+yOffset, 0),(width/2 +xOffset, +length/2+yOffset, 0)])
+        yOffset = -0.15
+        z = 0.12
+        magnets = np.array([(-width/2 -xOffset, -length/2-yOffset, z),(width/2 +xOffset, -length/2-yOffset, z),
+                   (-width/2 -xOffset, length/2+yOffset, z),(width/2 +xOffset, +length/2+yOffset, z)])
         self.magnets = magnets.tolist()
         
 

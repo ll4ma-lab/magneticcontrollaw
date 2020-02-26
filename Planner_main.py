@@ -19,10 +19,10 @@ from environments import PlanarProblem
 import matplotlib.pyplot as plt
 import time
 import visualization
-magnetLimit = 9
+magnetLimit = 1
 dt = 5
-runTime = 1200
-numSteps = int(runTime/dt)
+simTime = 90
+numSteps = int(simTime/dt)
 
 
 env = PlanarProblem()
@@ -52,16 +52,18 @@ for i in range(numSteps):
     numControl = numControl.sum()
     numControls.append(numControl)
 
-
+runTime = time.time() - start
+print(runTime)
 Plots = {'Position (m)':states[:3,:],
-         'Orientation (m)':states[3:6,:],
+         'Orientation (radians)':states[3:6,:],
          'Position plan (m)':plan_states[:3,:],
          'Velocity (m/s)':states[6:9,:],
          "Control Values":np.transpose(np.array(controls)[:,:,0])}
 
-visualization.plotStuff(Plots)
+visualization.plotStuff(Plots,'Planner')
 fig = plt.figure()
 fig.suptitle('Path (m)')
 plt.plot(states[0,:],states[1,:])
 plt.show()
 
+visualization.visualize2DPath(env,states,'Planner Path')

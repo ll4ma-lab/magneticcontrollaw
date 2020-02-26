@@ -32,9 +32,9 @@ class gurobiSolver:
 
 
             for i in range(self.dims):
-                u[i,0].lb = -1000.0
-                u[i,0].ub = 1000.0
-                z[i,0].ub = 1000.0
+                u[i,0].lb = -1600.0
+                u[i,0].ub = 1600.0
+                z[i,0].ub = 1600.0
             m.update()
             if(controlOnOff is None):
                 controlOnOff = m.addVars(self.dims,1, vtype=GRB.BINARY)
@@ -161,7 +161,7 @@ class gurobiSolver:
             l2Control = np.sum(np.sum(np.multiply(controls,controls)))
             error = (state - X) *scale
             print(error)
-            ob = np.dot(np.dot(np.transpose(error),Q),error) #+ l2Control * 100
+            ob = np.dot(np.dot(np.transpose(error),Q),error) + l2Control * 100
             #print(ob)
             self.prune(ob)
             print(ob)
