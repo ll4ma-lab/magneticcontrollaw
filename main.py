@@ -7,6 +7,7 @@ Created on Mon Nov 18 15:27:35 2019
 import numpy as np
 import gurobi
 from matlabModel import matlabModel
+from pythonModel import pythonModel
 from PDController import PDController
 from exponentialSimulator import exponentialSimulator, sphereProperties
 from environments import PlanarProblem
@@ -22,7 +23,9 @@ numSteps = int(simTime/dt)
 
 
 env = PlanarProblem()
-model = matlabModel(env.magnets,True)
+#model = matlabModel(env.magnets,False)
+model = pythonModel(env.magnets,False)
+
 solver = gurobi.gurobiSolver(len(env.magnets)*3,magnetLimit)
 controller = PDController(env.startState,0.006,0.000007,0.9,0.001)
 simulator = exponentialSimulator(env.startState,dt,sphereProperties(8940,0.05)) #density, diamter
@@ -55,7 +58,8 @@ for i in range(numSteps):
     numControls.append(numControl)
 runTime = time.time() - start
 print(runTime)
-print('Time spent in Octave ' + str(model.time))
+print('Time spent doing model ' + str(model.time))
+
 Plots = {'Position (m)':states[:2,:],
          'Orientation (radians)':states[5:6,:],
          'Velocity (m/s)':states[6:9,:],
