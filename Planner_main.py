@@ -13,6 +13,7 @@ Created on Mon Nov 18 15:27:35 2019
 """
 import numpy as np
 import gurobi
+from pythonModel import pythonModel
 from matlabModel import matlabModel
 from exponentialSimulator import exponentialSimulator, sphereProperties
 from environments import PlanarProblem
@@ -21,12 +22,14 @@ import time
 import visualization
 magnetLimit = 1
 dt = 5
-simTime = 90
+simTime = 180
 numSteps = int(simTime/dt)
 
 
 env = PlanarProblem()
-model = matlabModel(env.magnets)
+#model = matlabModel(env.magnets)
+model = pythonModel(env.magnets,True)
+
 solver = gurobi.gurobiSolver(len(env.magnets)*3,magnetLimit)
 simulator = exponentialSimulator(env.startState,dt,sphereProperties(8940,0.05)) #density, diamter
 

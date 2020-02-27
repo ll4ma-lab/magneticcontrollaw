@@ -116,10 +116,11 @@ end
 
 % Determine Z component perpendicular to Y axis
 if dot(omni_X,Z) == 0
-    %         fprintf('Z and X are already perpendicular\n');
+    fprintf('Z and X are already perpendicular\n');
     omni_Z = Z;
 else
-    omni_Z = (omni_X./norm(omni_X))*sin( acos(dot(omni_X,Z)/(norm(omni_X)*norm(Z))));
+    omni_Z = cross(omni_X,Z)
+    omni_Z = omni_Z/norm(omni_Z)
 end
 
 % Obtain Y axis by crossing Z and X

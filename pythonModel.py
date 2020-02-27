@@ -9,24 +9,29 @@ import numpy as np
 import time
 
 class pythonModel:
-    def __init__(self,magnets,fast=True):
+    def __init__(self,magnets,fast=True,symb=False):
         self.magnets = magnets
         self.dims = len(magnets)*3
         self.A = None
         self.B = None
         self.fast = fast
         self.time = 0.0
+        self.symbolic = symb
+        sigma_copper = 5.8E+07;
+        sigma_al = 3.77E+07;
+        self.sigma = sigma_copper;
+        self.do = 0.05;
+        freq = 15
+        
+        self.omniPreCompute(self.sigma,self.do,freq)
     def getAB(self,pose):
         if(self.fast and self.A is not None):
             return self.A,self.B
         position = pose[:3]
         newMagnets = (np.array(self.magnets) - np.transpose(position)).tolist()
-        sigma_copper = 5.8E+07;
-        sigma_al = 3.77E+07;
-        sigma = sigma_copper;
-        do = 0.05;
+        
         start = time.time()
-        allFT,A,B = self.calcEddyInput(newMagnets,sigma,do,15)
+        allFT,A,B = self.calcEddyInput(newMagnets,self.sigma,self.do,15)
         runTime = time.time() - start
         self.time = self.time + runTime
         A=A[:,:self.dims] #* 10**6
@@ -61,7 +66,7 @@ class pythonModel:
             AllFT_B[:,(3*(omni)):(3*(omni+1))] = omniworld_B 
         AllFT = None
         return [AllFT, AllFT_A, AllFT_B]
-    def omniAB_matrix(self,omni_pos, sigma, Do, freq):
+    def omniPreCompute(self,sigma,Do,freq):
         pi = 3.1416
         
         mu = 4*pi*np.power(10.0,-7);           #Magnetic Permittivity of Free Space
@@ -109,33 +114,53 @@ class pythonModel:
         C_B[0,0,:4] = Yaxis_Fabs; C_B[0,1,:4] = Xaxis_Fabs; C_B[0,2,:4] = Xaxis_Fabs;
         C_B[0,0,4] = 1; C_B[0,1,4] = 1; C_B[0,2,4] = 1;
         
-        omni_A = np.zeros((6,3))
-        omni_B = np.zeros((6,3))
+        #omni_A = np.zeros((6,3))
+        #omni_B = np.zeros((6,3))
         
-        # Calculate the Modeled Input Matrix from Omnimagnet Locations
-        pos = omni_pos
-        dist = np.sqrt(np.dot(pos,pos))
-        D = dist;
+    
         #
         P1 = sigma*mu*freq*Do*Do;
-        P2 = D/Do;
-        
+        BConstant = np.zeros((6,3))
+        AConstant = np.zeros((6,3))
+        BPower = np.zeros((6,3))
+        APower = np.zeros((6,3))
         # Build master force-torque matrix dependent on location
         for i in range(6):
             for j in range(3):
                 if i < 3:
                     # Force
-                    omni_A[i,j] = C_A[i,j,4]* ( 10**( C_A[i,j,0]*P1**C_A[i,j,1] ) * P2**( C_A[i,j,2]*P1+C_A[i,j,3]) ) * mu/(Do**4);
-                    omni_B[i,j] = C_B[i,j,4]* ( 10**( C_B[i,j,0]*P1**C_B[i,j,1] ) * P2**( C_B[i,j,2]*P1+C_B[i,j,3]) ) * mu/(Do**4);
+                    print('F A ' + str(C_A[i,j,2]*P1+C_A[i,j,3]))
+                    print('F B ' + str(C_B[i,j,2]*P1+C_B[i,j,3]))
+                    AConstant[i,j] = C_A[i,j,4]* ( 10**( C_A[i,j,0]*P1**C_A[i,j,1] )) * mu/(Do**4)
+                    APower[i,j] =  C_A[i,j,2]*P1+C_A[i,j,3]
+                    BConstant[i,j] = C_B[i,j,4]* ( 10**( C_B[i,j,0]*P1**C_B[i,j,1] )) * mu/(Do**4)
+                    BPower[i,j]=  C_B[i,j,2]*P1+C_B[i,j,3]
                 else:
                     pass
                     #Torque
-                    omni_A[i,j] = C_A[i,j,4]* ( 10**( C_A[i,j,0]*P1**C_A[i,j,1] )*P2**(C_A[i,j,2]*P1+C_A[i,j,3]) ) * mu/(Do**3);
-                    omni_B[i,j] = C_B[i,j,4]* ( 10**( C_B[i,j,0]*P1**C_B[i,j,1] )*P2**(C_B[i,j,2]*P1+C_B[i,j,3]) ) * mu/(Do**3);
+                    AConstant[i,j] = C_A[i,j,4]* ( 10**( C_A[i,j,0]*P1**C_A[i,j,1] ) ) * mu/(Do**3);
+                    APower[i,j] = C_A[i,j,2]*P1+C_A[i,j,3]
+                    BConstant[i,j] = C_B[i,j,4]* ( 10**( C_B[i,j,0]*P1**C_B[i,j,1] )) * mu/(Do**3);
+                    BPower[i,j] = C_B[i,j,2]*P1+C_B[i,j,3]
+        self.AConstant = AConstant
+        self.APower = APower
+        self.BConstant = BConstant
+        self.BPower = BPower
         
         
-        omni_FT = omni_A + omni_B;
+    def omniAB_matrix(self,omni_pos, sigma, Do, freq):
         
+        pos = omni_pos
+        dist = np.sqrt(np.dot(pos,pos))
+        D = dist;
+        #
+        P2 = D/Do;
+        omni_A = np.zeros((6,3))
+        omni_B = np.zeros((6,3))
+        for i in range(6):
+            for j in range(3):
+                omni_A[i,j] = self.AConstant[i,j]* (P2**self.APower[i,j])
+                omni_B[i,j] = self.BConstant[i,j]* (P2**self.BPower[i,j])
         # ----- Construct Rotation Vector from Omni Frame to World Frame ---%
         # X vector points toward tool
         omni_X = -1*(pos/dist);
@@ -146,16 +171,19 @@ class pythonModel:
         # Determine if default Z and X are the same
         if np.all(abs(omni_X) == abs(Z)):
             #         fprintf('X and Z are the same vectors, new perpendicular Z chosen [0 1 0]\n');
+            print('X and Z are the same vectors, new perpendicular Z chosen [0 1 0]')
             Z = np.array([0, 1, 0])#set Z to be something else if already equal
         
         
         # Determine Z component perpendicular to Y axis
         if np.dot(omni_X,Z) == 0:
             #         fprintf('Z and X are already perpendicular\n');
+            print('Z and X are already perpendicular')
             omni_Z = Z;
         else:
-            omni_Z = (omni_X)*np.sin( np.arccos(np.dot(omni_X,Z)));
-        
+            omni_Z = np.cross(omni_X,Z)
+            omni_Z = omni_Z/np.sqrt(np.dot(omni_Z,omni_Z))
+                
         
         # Obtain Y axis by crossing Z and X
         omni_Y = np.cross(omni_Z,omni_X);
