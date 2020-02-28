@@ -8,6 +8,7 @@ Created on Thu Sep 19 17:10:00 2019
 from gurobipy import *
 import numpy as np
 import time
+from pythonModel import pythonModel
 
 #matrix multiply
 class gurobiSolver:
@@ -46,7 +47,7 @@ class gurobiSolver:
 
             for i in range(self.dims):
                 m.addConstr(z[i,0]==abs_(u[i,0]))
-            self.equalityConstraint(m,u,u2)  
+            equalityConstraint(m,u,u2)  
             #for i in range(self.dims):
             #    m.addConstr(u2[i,0]==u[i,0])
                 
@@ -62,29 +63,6 @@ class gurobiSolver:
             u[i,0].ub = 0.1
         m.update()   
         return u,u,u,u        
-    def prune(self,array):
-        for i in range(array.shape[0]):
-            j=0
-            size = array[i,0].size()
-            while j < size:
-                if(array[i,0].getCoeff(j) ==0):
-                    array[i,0].remove(j)
-                    size = array[i,0].size()
-                else:
-                    j = j+1
-    def equalityConstraint(self,m,a,b):
-        scale = 1#0**8
-        for i in range(a.shape[0]):
-            m.addConstr(scale*a[i,0]==scale*b[i,0])
-    def constructNumpyVar(self,m,dims):
-        var = m.addVars(dims,1)
-        m.update()
-        npVar = np.array([[var[i,0]] for i in range(dims)])
-        for i in range(self.dims):
-            npVar[i,0].lb = -1000000.0
-            npVar[i,0].ub = 1000000.0
-        m.update()
-        return npVar
     def buildQ(self,stateCostString,loops = 1):
         
         activated = [0]*(loops * 6)
@@ -113,6 +91,7 @@ class gurobiSolver:
         
         
         m = Model("mip")
+        model = symbolicModel(model,m)
         m.Params.NumericFocus = 3
         #m.Params.PSDTol = 10**6
         m.Params.TimeLimit = 60 * 5
@@ -121,7 +100,7 @@ class gurobiSolver:
         print('starting')
         A,B = model.getAB(state)
         
-        simStartState = self.constructNumpyVar(m,12)
+        simStartState = constructNumpyVar(m,12)
         
         info = []
         states = []
@@ -129,7 +108,7 @@ class gurobiSolver:
 
         controls = []
         try:
-            self.equalityConstraint(m,simStartState,state)
+            equalityConstraint(m,simStartState,state)
             state = simStartState
             for i in range(steps):
                 if(i%keepControlSteps==0):
@@ -139,31 +118,31 @@ class gurobiSolver:
                     print('used old controlOnOff')
                     newY,u,z,controlOnOff = self.absSolverSetup(A,B,m,controlOnOff)
 
-                self.prune(newY)
+                prune(newY)
 
                 controls.append([u[j,0] for j in range(self.dims)])
                 nextState = simulator.forwardPass(state,newY)
                 
                 info.append((newY,u,controlOnOff,nextState,z))
                 
-                self.prune(nextState)
-                state = self.constructNumpyVar(m,12)
+                prune(nextState)
+                state = constructNumpyVar(m,12)
                 states.append(state)
 
-                self.equalityConstraint(m,nextState,state)
+                equalityConstraint(m,nextState,state)
                 A,B = model.getAB(state/UnitConversionFactor)
 
                 print('setup ' + str(i))
             m.update()
             controls = np.array(controls)
 
-            #self.equalityConstraint(m,X,state)
+            #equalityConstraint(m,X,state)
             l2Control = np.sum(np.sum(np.multiply(controls,controls)))
             error = (state - X) *scale
             print(error)
             ob = np.dot(np.dot(np.transpose(error),Q),error) + l2Control * 100
             #print(ob)
-            self.prune(ob)
+            prune(ob)
             print(ob)
             
             m.setObjective(ob[0,0], GRB.MINIMIZE)
@@ -227,10 +206,86 @@ class gurobiSolver:
             return chosenU
         except GurobiError as e:
             print('Error code ' + str(e.errno) + ": " + str(e))
-        
+            return np.reshape(np.array([0]*self.dims),(-1,1))
+
         except AttributeError:
             print('Encountered an attribute error')
             #chosenU = np.reshape(bestControlChoice,(-1,1))*bestU
 
             return np.reshape(np.array([0]*self.dims),(-1,1))
         
+class symbolicModel(pythonModel):
+    def __init__(self,dynamicsModel,gurobiModel):
+        super(symbolicModel,self).__init__(dynamicsModel.magnets,dynamicsModel.fast)
+    def omniAB_matrix(self,omni_pos, sigma, Do, freq):
+        print('called')
+        if(self.fast):
+            return super(symbolicModel,self).omniAB_matrix(omni_pos, sigma, Do, freq)
+        
+        pos = omni_pos
+        dist = np.sqrt(np.dot(pos,pos))
+        D = dist;
+        #
+        P2 = D/Do;
+        omni_A = np.zeros((6,3))
+        omni_B = np.zeros((6,3))
+        for i in range(6):
+            for j in range(3):
+                omni_A[i,j] = self.AConstant[i,j]* (P2**self.APower[i,j])
+                omni_B[i,j] = self.BConstant[i,j]* (P2**self.BPower[i,j])
+        # ----- Construct Rotation Vector from Omni Frame to World Frame ---%
+        # X vector points toward tool
+        omni_X = -1*(pos/dist);
+        
+        # Set default Z vector as upward
+        Z = np.array([0, 0, 1])
+        #
+        # Determine if default Z and X are the same
+        if np.all(abs(omni_X) == abs(Z)):
+            #         fprintf('X and Z are the same vectors, new perpendicular Z chosen [0 1 0]\n');
+            print('X and Z are the same vectors, new perpendicular Z chosen [0 1 0]')
+            Z = np.array([0, 1, 0])#set Z to be something else if already equal
+        
+        
+        # Determine Z component perpendicular to Y axis
+        if np.dot(omni_X,Z) == 0:
+            #         fprintf('Z and X are already perpendicular\n');
+            print('Z and X are already perpendicular')
+            omni_Z = Z;
+        else:
+            omni_Z = np.cross(omni_X,Z)
+            omni_Z = omni_Z/np.sqrt(np.dot(omni_Z,omni_Z))
+                
+        
+        # Obtain Y axis by crossing Z and X
+        omni_Y = np.cross(omni_Z,omni_X);
+                
+        # Combine to build rotation matrix
+        omniFrame = np.transpose(np.array([omni_X, omni_Y, omni_Z]));
+        return (omni_A,omni_B,omniFrame)   
+
+def prune(array):
+    for i in range(array.shape[0]):
+        j=0
+        size = array[i,0].size()
+        while j < size:
+            if(array[i,0].getCoeff(j) ==0):
+                array[i,0].remove(j)
+                size = array[i,0].size()
+            else:
+                j = j+1
+def equalityConstraint(m,a,b):
+    scale = 1#0**8
+    for i in range(a.shape[0]):
+        m.addConstr(scale*a[i,0]==scale*b[i,0])
+def constructNumpyVar(m,dims):
+    var = m.addVars(dims,1)
+    m.update()
+    npVar = np.array([[var[i,0]] for i in range(dims)])
+    for i in range(dims):
+        npVar[i,0].lb = -1000000.0
+        npVar[i,0].ub = 1000000.0
+    m.update()
+    return npVar
+  
+    

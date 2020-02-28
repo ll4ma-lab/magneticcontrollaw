@@ -8,15 +8,14 @@ from oct2py import octave
 import numpy as np
 import time
 
-class pythonModel:
-    def __init__(self,magnets,fast=True,symb=False):
+class pythonModel(object):
+    def __init__(self,magnets,fast=True):
         self.magnets = magnets
         self.dims = len(magnets)*3
         self.A = None
         self.B = None
         self.fast = fast
         self.time = 0.0
-        self.symbolic = symb
         sigma_copper = 5.8E+07;
         sigma_al = 3.77E+07;
         self.sigma = sigma_copper;
@@ -129,12 +128,13 @@ class pythonModel:
             for j in range(3):
                 if i < 3:
                     # Force
-                    print('F A ' + str(C_A[i,j,2]*P1+C_A[i,j,3]))
-                    print('F B ' + str(C_B[i,j,2]*P1+C_B[i,j,3]))
+
                     AConstant[i,j] = C_A[i,j,4]* ( 10**( C_A[i,j,0]*P1**C_A[i,j,1] )) * mu/(Do**4)
                     APower[i,j] =  C_A[i,j,2]*P1+C_A[i,j,3]
                     BConstant[i,j] = C_B[i,j,4]* ( 10**( C_B[i,j,0]*P1**C_B[i,j,1] )) * mu/(Do**4)
                     BPower[i,j]=  C_B[i,j,2]*P1+C_B[i,j,3]
+                    print('F A ' + str(APower[i,j]))
+                    print('F B ' + str(BPower[i,j]))
                 else:
                     pass
                     #Torque
@@ -142,6 +142,8 @@ class pythonModel:
                     APower[i,j] = C_A[i,j,2]*P1+C_A[i,j,3]
                     BConstant[i,j] = C_B[i,j,4]* ( 10**( C_B[i,j,0]*P1**C_B[i,j,1] )) * mu/(Do**3);
                     BPower[i,j] = C_B[i,j,2]*P1+C_B[i,j,3]
+                    print('T A ' + str(APower[i,j]))
+                    print('T B ' + str(BPower[i,j]))
         self.AConstant = AConstant
         self.APower = APower
         self.BConstant = BConstant
@@ -149,7 +151,6 @@ class pythonModel:
         
         
     def omniAB_matrix(self,omni_pos, sigma, Do, freq):
-        
         pos = omni_pos
         dist = np.sqrt(np.dot(pos,pos))
         D = dist;

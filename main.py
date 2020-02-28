@@ -17,7 +17,7 @@ import visualization
 magnetLimit = 1
 
 
-simTime = 180
+simTime = 3000
 dt = 5
 numSteps = int(simTime/dt)
 
@@ -27,7 +27,7 @@ env = PlanarProblem()
 model = pythonModel(env.magnets,False)
 
 solver = gurobi.gurobiSolver(len(env.magnets)*3,magnetLimit)
-controller = PDController(env.startState,0.006,0.000007,0.9,0.001)
+controller = PDController(env.startState,0.004,0.000007,10,0.001)
 simulator = exponentialSimulator(env.startState,dt,sphereProperties(8940,0.05)) #density, diamter
 
 numControls = []
@@ -63,7 +63,8 @@ print('Time spent doing model ' + str(model.time))
 Plots = {'Position (m)':states[:2,:],
          'Orientation (radians)':states[5:6,:],
          'Velocity (m/s)':states[6:9,:],
-         "Wrenches":np.transpose(np.array(wrenches)[:,:,0]),
+         "Force ":np.transpose(np.array(wrenches)[:,:3,0]),
+         "Torque ":np.transpose(np.array(wrenches)[:,3:,0]),
          "Control Values":np.transpose(np.array(controls)[:,:,0])}
 
 visualization.plotStuff(Plots,'Controller')
