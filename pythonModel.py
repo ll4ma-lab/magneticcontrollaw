@@ -4,7 +4,6 @@ Created on Fri Nov 15 11:41:12 2019
 
 @author: tabor
 """
-from oct2py import octave
 import numpy as np
 import time
 

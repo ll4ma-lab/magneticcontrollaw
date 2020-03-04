@@ -6,7 +6,7 @@ Created on Mon Nov 18 15:27:35 2019
 """
 import numpy as np
 import gurobi
-from matlabModel import matlabModel
+#from matlabModel import matlabModel
 from pythonModel import pythonModel
 from PDController import PDController
 from exponentialSimulator import exponentialSimulator, sphereProperties
