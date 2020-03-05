@@ -46,11 +46,11 @@ class pythonModel(object):
         return FT
     def calcEddyInput(self, omnimagnets, sigma, DO, freq):
     # Matrix Pre-allocation
-        AllFT_A = np.zeros((6, 3*len(omnimagnets))); 
-        AllFT_B = np.copy(AllFT_A); 
         # Calculate the Modeled Input Matrix from Omnimagnet Locations 
+        As = []
+        Bs = []
         for omni in range(len(omnimagnets)):
-            #print(omni)
+            print(omni)
             pos = omnimagnets[omni]
             omni_A, omni_B, omniFrame = self.omniAB_matrix(pos,sigma,DO,freq)
             #print(omni_A.shape)
@@ -60,10 +60,13 @@ class pythonModel(object):
             # Keeps tracks the different rotations to each omnimagnet
             #print(omniworld_A.shape)
             #print(AllFT_A[:,(3*(omni)):(3*(omni+1))].shape)
-            AllFT_A[:,(3*(omni)):(3*(omni+1))] = omniworld_A
-            AllFT_B[:,(3*(omni)):(3*(omni+1))] = omniworld_B 
+            As.append(omniworld_A)
+            Bs.append(omniworld_B)
+        newAs = np.concatenate(As,1)
+        newBs = np.concatenate(Bs,1)
+
         AllFT = None
-        return [AllFT, AllFT_A, AllFT_B]
+        return [AllFT, newAs, newBs]
     def omniPreCompute(self,sigma,Do,freq):
         pi = 3.1416
         
@@ -134,6 +137,9 @@ class pythonModel(object):
                     BPower[i,j]=  C_B[i,j,2]*P1+C_B[i,j,3]
                     print('F A ' + str(APower[i,j]))
                     print('F B ' + str(BPower[i,j]))
+                    
+                    print('F A const ' + str(AConstant[i,j]))
+                    print('F B const ' + str(BConstant[i,j]))
                 else:
                     pass
                     #Torque
@@ -173,7 +179,6 @@ class pythonModel(object):
             #         fprintf('X and Z are the same vectors, new perpendicular Z chosen [0 1 0]\n');
             print('X and Z are the same vectors, new perpendicular Z chosen [0 1 0]')
             Z = np.array([0, 1, 0])#set Z to be something else if already equal
-        
         
         # Determine Z component perpendicular to Y axis
         if np.dot(omni_X,Z) == 0:

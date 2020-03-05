@@ -22,13 +22,13 @@ import time
 import visualization
 magnetLimit = 1
 dt = 5
-simTime = 180
+simTime = 50
 numSteps = int(simTime/dt)
 
 
 env = PlanarProblem()
 #model = matlabModel(env.magnets)
-model = pythonModel(env.magnets,True)
+model = pythonModel(env.magnets,False)
 
 solver = gurobi.gurobiSolver(len(env.magnets)*3,magnetLimit)
 simulator = exponentialSimulator(env.startState,dt,sphereProperties(8940,0.05)) #density, diamter
