@@ -28,8 +28,13 @@ class PlanarProblem:
         self.startState = np.zeros((12,1))
         
         if(challengeID==0):
-            self.TrueDesiredState = np.zeros((12,1))
+            self.TrueDesiredState = np.zeros((12,5))
             self.TrueDesiredState[:3,0] = [0.075,-0.15,0]
+            self.TrueDesiredState[:3,1] = [-0.075,-0.15,0]
+            self.TrueDesiredState[:3,2] = [-0.075,0.15,0]
+            self.TrueDesiredState[:3,3] = [0.075,0.15,0]
+            self.TrueDesiredState[:3,4] = [0.075,-0.15,0]
+
         
             self.desiredState= self.TrueDesiredState * UnitConversionFactor
         

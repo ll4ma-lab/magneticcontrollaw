@@ -122,7 +122,6 @@ class gurobiSolver:
                 prune(newY)
 
                 controls.append([u[j,0] for j in range(self.dims)])
-                print('preFP')
                 nextState = simulator.forwardPass(state,newY)
                 
                 info.append((newY,u,controlOnOff,nextState,z))
@@ -130,9 +129,8 @@ class gurobiSolver:
                 prune(nextState)
                 state = constructNumpyVar(m,12)
                 states.append(state)
-                print('pre constraint')
                 equalityConstraint(m,nextState,state)
-                print(state)
+                #state = nextState
                 A,B = model.getAB(state/UnitConversionFactor)
                 print('setup ' + str(i))
             m.update()
@@ -235,7 +233,6 @@ class symbolicModel(pythonModel):
         pos = np.reshape(np.array(omni_pos),(1,3))
         dist = arbitraryPower(self.m,np.reshape(np.dot(pos,np.transpose(pos)),(1,1)),np.array([[0.5]]))
         D = dist;
-        print('part 1')
         
         P2 = D/Do;
         omni_A = np.zeros((6,3))
@@ -244,7 +241,6 @@ class symbolicModel(pythonModel):
 
         omni_A = np.multiply(self.AConstant,arbitraryPower(self.m,P2_array,self.APower))
         omni_B = np.multiply(self.BConstant,arbitraryPower(self.m,P2_array,self.BPower))
-        print('part 2')
 
         
         # ----- Construct Rotation Vector from Omni Frame to World Frame ---%
@@ -256,27 +252,23 @@ class symbolicModel(pythonModel):
         omni_X = -1*np.dot(overDist,pos)
         #print(omni_X)
         
-        print('part 3')
 
         # Set default Z vector as upward
         Z = np.reshape(np.array([0, 0, 1]),(1,3))
         #
         # Determine if default Z and X are the same
-        print('z ' + str(omni_X))
         omni_X = getEquivalent(self.m,omni_X)
         omni_Z = np.cross(omni_X,Z)
         overOmni_Z_length = arbitraryPower(self.m,np.reshape(np.dot(omni_Z,np.transpose(omni_Z)),(1,1)),np.array([[-0.5]]))
         omni_Z = np.dot(overOmni_Z_length,omni_Z)
         # Obtain Y axis by crossing Z and X
-        print('part 4')
-
         omni_Z = getEquivalent(self.m,omni_Z)
-
         omni_Y = np.cross(omni_Z,omni_X);
-                
+        
         # Combine to build rotation matrix
         omniFrame = np.transpose(np.array([omni_X, omni_Y, omni_Z]))[:,0,:];
         omniFrame = getEquivalent(self.m,omniFrame)
+        #omniFrame = np.eye(3)
         return (omni_A,omni_B,omniFrame)
 def getEquivalent(m,npGurobiTerm):
     newTerm = constructNumpyVar(m,npGurobiTerm.shape[0],npGurobiTerm.shape[1])
@@ -288,7 +280,7 @@ def arbitraryPower(m,base,power):
     newBase = constructNumpyVar(m,base.shape[0],base.shape[1])
     output = constructNumpyVar(m,base.shape[0],base.shape[1])
     equalityConstraint(m,newBase,base)
-    print(power.shape)
+    #print(power.shape)
     for j in range(base.shape[1]):
         for i in range(base.shape[0]):
             if(power[i,j]==0):
@@ -312,9 +304,9 @@ def prune(array):
                 j = j+1
 def equalityConstraint(m,a,b):
     scale = 1#0**8
-    print('equality')    
-    print(a)
-    print(b)
+    #print('equality')    
+    #print(a)
+    #print(b)
     for j in range(a.shape[1]):
         for i in range(a.shape[0]):
             m.addConstr(scale*a[i,j]==scale*b[i,j])
