@@ -161,7 +161,12 @@ def animateOptimization2DPath(environment,states,name='path'):
     
     plt.show()
     return anim
-        
+def drawCost(costs):
+    newFig = plt.figure()
+    plt.plot(range(costs.shape[0]),costs)
+    plt.grid()
+    plt.yscale("log")
+    plt.show()
 def plotStuff(dataDict,name):
     keys = dataDict.keys()
     fig,axs = plt.subplots(len(keys))
