@@ -157,7 +157,7 @@ def animateOptimization2DPath(environment,states,name='path'):
         line.set_3d_properties(z)
         fig.canvas.draw()
         return line
-    anim = animation.FuncAnimation(fig, animate, frames=states.shape[0], interval=20)
+    anim = animation.FuncAnimation(fig, animate, frames=states.shape[0], interval=2)
     
     plt.show()
     return anim
@@ -166,6 +166,7 @@ def drawCost(costs):
     plt.plot(range(costs.shape[0]),costs)
     plt.grid()
     plt.yscale("log")
+    newFig.axes[0].set_title("loss")
     plt.show()
 def plotStuff(dataDict,name):
     keys = dataDict.keys()

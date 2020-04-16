@@ -70,57 +70,69 @@ AllStates = []
 startShapeCost = error(start,shape.getStart()) 
 endShapeCost = error(end,shape.getEnd())
 cost = startShapeCost *100 + endShapeCost*100
-#percents = []
-#for i in range(steps):
-#    newState = simulator.simulate(wrenchesT[:,:,i])
-#    AllStates.append(newState)
-#    cState,cPercent = shape.getBetween()
-#    cost += error(newState,cState) + (1-cPercent) * 10.0**-3
-#    percents.append(cPercent)
-#reachGoalCost = error(newState,end)
-#cost +=  reachGoalCost * 10
 
-train_op = tf.train.AdamOptimizer(1e-4).minimize(cost)
+percents = []
+for i in range(steps):
+    newState = simulator.simulate(wrenchesT[:,:,i])
+    AllStates.append(newState)
+    cState,cPercent = shape.getBetween()
+    cost += error(newState,cState) + (1-cPercent) * 10.0**-3
+    percents.append(cPercent)
+reachGoalCost = error(newState,end)
+cost +=  reachGoalCost * 10
+
+train_op = tf.train.AdamOptimizer(1e-3).minimize(cost)
 init_op = tf.global_variables_initializer()
 sess.run(init_op)
 
-stateT = []
+#stateT = []
 ts = np.linspace(0,1,100)
-costs = []
-for i in range(5000):
-    _,r,c,newCost = sess.run([train_op,shape.R,shape.center,cost])
-    costs.append(newCost)
-    #print(r)
-    states = np.array([r*np.cos(ts)+c[0],r*np.sin(ts)+c[1],ts*0])
-    stateT.append(np.transpose(states))
-allStates = np.array(stateT)
-anim = visualization.animateOptimization2DPath(env,np.reshape(allStates,(5000,100,3,1))[::10,:,:,:])
-
-#wrenchT = []
-#stateT= []
 #costs = []
-#IndividualCosts = []
-#print('init time ' + str(time.time()-startRLTime))
-#optStart = time.time()
-#for i in range(500):
-#    if(i%100 is 0):
-#        print(str(i) +' ' + str(time.time()-optStart))
-#    _,outputCost,outputWrench,outputState,npPercents,npIndividualCosts = sess.run([train_op,cost,wrenchesT,AllStates,percents,[startShapeCost,endShapeCost,reachGoalCost]])
-#    costs.append(outputCost)
-#    stateT.append(outputState)
-#    wrenchT.append(outputWrench)
-#    IndividualCosts.append(npIndividualCosts)
 #
-#wrenches = np.array(wrenchT)
-#states = np.array(stateT)
+#for i in range(5000):
+#    _,r,c,newCost = sess.run([train_op,shape.R,shape.center,cost])
+#    costs.append(newCost)
+#    #print(r)
+#    states = np.array([r*np.cos(ts)+c[0],r*np.sin(ts)+c[1],ts*0])
+#    stateT.append(np.transpose(states))
+#allStates = np.array(stateT)
+#anim = visualization.animateOptimization2DPath(env,np.reshape(allStates,(5000,100,3,1))[::10,:,:,:])
+
+epochs = 10000
+wrenchT = []
+stateT= []
+costs = []
+IndividualCosts = []
+goalStateT = []
+print('init time ' + str(time.time()-startRLTime))
+optStart = time.time()
+for i in range(epochs):
+    if(i%100 is 0):
+        print(str(i) +' ' + str(time.time()-optStart))
+    _,outputCost,outputWrench,outputState,npPercents,npIndividualCosts,r,c, = sess.run([train_op,cost,wrenchesT,AllStates,percents,[startShapeCost,endShapeCost,reachGoalCost],shape.R,shape.center])
+    goalStates = np.array([r*np.cos(ts)+c[0],r*np.sin(ts)+c[1],ts*0])    
+    costs.append(outputCost)
+    stateT.append(outputState)
+    wrenchT.append(outputWrench)
+    IndividualCosts.append(npIndividualCosts)
+    goalStateT.append(np.transpose(goalStates))
+
+wrenches = np.array(wrenchT)
+states = np.array(stateT)
 costs = np.array(costs)
-#Plots = {'Position (m)':np.transpose(states[-1,:,:2,0]),
-#         'Orientation (radians)':np.transpose(states[-1,:,5:6,0]),
-#         'Velocity (m/s)':np.transpose(states[-1,:,6:8,0]),
-#         "Force ":wrenches[-1,:3,0,:],
-#         "Torque ":wrenches[-1,3:,0,:]}
-#visualization.plotStuff(Plots,'demo')
-#anim = visualization.animateOptimization2DPath(env,states)
+Plots = {'Position (m)':np.transpose(states[-1,:,:2,0]),
+         'Orientation (radians)':np.transpose(states[-1,:,5:6,0]),
+         'Velocity (m/s)':np.transpose(states[-1,:,6:8,0]),
+         "Force ":wrenches[-1,:3,0,:],
+         "Torque ":wrenches[-1,3:,0,:]}
+visualization.plotStuff(Plots,'Discrete Optimization stats')
+anim = visualization.animateOptimization2DPath(env,states[::10,:,:,:],'discrete path')
 visualization.drawCost(costs)
-visualization.visualize2DPath(env,states)
-    
+visualization.visualize2DPath(env,goalStates)
+anim2 = visualization.animateOptimization2DPath(env,np.reshape(np.array(goalStateT),(epochs,100,3,1))[::10,:,:,:],'continious goal path')
+
+fig = plt.figure()
+fig.suptitle('Path (m)')
+plt.plot(states[-1,:,0,0],states[-1,:,1,0])
+plt.plot(goalStates[0,:],goalStates[1,:])
+plt.show()
