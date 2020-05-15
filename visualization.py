@@ -94,6 +94,14 @@ def drawArrows(vectors,errors,threshold,ax,torque = False):
             drawArrow(vector,'green',ax,torque)
         else:
             drawArrow(vector,'red',ax,torque)
+def drawSphere(center,radius,ax):
+    # draw sphere
+    u, v = np.mgrid[0:2*np.pi:20j, 0:np.pi:10j]
+    x = np.cos(u)*np.sin(v) * radius + center[0]
+    y = np.sin(u)*np.sin(v) * radius + center[1]
+    z = np.cos(v) * radius + center[2]
+    ax.plot_wireframe(x, y, z, color="orange")
+    
 def visualize2DPath(environment,states,name='path'):
     allMagnets = environment.magnets
     magnets = environment.magnets
@@ -150,9 +158,9 @@ def animateOptimization2DPath(environment,states,name='path'):
     
     line, = ax.plot([], [], [], lw=2,color='green')
     def animate(i):
-        x = states[i,:,0,0]
-        y = states[i,:,1,0]
-        z = states[i,:,2,0]
+        x = states[i,:,0]
+        y = states[i,:,1]
+        z = states[i,:,2]
         line.set_data(x, y)
         line.set_3d_properties(z)
         fig.canvas.draw()

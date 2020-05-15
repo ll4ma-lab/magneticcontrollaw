@@ -50,7 +50,7 @@ class pythonModel(object):
         As = []
         Bs = []
         for omni in range(len(omnimagnets)):
-            print(omni)
+            #print(omni)
             pos = omnimagnets[omni]
             omni_A, omni_B, omniFrame = self.omniAB_matrix(pos,sigma,DO,freq)
             #print(omni_A.shape)

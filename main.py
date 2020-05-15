@@ -8,6 +8,8 @@ import numpy as np
 import gurobi
 #from matlabModel import matlabModel
 from pythonModel import pythonModel
+from matlabModel import matlabModel
+
 from PDController import PDController
 from exponentialSimulator import exponentialSimulator, sphereProperties
 from environments import PlanarProblem
@@ -27,9 +29,8 @@ numSteps = int(simTime/dt)
 env = PlanarProblem()
 #model = matlabModel(env.magnets,False)
 model = pythonModel(env.magnets,False)
-
 solver = gurobi.gurobiSolver(len(env.magnets)*3,magnetLimit)
-controller = PDController(env.startState,0.003,0.000007,0.035,0.001)
+controller = PDController(env.startState,0.003,0.000007,0.3,0.001)
 simulator = exponentialSimulator(env.startState,dt,sphereProperties(8940,0.05)) #density, diamter
 velocityProfile = SplineProfile.SplineProfile(env,simTime)
 numControls = []
@@ -46,8 +47,8 @@ for i in range(numSteps):
     desired_wrench = controller.getDesiredWrench(state,desiredState)
     desiredStates.append(desiredState)
     state[2] = 0
-    A,B = model.getAB(state)
-    control =  solver.solveWrench(A,B,desired_wrench,env.trajectoryDimensions)
+    
+    control =  solver.solveWrench(model,state,desired_wrench,env.trajectoryDimensions)
     controls.append(control)
     trueWrench = model.forwardPass(state,control)
     wrenches.append(trueWrench)
