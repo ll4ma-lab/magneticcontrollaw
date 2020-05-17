@@ -4,66 +4,58 @@ Created on Thu May 14 15:54:42 2020
 
 @author: tabor
 """
+from cylinderModel import cylinderSolver,cylinderModel
 
 from oct2py import octave
 import numpy as np
 import matplotlib.pyplot as plt
-def getOmniFrame(pos):
-    dist = np.linalg.norm(pos)
+from environments import PlanarProblem
+import time 
+def evaluateTheta(theta):
+    thetarad = np.deg2rad(theta)
+    Rx=np.array([[1,0,0],
+              [0,np.cos(thetarad) , -np.sin(thetarad)],
+              [0,np.sin(thetarad) , np.cos(thetarad)]])
+    R = np.dot(model.getOmniFrame(pos),Rx)
+    
+    rotatedVector = np.concatenate([np.dot(R,cart[:3,0]),np.dot(R,cart[3:,0])])
+    return rotatedVector
 
-    omni_X = -1*(pos/dist);
-    
-    # Set default Z vector as upward
-    Z = np.array([0, 0, 1])
-    #
-    # Determine if default Z and X are the same
-    if np.all(abs(omni_X) == abs(Z)):
-        #         fprintf('X and Z are the same vectors, new perpendicular Z chosen [0 1 0]\n');
-        #print('X and Z are the same vectors, new perpendicular Z chosen [0 1 0]')
-        Z = np.array([0, 1, 0])#set Z to be something else if already equal
-    
-    # Determine Z component perpendicular to Y axis
-    if np.dot(omni_X,Z) == 0:
-        #         fprintf('Z and X are already perpendicular\n');
-        #print('Z and X are already perpendicular')
-        omni_Z = Z;
-    else:
-        omni_Z = np.cross(omni_X,Z)
-        omni_Z = omni_Z/np.sqrt(np.dot(omni_Z,omni_Z))
-            
-    
-    # Obtain Y axis by crossing Z and X
-    omni_Y = np.cross(omni_Z,omni_X);
-    # Combine to build rotation matrix
-    omniFrame = np.transpose(np.array([omni_X, omni_Y, omni_Z]));
-    return omniFrame
-
+env = PlanarProblem()
+model = cylinderModel(env.magnets)
+solver = cylinderSolver(env.magnets)
 
 
 
 diamter = 0.05
 freq = 10.0
-power = 200.0
-for i in range(10):
-    pos = (np.random.random((3)) - 0.5) * 0.3
+power = 40.0
+state = env.startState
+
+state[1] = -0.16
+state[2] = 0.12
+position = state[0:3]
+pos = (np.array(env.magnets) - np.transpose(position)).tolist()[0]
+
+cycle,cart = model.modelCall(pos,power)
+
+desired = np.zeros((6,1))
+desired[1] = 0.01
+
+
+costs=[]
+thetas = range(-180,180)
+for theta in thetas:
     
-    cycle,cart = octave.eddyFTRotated(np.linalg.norm(pos),power,freq,diamter/2.0,nout=2)
-    
-    desired = np.random.random((6,1)) - 0.5
-    
-    
-    costs=[]
-    thetas = range(-360,360)
-    for theta in thetas:
-        thetarad = np.deg2rad(theta)
-        Rx=np.array([[1,0,0],
-                  [0,np.cos(thetarad) , -np.sin(thetarad)],
-                  [0,np.sin(thetarad) , np.cos(thetarad)]])
-        R = np.dot(getOmniFrame(pos),Rx)
-        
-        rotatedVector = np.concatenate([np.dot(R,cart[:3,0]),np.dot(R,cart[3:,0])])
-        cost = (np.linalg.norm(desired-rotatedVector))
-        costs.append(cost)
-    plt.plot(thetas,np.array(costs) - np.min(costs))
+    rotatedVector = evaluateTheta(theta)
+    cost = np.linalg.norm(desired[:,0]-rotatedVector)**2
+    costs.append(cost)
+print(thetas[np.argmin(costs)])
+print(np.min(costs))
+plt.plot(thetas,np.array(costs) - np.min(costs))
+
 plt.yscale("log")
 plt.show()
+s = time.time()
+a,b,c = solver.solveWrench(model,state,desired)
+print(time.time()-s)
