@@ -33,22 +33,29 @@ power = 40.0
 state = env.startState
 
 state[1] = -0.16
-state[2] = 0.12
+#state[2] = 0.12
 position = state[0:3]
 pos = (np.array(env.magnets) - np.transpose(position)).tolist()[0]
 
+
 cycle,cart = model.modelCall(pos,power)
 
+
+
+
 desired = np.zeros((6,1))
-desired[1] = 0.01
+desired[0] = 1e-4
+desired[1] = -1e-4
 
 
 costs=[]
 thetas = range(-180,180)
+fts = []
 for theta in thetas:
     
     rotatedVector = evaluateTheta(theta)
-    cost = np.linalg.norm(desired[:,0]-rotatedVector)**2
+    fts.append(rotatedVector)
+    cost = 1e10*np.linalg.norm(desired[:,0]-rotatedVector)**2
     costs.append(cost)
 print(thetas[np.argmin(costs)])
 print(np.min(costs))
@@ -57,5 +64,5 @@ plt.plot(thetas,np.array(costs) - np.min(costs))
 plt.yscale("log")
 plt.show()
 s = time.time()
-a,b,c = solver.solveWrench(model,state,desired)
+a,b,c,d,e = solver.solveWrench(model,state,desired)
 print(time.time()-s)

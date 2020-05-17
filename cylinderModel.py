@@ -8,6 +8,8 @@ import numpy as np
 import time
 from oct2py import octave
 import numpy as np
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="-1" 
 import tensorflow as tf
 class cylinderSolver():
     def __init__(self,magnets):
@@ -18,60 +20,75 @@ class cylinderSolver():
     
     def solveWrench(self,model,state,Y):
         s = time.time()
-        
-        power = tf.Variable(5,dtype=tf.float64)
-        clippedPower = tf.clip_by_value(power,0,400)
-        
-        theta = tf.Variable(0,dtype=tf.float64)
-        clippedTheta = theta#tf.clip_by_value(theta,-180,180)
-        
-        radians = clippedTheta*np.pi/180.0        
-        
+        powers = []
+        thetas = []
+        costs = []    
+        ft = []
         position = state[0:3]
-        chosenMagnetPose = (np.array(self.magnets) - np.transpose(position)).tolist()[0]
-        omniFrame = model.getOmniFrame(chosenMagnetPose)
-        
-        print(1,time.time()-s)
-        s = time.time()
 
-        
-        _,cart = model.modelCall(chosenMagnetPose,1)
-        print(2,time.time()-s)
-        s = time.time()
-
-        
+        magPoses =(np.array(self.magnets) - np.transpose(position)).tolist()
         one = tf.constant(1.0,dtype=tf.float64)
         zero = tf.constant(0.0,dtype=tf.float64)
-        Rx=np.array([[one,zero,zero],
-                  [zero,tf.cos(radians) , -tf.sin(radians)],
-                  [zero,tf.sin(radians) , tf.cos(radians)]])
-        Rx_t = tf.stack([tf.stack(Rx[0].tolist()),tf.stack(Rx[1].tolist()),tf.stack(Rx[2].tolist())])
-        omniFrame_t = tf.convert_to_tensor(omniFrame)
-        R = tf.matmul(omniFrame_t,Rx_t)
+        for i in range(4):
+            
+            chosenMagnetPose = magPoses[i]
+            omniFrame = model.getOmniFrame(chosenMagnetPose)
+            _,cart = model.modelCall(chosenMagnetPose,1)
+            omniFrame_t = tf.convert_to_tensor(omniFrame)
+
+            for j in range(1):
+
+                powerPercent = tf.Variable(0.5,dtype=tf.float64)
+                clippedPower = tf.sigmoid(powerPercent) * 40
+
+                if j ==0:
+                    anglePercent = tf.Variable(0.5,dtype=tf.float64)
+                    clippedTheta = tf.sigmoid(anglePercent) * 360 - 180
+                    
+                    radians = clippedTheta*np.pi/180.0        
+    
+                    Rx=np.array([[one,zero,zero],
+                              [zero,tf.cos(radians) , -tf.sin(radians)],
+                              [zero,tf.sin(radians) , tf.cos(radians)]])
+                    Rx_t = tf.stack([tf.stack(Rx[0].tolist()),tf.stack(Rx[1].tolist()),tf.stack(Rx[2].tolist())])
+                    R = tf.matmul(omniFrame_t,Rx_t)
+                else:
+                    R = omniFrame_t
+                    
+                
+                cart = cart * clippedPower * clippedPower
+                FT = tf.concat([tf.matmul(R,cart[:3,j:j+1]),tf.matmul(R,cart[3:,j:j+1])],0)
+                
+                errors = (FT-Y)[:2]
+                print(errors)
+                cost =1e10* tf.matmul(tf.transpose(errors),errors)
+                
+                
+                if j ==0:
+                    thetas.append(clippedTheta)
+                ft.append(FT)
+                powers.append(clippedPower)
+                costs.append(cost)
         
-        cart = cart*clippedPower * clippedPower
-        FT = tf.concat([tf.matmul(R,cart[:3,:1]),tf.matmul(R,cart[3:,:1])],0)
-        
-        errors = FT-Y
-#
-#        cost = errors[0] * errors[0] 
-        cost = tf.matmul(tf.transpose(errors),errors)
         print(3,time.time()-s)
         s = time.time()
 
-
-        train_op = tf.train.AdamOptimizer(1e1).minimize(cost)
+        magNum = tf.argmin(tf.stack(costs))
+        cost = np.sum(costs)
+        train_op = tf.train.AdamOptimizer(1e-0).minimize(cost)
         init_op = tf.global_variables_initializer()
         self.sess.run(init_op)
         
         print(4,time.time()-s)
         s = time.time()
 
-        for i in range(100):
-            _,bestCost,closestFT,bestTheta, p = self.sess.run([train_op,cost,FT,theta,power])
-            #print(bestCost[0,0],closestFT[:,0].tolist(),bestTheta,p)
+        for i in range(50):
+            _,bestCost,magChoice,bestThetas, ps, fts = self.sess.run([train_op,costs,magNum,thetas,powers,ft])
+            print(magChoice,bestCost)
+        _,bestCost,magChoice,bestThetas, ps, fts = self.sess.run([train_op,costs,magNum,thetas,powers,ft])
+
         print(5,time.time()-s)
-        return bestCost,closestFT,bestTheta
+        return bestCost,magChoice,bestThetas,ps,fts
 
         
     
@@ -86,9 +103,79 @@ class cylinderModel(object):
         self.sigma = sigma_copper;
         self.do = 0.05;
         self.freq = 15
+    def eddyFTRotated(self, dist, dipole_strength, freq, radii):
+        #Constants 
+        sig = 5.8e7;          # conductivity of copper 
+        mu = 4*np.pi*1e-7;        # Magnetic Permittivity of Free Space
+        # --- Model Coefficients --- # 
+        model_C = np.array([
+            # --- Rho Configuration 
+            # F Rho
+            [1, -1.27, -0.300,-7.26],                # Xaxis: Fx
+            [0,0,0, 0],                           # Xaxis: Fy = 0
+            # F Phi 
+            [1, -1.13, -0.220,-7.22],                # Xaxis: Fz
+            [0,0,0, 0],                           # Xaxis: Tx = 0
+            # T X
+            [1, -1.44, -0.185, -6.23],                # Xaxis: Ty
+            [0,0,0, 0],                           # Xaxis: Tz
+            # --- +Z Configuration
+            # F Z
+            [1, -1.86, -0.238,  -6.88 ],              # Yaxis: Fy
+            [0,0,0, 0],                           #  Yaxis: Fz
+            [0,0,0, 0],                           # Yaxis: Fx = 0
         
-    def modelCall(self,chosenMagnetPose,power):
-        cycle,cart = octave.eddyFTRotated(np.linalg.norm(chosenMagnetPose),power,self.freq,self.do/2.0,nout=2)
+            # T Z 
+            [1, -2.05, -0.153,  -5.67],               # Yaxis: Ty
+            [0,0,0,0,],
+            [0,0,0, 0],                           # Yaxis: Tx = 0
+        
+             # --- -Z Configuration
+            # F Z
+            [-1, -1.86, -0.238,  -6.88 ],              # Yaxis: Fy
+            [0,0,0, 0],                           # Yaxis: Fz
+            [0,0,0,0,],                           # Yaxis: Fx = 0
+        
+            # T Z 
+            [1, -2.05, -0.153,  -5.67],               # Yaxis: Ty
+            [0,0,0,0],
+            [0,0,0, 0]])                           # Yaxis: Tx = 0
+        P1 = sig*mu*freq*radii*radii
+        P2 = dist/radii;
+
+        P0_temp_1_1 = np.power(P1,model_C[:,2:3])
+        P0_temp_1_2 =  model_C[:,1:2]*P0_temp_1_1 
+        P0_temp_1 =  np.power(10,P0_temp_1_2)
+        P0_temp_2_1 = np.power(P2,model_C[:,3:4] )
+        P0_temp_2_2 = np.multiply(P0_temp_1,P0_temp_2_1)
+        P0_temp_2 = np.multiply(model_C[:, 0:1],P0_temp_2_2)
+        
+        P0 = np.stack([P0_temp_2[:6] , P0_temp_2[6:12] , P0_temp_2[12:18] ],1)[:,:,0]
+
+        FT_Cycle = np.copy(P0)
+        c=  mu*np.power(dipole_strength,2)*np.power(radii,-4)
+        FT_Cycle[:3,:] *= c
+        FT_Cycle[3:,:] *= mu*np.power(dipole_strength,2)*np.power(radii,-3)
+        
+        FT_Cartesian = np.copy(FT_Cycle)
+        FT_Cartesian[2,0] *= -1
+        return FT_Cycle,FT_Cartesian
+        #model_C[:, 1] .*  .*P2.^( model_C[:,4]) 
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    def modelCall(self,chosenMagnetPose,power,m=False):
+        if(m):
+            cycle,cart = octave.eddyFTRotated(np.linalg.norm(chosenMagnetPose),power,self.freq,self.do/2.0,nout=2)
+            return cycle,cart
+        cycle,cart = self.eddyFTRotated(np.linalg.norm(chosenMagnetPose),power,self.freq,self.do/2.0)
         return cycle,cart
     def forwardPass(self,pose,control):
             #control[0] = magnetNumber
@@ -98,7 +185,7 @@ class cylinderModel(object):
         position = pose[0:3]
         chosenMagnetPose = (np.array(self.magnets) - np.transpose(position)).tolist()[control[0]]
         omniFrame = self.getOmniFrame(chosenMagnetPose)
-        _,cart = self.modelCall(chosenMagnetPose,power)
+        _,cart = self.modelCall(chosenMagnetPose,control[2])
         if(control[1]==0):
             theta = control[3]
             thetarad = np.deg2rad(theta)
