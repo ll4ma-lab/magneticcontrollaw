@@ -17,8 +17,9 @@ class cylinderSolver():
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,use_per_session_threads=True))
     
-    
-    def solveWrench(self,model,state,Y):
+    def setup(self,model):
+        pass
+    def solveWrench(self,model,state,wrench):
         s = time.time()
         powers = []
         thetas = []
@@ -26,16 +27,28 @@ class cylinderSolver():
         ft = []
         position = state[0:3]
 
-        magPoses =(np.array(self.magnets) - np.transpose(position)).tolist()
+        magPoses_np =(np.array(self.magnets) - np.transpose(position))
         one = tf.constant(1.0,dtype=tf.float64)
         zero = tf.constant(0.0,dtype=tf.float64)
+        
+        Y = tf.placeholder(tf.float64,shape = [6,1]) 
+        print(magPoses_np.shape)
+        magPoses = tf.placeholder(tf.float64,shape = magPoses_np.shape) 
+
+        myDict = {}
+        myDict[Y] = wrench
+        myDict[magPoses] = magPoses_np
+        
+        
+        
         for i in range(4):
             
             chosenMagnetPose = magPoses[i]
-            omniFrame = model.getOmniFrame(chosenMagnetPose)
-            _,cart = model.modelCall(chosenMagnetPose,1)
+            print(magPoses)
+            omniFrame = model.getOmniFrame(chosenMagnetPose,True)
+            _,cart = model.modelCall(chosenMagnetPose,1,use_tf = True)
             omniFrame_t = tf.convert_to_tensor(omniFrame)
-
+            cart = tf.stack([tf.stack(cart[i].tolist()) for i in range(6)])
             for j in range(1):
 
                 powerPercent = tf.Variable(0.5,dtype=tf.float64)
@@ -83,9 +96,9 @@ class cylinderSolver():
         s = time.time()
 
         for i in range(50):
-            _,bestCost,magChoice,bestThetas, ps, fts = self.sess.run([train_op,costs,magNum,thetas,powers,ft])
+            _,bestCost,magChoice,bestThetas, ps, fts = self.sess.run([train_op,costs,magNum,thetas,powers,ft],feed_dict=myDict)
             print(magChoice,bestCost)
-        _,bestCost,magChoice,bestThetas, ps, fts = self.sess.run([train_op,costs,magNum,thetas,powers,ft])
+        _,bestCost,magChoice,bestThetas, ps, fts = self.sess.run([train_op,costs,magNum,thetas,powers,ft],feed_dict=myDict)
 
         print(5,time.time()-s)
         return bestCost,magChoice,bestThetas,ps,fts
@@ -103,7 +116,7 @@ class cylinderModel(object):
         self.sigma = sigma_copper;
         self.do = 0.05;
         self.freq = 15
-    def eddyFTRotated(self, dist, dipole_strength, freq, radii):
+    def eddyFTRotated(self, dist, dipole_strength, freq, radii,use_tf=False):
         #Constants 
         sig = 5.8e7;          # conductivity of copper 
         mu = 4*np.pi*1e-7;        # Magnetic Permittivity of Free Space
@@ -141,14 +154,16 @@ class cylinderModel(object):
             [0,0,0,0],
             [0,0,0, 0]])                           # Yaxis: Tx = 0
         P1 = sig*mu*freq*radii*radii
-        P2 = dist/radii;
 
         P0_temp_1_1 = np.power(P1,model_C[:,2:3])
         P0_temp_1_2 =  model_C[:,1:2]*P0_temp_1_1 
         P0_temp_1 =  np.power(10,P0_temp_1_2)
+        
+        
+        P2 = dist/radii;
         P0_temp_2_1 = np.power(P2,model_C[:,3:4] )
-        P0_temp_2_2 = np.multiply(P0_temp_1,P0_temp_2_1)
-        P0_temp_2 = np.multiply(model_C[:, 0:1],P0_temp_2_2)
+        P0_temp_2_2 = P0_temp_1*P0_temp_2_1
+        P0_temp_2 = model_C[:, 0:1]*P0_temp_2_2
         
         P0 = np.stack([P0_temp_2[:6] , P0_temp_2[6:12] , P0_temp_2[12:18] ],1)[:,:,0]
 
@@ -171,10 +186,14 @@ class cylinderModel(object):
         
         
         
-    def modelCall(self,chosenMagnetPose,power,m=False):
+    def modelCall(self,chosenMagnetPose,power,m=False,use_tf = False):
         if(m):
             cycle,cart = octave.eddyFTRotated(np.linalg.norm(chosenMagnetPose),power,self.freq,self.do/2.0,nout=2)
             return cycle,cart
+        if(use_tf):
+            cycle,cart = self.eddyFTRotated(tf.norm(chosenMagnetPose),power,self.freq,self.do/2.0,use_tf)
+            return cycle,cart
+        
         cycle,cart = self.eddyFTRotated(np.linalg.norm(chosenMagnetPose),power,self.freq,self.do/2.0)
         return cycle,cart
     def forwardPass(self,pose,control):
@@ -201,32 +220,34 @@ class cylinderModel(object):
             FT = np.concatenate([np.dot(omniFrame,cart[:3,2]),np.dot(omniFrame,cart[3:,2])])
 
         return FT
-    def getOmniFrame(self,pos):
-        dist = np.linalg.norm(pos)
-        
-        omni_X = -1*(pos/dist);
-        
-        # Set default Z vector as upward
+    def getOmniFrame(self,pos,use_tf=False):
         Z = np.array([0, 0, 1])
-        #
-        # Determine if default Z and X are the same
-        if np.all(abs(omni_X) == abs(Z)):
-            #         fprintf('X and Z are the same vectors, new perpendicular Z chosen [0 1 0]\n');
-            #print('X and Z are the same vectors, new perpendicular Z chosen [0 1 0]')
-            Z = np.array([0, 1, 0])#set Z to be something else if already equal
-        
-        # Determine Z component perpendicular to Y axis
-        if np.dot(omni_X,Z) == 0:
-            #         fprintf('Z and X are already perpendicular\n');
-            #print('Z and X are already perpendicular')
-            omni_Z = Z;
+
+        if(use_tf):
+            dist = tf.norm(pos)
+            omni_X = -1*(pos/dist);
+            
+    
+            omni_Z = tf.cross(omni_X,Z)
+            omni_Z = omni_Z/tf.norm(omni_Z)
+                    
+            
+            # Obtain Y axis by crossing Z and X
+            omni_Y = tf.cross(omni_Z,omni_X);
+            # Combine to build rotation matrix
+            omniFrame = tf.transpose(tf.stack([omni_X, omni_Y, omni_Z]));
         else:
+            dist = np.linalg.norm(pos)
+        
+            omni_X = -1*(pos/dist);
+            
+    
             omni_Z = np.cross(omni_X,Z)
             omni_Z = omni_Z/np.sqrt(np.dot(omni_Z,omni_Z))
-                
-        
-        # Obtain Y axis by crossing Z and X
-        omni_Y = np.cross(omni_Z,omni_X);
-        # Combine to build rotation matrix
-        omniFrame = np.transpose(np.array([omni_X, omni_Y, omni_Z]));
+                    
+            
+            # Obtain Y axis by crossing Z and X
+            omni_Y = np.cross(omni_Z,omni_X);
+            # Combine to build rotation matrix
+            omniFrame = np.transpose(np.array([omni_X, omni_Y, omni_Z]));
         return omniFrame
