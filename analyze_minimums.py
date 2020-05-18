@@ -32,7 +32,7 @@ freq = 10.0
 power = 40.0
 state = env.startState
 
-state[1] = -0.16
+state[1] = 0.16
 #state[2] = 0.12
 position = state[0:3]
 pos = (np.array(env.magnets) - np.transpose(position)).tolist()[0]
@@ -63,6 +63,12 @@ plt.plot(thetas,np.array(costs) - np.min(costs))
 
 plt.yscale("log")
 plt.show()
+
 s = time.time()
-a,b,c,d,e = solver.solveWrench(model,state,desired)
-print(time.time()-s)
+solver.setup(model)
+print('setup time',time.time()-s)
+
+
+a,b,c,d = solver.solveWrench(model,state,desired)
+
+    #print(control)

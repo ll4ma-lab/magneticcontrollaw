@@ -9,52 +9,42 @@ import time
 from oct2py import octave
 import numpy as np
 import os
-os.environ["CUDA_VISIBLE_DEVICES"]="-1" 
+#os.environ["CUDA_VISIBLE_DEVICES"]="-1" 
 import tensorflow as tf
 class cylinderSolver():
     def __init__(self,magnets):
         self.magnets = magnets
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,use_per_session_threads=True))
-    
     def setup(self,model):
-        pass
-    def solveWrench(self,model,state,wrench):
         s = time.time()
         powers = []
         thetas = []
         costs = []    
         ft = []
-        position = state[0:3]
-
-        magPoses_np =(np.array(self.magnets) - np.transpose(position))
+        train_ops= []
+        Rs = []
+        carts = []
         one = tf.constant(1.0,dtype=tf.float64)
         zero = tf.constant(0.0,dtype=tf.float64)
         
         Y = tf.placeholder(tf.float64,shape = [6,1]) 
-        print(magPoses_np.shape)
-        magPoses = tf.placeholder(tf.float64,shape = magPoses_np.shape) 
-
-        myDict = {}
-        myDict[Y] = wrench
-        myDict[magPoses] = magPoses_np
-        
-        
+        magPoses = tf.placeholder(tf.float64,shape = np.array(self.magnets).shape) 
+        self.Y = Y
+        self.magPoses = magPoses
         
         for i in range(4):
             
             chosenMagnetPose = magPoses[i]
-            print(magPoses)
             omniFrame = model.getOmniFrame(chosenMagnetPose,True)
             _,cart = model.modelCall(chosenMagnetPose,1,use_tf = True)
             omniFrame_t = tf.convert_to_tensor(omniFrame)
             cart = tf.stack([tf.stack(cart[i].tolist()) for i in range(6)])
-            for j in range(1):
+            for j in range(3):
 
                 powerPercent = tf.Variable(0.5,dtype=tf.float64)
                 clippedPower = tf.sigmoid(powerPercent) * 40
-
-                if j ==0:
+                if j == 0:
                     anglePercent = tf.Variable(0.5,dtype=tf.float64)
                     clippedTheta = tf.sigmoid(anglePercent) * 360 - 180
                     
@@ -67,13 +57,15 @@ class cylinderSolver():
                     R = tf.matmul(omniFrame_t,Rx_t)
                 else:
                     R = omniFrame_t
-                    
-                
-                cart = cart * clippedPower * clippedPower
-                FT = tf.concat([tf.matmul(R,cart[:3,j:j+1]),tf.matmul(R,cart[3:,j:j+1])],0)
+
+                Rs.append(R)
+                cartT = cart * clippedPower * clippedPower
+                carts.append(cartT)
+                print(R)
+                print(cartT)
+                FT = tf.concat([tf.matmul(R,cartT[:3,j:j+1]),tf.matmul(R,cartT[3:,j:j+1])],0)  
                 
                 errors = (FT-Y)[:2]
-                print(errors)
                 cost =1e10* tf.matmul(tf.transpose(errors),errors)
                 
                 
@@ -82,26 +74,39 @@ class cylinderSolver():
                 ft.append(FT)
                 powers.append(clippedPower)
                 costs.append(cost)
-        
+                train_ops.append(tf.train.AdamOptimizer(1e-1).minimize(cost))
+
         print(3,time.time()-s)
         s = time.time()
 
         magNum = tf.argmin(tf.stack(costs))
-        cost = np.sum(costs)
-        train_op = tf.train.AdamOptimizer(1e-0).minimize(cost)
+        #cost = np.sum(costs)
         init_op = tf.global_variables_initializer()
         self.sess.run(init_op)
-        
         print(4,time.time()-s)
+        self.ops = [train_ops,costs,magNum,thetas,powers,ft,Rs,carts]
+    def solveWrench(self,model,state,wrench,other=False):
         s = time.time()
+        position = state[0:3]
 
-        for i in range(50):
-            _,bestCost,magChoice,bestThetas, ps, fts = self.sess.run([train_op,costs,magNum,thetas,powers,ft],feed_dict=myDict)
-            print(magChoice,bestCost)
-        _,bestCost,magChoice,bestThetas, ps, fts = self.sess.run([train_op,costs,magNum,thetas,powers,ft],feed_dict=myDict)
+        myDict = {}
+        myDict[self.Y] = wrench
+        myDict[self.magPoses] = np.array(self.magnets) - np.transpose(position)
 
-        print(5,time.time()-s)
-        return bestCost,magChoice,bestThetas,ps,fts
+        for i in range(20):
+            _,bestCost,magChoice,bestThetas, ps, fts,rs,carts = self.sess.run(self.ops,feed_dict=myDict)
+        #print(magChoice,[bestCost[j][0,0] for j in range(len(bestCost))])
+        #print('wrench solve ',time.time()-s)
+        mag = magChoice[0,0]
+        magNum = mag/3
+        modelNumber = mag%3
+        theta = bestThetas[magNum]
+        power = ps[mag]
+        control = [magNum,modelNumber,power,theta]
+
+        model.forwardPass(state,control)
+
+        return control
 
         
     
@@ -212,14 +217,12 @@ class cylinderModel(object):
                       [0,np.cos(thetarad) , -np.sin(thetarad)],
                       [0,np.sin(thetarad) , np.cos(thetarad)]])
             R = np.dot(omniFrame,Rx)
-            
-            FT = np.concatenate([np.dot(R,cart[:3,1]),np.dot(R,cart[3:,1])])
+            FT = np.concatenate([np.dot(R,cart[:3,0]),np.dot(R,cart[3:,0])])
         if(control[1]==1):
             FT = np.concatenate([np.dot(omniFrame,cart[:3,1]),np.dot(omniFrame,cart[3:,1])])
         if(control[1]==2):
             FT = np.concatenate([np.dot(omniFrame,cart[:3,2]),np.dot(omniFrame,cart[3:,2])])
-
-        return FT
+        return np.reshape(FT,(6,1))
     def getOmniFrame(self,pos,use_tf=False):
         Z = np.array([0, 0, 1])
 
