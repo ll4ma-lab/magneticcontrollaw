@@ -9,14 +9,30 @@ import time
 from oct2py import octave
 import numpy as np
 import os
-#os.environ["CUDA_VISIBLE_DEVICES"]="-1" 
+os.environ["CUDA_VISIBLE_DEVICES"]="-1" 
 import tensorflow as tf
 class cylinderSolver():
     def __init__(self,magnets):
         self.magnets = magnets
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,use_per_session_threads=True))
-    def setup(self,model):
+    
+    def buildQ(self,stateCostString,loops = 1):
+        
+        activated = [0]*(loops * 6)
+        if("all" in stateCostString):
+            activated = [1]*(loops * 6)
+        letterOptions = ["x","y","z","r","p","t"]
+        for j in range(loops):
+            for i in range(len(letterOptions)):
+                if(letterOptions[i] in stateCostString):
+                    index = j*6+i
+                    #print(index)
+                    activated[index] = 1.0
+        Q = np.diag(activated)
+        return Q
+
+    def setup(self,model,stateCostString):
         s = time.time()
         powers = []
         thetas = []
@@ -30,6 +46,8 @@ class cylinderSolver():
         
         Y = tf.placeholder(tf.float64,shape = [6,1]) 
         magPoses = tf.placeholder(tf.float64,shape = np.array(self.magnets).shape) 
+        Q = self.buildQ(stateCostString)
+
         self.Y = Y
         self.magPoses = magPoses
         
@@ -61,12 +79,10 @@ class cylinderSolver():
                 Rs.append(R)
                 cartT = cart * clippedPower * clippedPower
                 carts.append(cartT)
-                print(R)
-                print(cartT)
                 FT = tf.concat([tf.matmul(R,cartT[:3,j:j+1]),tf.matmul(R,cartT[3:,j:j+1])],0)  
                 
-                errors = (FT-Y)[:2]
-                cost =1e10* tf.matmul(tf.transpose(errors),errors)
+                errors = FT-Y
+                cost =1e10* tf.matmul(tf.matmul(tf.transpose(errors),Q),errors)
                 
                 
                 if j ==0:

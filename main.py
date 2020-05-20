@@ -32,13 +32,13 @@ new_model = True
 if(new_model):
     model = cylinderModel(env.magnets)
     solver = cylinderSolver(env.magnets)
-    solver.setup(model)
+    solver.setup(model,'xy')
 
 else:
     model = pythonModel(env.magnets,False)
     solver = gurobi.gurobiSolver(len(env.magnets)*3,magnetLimit)
     
-controller = PDController(env.startState,0.004,0.000007,0.3,0.001)
+controller = PDController(env.startState,0.003,0.00000000000,0.3,0.00)
 simulator = exponentialSimulator(env.startState,dt,sphereProperties(8940,0.05)) #density, diamter
 velocityProfile = SplineProfile.SplineProfile(env,simTime)
 numControls = []
@@ -72,11 +72,14 @@ print(runTime)
 print('Time spent doing model ' + str(model.time))
 print('Time spent doing velocity ' + str(velocityProfile.time))
 
+modified_controls = np.zeros((numSteps,4))
+for j in range(numSteps):
+    modified_controls[j,controls[j][0]] = controls[j][2] **2
 npdesiredStates = np.array(desiredStates)
 Plots = {'Position (m)':states[:2,:],
          'Orientation (radians)':states[5:6,:],
          'Velocity (m/s)':states[6:8,:],
-         'Control (A)':np.transpose(np.array(controls)[:,2:3]),
+         'Control (A)': np.transpose(modified_controls[:,:]),
 
          "Force ":np.transpose(np.array(wrenches)[:,:3,0]),
          "Torque ":np.transpose(np.array(wrenches)[:,3:,0]),
