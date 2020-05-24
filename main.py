@@ -21,12 +21,13 @@ import SplineProfile
 magnetLimit = 1
 
 
-simTime = 900
+
+
+
+env = PlanarProblem(3)
+simTime = 180 * env.desiredState.shape[1]
 dt = 1
 numSteps = int(simTime/dt)
-
-
-env = PlanarProblem()
 #model = matlabModel(env.magnets,False)
 new_model = True
 if(new_model):
@@ -79,7 +80,7 @@ for j in range(i):
     modified_controls[j,controls[j][0]] = controls[j][2] **2
 npdesiredStates = np.array(desiredStates)
 Plots = {'Position (m)':states[:2,:],
-         'Orientation (radians)':states[5:6,:],
+         'Orientation (radians)':states[5:6,:]*(180/np.pi),
          'Velocity (m/s)':states[6:8,:],
          'Control (A)': np.transpose(modified_controls[:,:]),
 
