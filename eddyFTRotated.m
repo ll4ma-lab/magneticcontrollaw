@@ -41,37 +41,31 @@ mu = 4*pi*10^-7;        % Magnetic Permittivity of Free Space
 % --- Model Coefficients --- % 
 model_C = [...
     % --- Rho Configuration 
-    % F Rho
+    % F Rho 
     1 -1.27 -0.300 -7.26; ...               % Xaxis: Fx
-    0 0 0  0;...                           % Xaxis: Fy = 0
     % F Phi 
     1 -1.13 -0.220 -7.22;...                % Xaxis: Fz
+    0 0 0  0;...                           % Xaxis: Fy = 0    
     0 0 0  0;...                           % Xaxis: Tx = 0
-    % T X
-    1 -1.44 -0.185 -6.23; ...               % Xaxis: Ty
     0 0 0  0;...                           % Xaxis: Tz
+    % T Z
+    -1 -1.44 -0.185 -6.23; ...               % Xaxis: Ty
     % --- +Z Configuration
-    % F Z
-    1 -1.86 -0.238  -6.88 ;...              % Yaxis: Fy
-    0 0 0  0; ...                          %  Yaxis: Fz
-    0 0 0  0;...                           % Yaxis: Fx = 0
-
-    % T Z 
-    1 -2.05 -0.153  -5.67;...               % Yaxis: Ty
-    0 0 0 0 ;...
-    0 0 0  0;...                           % Yaxis: Tx = 0
-
+    % F_RHO
+    1 -1.86 -0.238  -6.88 ;...              
+    0 0 0  0;...                           
+    0 0 0  0;...                 
+    1 -2.05 -0.153  -5.67;... 
+    0 0 0  0; ...                          
+    0 0 0  0;...                           
      % --- -Z Configuration
-    % F Z
-    -1 -1.86 -0.238  -6.88 ;...              % Yaxis: Fy
-    0 0 0  0; ...                          % Yaxis: Fz
-    0 0 0 0 ;...                           % Yaxis: Fx = 0
+    1 -1.86 -0.238  -6.88 ;...              
+    0 0 0  0;...                           
+    0 0 0  0;...                 
+    1 -2.05 -0.153  -5.67;... 
+    0 0 0  0; ...                          
+    0 0 0  0];          
 
-    % T Z 
-    1 -2.05 -0.153  -5.67;...               % Yaxis: Ty
-    0 0 0 0;...
-    0 0 0  0];                           % Yaxis: Tx = 0
- 
 
 % --- Calculate Force --- %
 P1 = sig*mu*freq*radii^2;

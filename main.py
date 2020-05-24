@@ -32,13 +32,13 @@ new_model = True
 if(new_model):
     model = cylinderModel(env.magnets)
     solver = cylinderSolver(env.magnets)
-    solver.setup(model,'xy')
+    solver.setup(model,'xyt')
 
 else:
     model = pythonModel(env.magnets,False)
     solver = gurobi.gurobiSolver(len(env.magnets)*3,magnetLimit)
     
-controller = PDController(env.startState,0.003,0.00000000000,0.3,0.00)
+controller = PDController(env.startState,0.003,0.00001,0.3,0.001)
 simulator = exponentialSimulator(env.startState,dt,sphereProperties(8940,0.05)) #density, diamter
 velocityProfile = SplineProfile.SplineProfile(env,simTime)
 numControls = []
@@ -55,7 +55,9 @@ for i in range(numSteps):
     desired_wrench = controller.getDesiredWrench(state,desiredState)
     desiredStates.append(desiredState)
     state[2] = 0
-
+    #print(i)
+#    if(i ==200):
+#        break
     control =  solver.solveWrench(model,state,desired_wrench,env.trajectoryDimensions)
     controls.append(control)
     trueWrench = model.forwardPass(state,control)
@@ -72,8 +74,8 @@ print(runTime)
 print('Time spent doing model ' + str(model.time))
 print('Time spent doing velocity ' + str(velocityProfile.time))
 
-modified_controls = np.zeros((numSteps,4))
-for j in range(numSteps):
+modified_controls = np.zeros((i,4))
+for j in range(i):
     modified_controls[j,controls[j][0]] = controls[j][2] **2
 npdesiredStates = np.array(desiredStates)
 Plots = {'Position (m)':states[:2,:],

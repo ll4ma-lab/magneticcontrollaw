@@ -65,7 +65,7 @@ plt.yscale("log")
 plt.show()
 
 s = time.time()
-solver.setup(model)
+solver.setup(model,'xy')
 print('setup time',time.time()-s)
 
 

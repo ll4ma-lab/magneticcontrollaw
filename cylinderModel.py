@@ -41,6 +41,7 @@ class cylinderSolver():
         train_ops= []
         Rs = []
         carts = []
+        tf_vars = []
         one = tf.constant(1.0,dtype=tf.float64)
         zero = tf.constant(0.0,dtype=tf.float64)
         
@@ -50,7 +51,7 @@ class cylinderSolver():
 
         self.Y = Y
         self.magPoses = magPoses
-        
+        self.allowedModels = 3
         for i in range(4):
             
             chosenMagnetPose = magPoses[i]
@@ -58,14 +59,14 @@ class cylinderSolver():
             _,cart = model.modelCall(chosenMagnetPose,1,use_tf = True)
             omniFrame_t = tf.convert_to_tensor(omniFrame)
             cart = tf.stack([tf.stack(cart[i].tolist()) for i in range(6)])
-            for j in range(3):
+            for j in range(self.allowedModels):
 
-                powerPercent = tf.Variable(0.5,dtype=tf.float64)
+                powerPercent = tf.Variable(0,dtype=tf.float64)
                 clippedPower = tf.sigmoid(powerPercent) * 40
                 if j == 0:
-                    anglePercent = tf.Variable(0.5,dtype=tf.float64)
-                    clippedTheta = tf.sigmoid(anglePercent) * 360 - 180
-                    
+                    anglePercent = tf.Variable(0.0,dtype=tf.float64)
+                    clippedTheta = tf.sigmoid(anglePercent) * 720 - 360
+                    tf_vars.append(anglePercent)
                     radians = clippedTheta*np.pi/180.0        
     
                     Rx=np.array([[one,zero,zero],
@@ -90,7 +91,8 @@ class cylinderSolver():
                 ft.append(FT)
                 powers.append(clippedPower)
                 costs.append(cost)
-                train_ops.append(tf.train.AdamOptimizer(1e-1).minimize(cost))
+                train_ops.append(tf.train.AdamOptimizer(0.5e-1).minimize(cost))
+                tf_vars.append(powerPercent)
 
         print(3,time.time()-s)
         s = time.time()
@@ -101,27 +103,35 @@ class cylinderSolver():
         self.sess.run(init_op)
         print(4,time.time()-s)
         self.ops = [train_ops,costs,magNum,thetas,powers,ft,Rs,carts]
+        self.tf_vars = tf_vars
     def solveWrench(self,model,state,wrench,other=False):
         s = time.time()
         position = state[0:3]
-
+        
         myDict = {}
         myDict[self.Y] = wrench
         myDict[self.magPoses] = np.array(self.magnets) - np.transpose(position)
+        #init_op = tf.global_variables_initializer()
+        init_op = [self.tf_vars[i].initializer for i in range(len(self.tf_vars))]
+        self.sess.run(init_op)
 
+        _,bestCost,magChoice,bestThetas, ps, fts,rs,carts = self.sess.run(self.ops,feed_dict=myDict)
+
+        #print('start Thetas',bestThetas)
         for i in range(20):
             _,bestCost,magChoice,bestThetas, ps, fts,rs,carts = self.sess.run(self.ops,feed_dict=myDict)
-        #print(magChoice,[bestCost[j][0,0] for j in range(len(bestCost))])
+#            if(np.min(bestCost)>0.01):            
+#                print(magChoice,[bestCost[j][0,0] for j in range(len(bestCost))])
         #print('wrench solve ',time.time()-s)
         mag = magChoice[0,0]
-        magNum = mag/3
-        modelNumber = mag%3
+        magNum = mag/self.allowedModels
+        modelNumber = mag%self.allowedModels 
         theta = bestThetas[magNum]
         power = ps[mag]
         control = [magNum,modelNumber,power,theta]
-
-        model.forwardPass(state,control)
-
+        #print('')
+        #model.forwardPass(state,control)
+        #print(control)
         return control
 
         
@@ -145,14 +155,18 @@ class cylinderModel(object):
         model_C = np.array([
             # --- Rho Configuration 
             # F Rho
-            [1, -1.27, -0.300,-7.26],                # Xaxis: Fx
-            [0,0,0, 0],                           # Xaxis: Fy = 0
-            # F Phi 
+            [1, -1.27, -0.300,-7.26],      
+          # Xaxis: Fx
             [1, -1.13, -0.220,-7.22],                # Xaxis: Fz
+            
+            [0,0,0, 0],    
+                       # Xaxis: Fy = 0
+            # F Phi 
             [0,0,0, 0],                           # Xaxis: Tx = 0
             # T X
-            [1, -1.44, -0.185, -6.23],                # Xaxis: Ty
             [0,0,0, 0],                           # Xaxis: Tz
+            [1, -1.44, -0.185, -6.23],                # Xaxis: Ty
+
             # --- +Z Configuration
             # F Z
             [1, -1.86, -0.238,  -6.88 ],              # Yaxis: Fy
@@ -166,12 +180,12 @@ class cylinderModel(object):
         
              # --- -Z Configuration
             # F Z
-            [-1, -1.86, -0.238,  -6.88 ],              # Yaxis: Fy
+            [1, -1.86, -0.238,  -6.88 ],              # Yaxis: Fy
             [0,0,0, 0],                           # Yaxis: Fz
             [0,0,0,0,],                           # Yaxis: Fx = 0
         
             # T Z 
-            [1, -2.05, -0.153,  -5.67],               # Yaxis: Ty
+            [-1, -2.05, -0.153,  -5.67],               # Yaxis: Ty
             [0,0,0,0],
             [0,0,0, 0]])                           # Yaxis: Tx = 0
         P1 = sig*mu*freq*radii*radii
@@ -194,7 +208,7 @@ class cylinderModel(object):
         FT_Cycle[3:,:] *= mu*np.power(dipole_strength,2)*np.power(radii,-3)
         
         FT_Cartesian = np.copy(FT_Cycle)
-        FT_Cartesian[2,0] *= -1
+        #FT_Cartesian[2,0] *= -1
         return FT_Cycle,FT_Cartesian
         #model_C[:, 1] .*  .*P2.^( model_C[:,4]) 
         
