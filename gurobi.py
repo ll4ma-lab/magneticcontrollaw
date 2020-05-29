@@ -166,8 +166,10 @@ class gurobiSolver:
             controls.append(control)
 
         return m,info,np_states,controls
-    def solveWrench(self,A,B,Y,stateCostString="all",param = 0):
+    def solveWrench(self,model,state,Y,stateCostString="all",param = 0):
         try:
+            A,B = model.getAB(state)
+
             Q = self.buildQ(stateCostString)
             #print('loop')
             #print(Y)

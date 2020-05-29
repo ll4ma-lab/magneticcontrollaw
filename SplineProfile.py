@@ -8,7 +8,9 @@ Created on Thu Mar  5 17:48:07 2020
 import numpy as np
 import time
 class SplineProfile:
-    def __init__(self,startState,points,totalTimeSteps):
+    def __init__(self,env,totalTimeSteps):
+        startState = env.startState
+        points = env.desiredState
         self.points = np.concatenate((startState,points),1)
         self.totalTimeSteps = totalTimeSteps
         self.time = 0.0

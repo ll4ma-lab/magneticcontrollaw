@@ -8,6 +8,8 @@ Created on Thu Oct  3 11:59:03 2019
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import mpl_toolkits.mplot3d.axes3d as p3
+from matplotlib import animation
 
 def addCube(center,radius,op,ax):
     cube_definition = buildRectangularPrism(center,radius,radius,radius)
@@ -92,6 +94,14 @@ def drawArrows(vectors,errors,threshold,ax,torque = False):
             drawArrow(vector,'green',ax,torque)
         else:
             drawArrow(vector,'red',ax,torque)
+def drawSphere(center,radius,ax):
+    # draw sphere
+    u, v = np.mgrid[0:2*np.pi:20j, 0:np.pi:10j]
+    x = np.cos(u)*np.sin(v) * radius + center[0]
+    y = np.sin(u)*np.sin(v) * radius + center[1]
+    z = np.cos(v) * radius + center[2]
+    ax.plot_wireframe(x, y, z, color="orange")
+    
 def visualize2DPath(environment,states,name='path'):
     allMagnets = environment.magnets
     magnets = environment.magnets
@@ -107,7 +117,65 @@ def visualize2DPath(environment,states,name='path'):
     addRect((0,0,environment.lims[2][0]/2),w=environment.lims[0][1],l=environment.lims[1][1],
             h=environment.lims[2][1],color=(0,0,1,0.1),ax=ax)
     plt.show()
+def animate2DPath(environment,states,name='path'):
+    # Attaching 3D axis to the figure
+    fig = plt.figure()
+    ax = p3.Axes3D(fig)
+    ax.set_xlim(*environment.lims[1])
+    ax.set_ylim(*environment.lims[1])
+    ax.set_zlim(*environment.lims[1])
     
+    drawCubes(environment.magnets,environment.magnets,ax)
+    addRect((0,0,environment.lims[2][0]/2),l=environment.lims[0][1],w=environment.lims[1][1],
+            h=environment.lims[2][1],color=(0,0,1,0.1),ax=ax)
+    ax.set_title(name)
+    
+    def update_lines(num, dataLines, lines):
+    
+        lines.set_data(dataLines[0:2, :num])
+        lines.set_3d_properties(dataLines[2, :num])
+        return lines
+    lines = ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=4,color='g')[0] 
+    # Creating the Animation object
+    line_ani = animation.FuncAnimation(fig, update_lines, 900, fargs=(states, lines),
+                                       interval=1, blit=False)
+    plt.show()
+    line_ani.save('animation.gif', writer='imagemagick', fps=30)
+def animateOptimization2DPath(environment,states,name='path'):
+
+    fig = plt.figure()
+    
+    ax = fig.gca(projection="3d")
+    
+    ax.set_xlim(*environment.lims[1])
+    ax.set_ylim(*environment.lims[1])
+    ax.set_zlim(*environment.lims[1])
+    
+    drawCubes(environment.magnets,environment.magnets,ax)
+    addRect((0,0,environment.lims[2][0]/2),l=environment.lims[0][1],w=environment.lims[1][1],
+            h=environment.lims[2][1],color=(0,0,1,0.1),ax=ax)
+    ax.set_title(name)
+    
+    line, = ax.plot([], [], [], lw=2,color='green')
+    def animate(i):
+        x = states[i,:,0]
+        y = states[i,:,1]
+        z = states[i,:,2]
+        line.set_data(x, y)
+        line.set_3d_properties(z)
+        fig.canvas.draw()
+        return line
+    anim = animation.FuncAnimation(fig, animate, frames=states.shape[0], interval=2)
+    
+    plt.show()
+    return anim
+def drawCost(costs):
+    newFig = plt.figure()
+    plt.plot(range(costs.shape[0]),costs)
+    plt.grid()
+    plt.yscale("log")
+    newFig.axes[0].set_title("loss")
+    plt.show()
 def plotStuff(dataDict,name):
     keys = dataDict.keys()
     fig,axs = plt.subplots(len(keys))

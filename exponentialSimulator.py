@@ -25,6 +25,13 @@ class exponentialSimulator:
         quarterDims = halfStateDims/2
         Ac = np.zeros((stateDims,stateDims))
         Ac[:halfStateDims,halfStateDims:] = np.eye(halfStateDims) 
+        #Ac[halfStateDims:,:halfStateDims] = np.eye(halfStateDims) 
+        linearFriction = 0.0
+        rotationalFriction = 0.00000
+        Ac[halfStateDims:halfStateDims + quarterDims,halfStateDims:halfStateDims+quarterDims] = np.eye(quarterDims)*(-1.0/self.mass) *linearFriction
+        #Ac[halfStateDims + quarterDims:,quarterDims:halfStateDims] = np.eye(quarterDims)*np.linalg.inv(self.MOI) * rotationalFriction
+        #print(Ac)
+#        a=b
         
         Bc = np.zeros((stateDims,halfStateDims))
         Bc[halfStateDims:,:halfStateDims] = np.eye(halfStateDims)
@@ -45,7 +52,7 @@ class exponentialSimulator:
         
         self.Ad =  fullDiscrete[:stateDims,:stateDims]
         self.Bd =  fullDiscrete[:stateDims,stateDims:]
-        
+        #print(self.Ad)
        # self.Bd [halfStateDims:,:halfStateDims] *= 1.0/self.mass
     def simulate(self,control):
         self.state = self.forwardPass(self.state,control)

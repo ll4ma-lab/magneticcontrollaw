@@ -6,7 +6,9 @@ Created on Thu Mar  5 17:42:58 2020
 """
 import numpy as np
 class DummyProfile:
-    def __init__(self,startState,points,totalTimeSteps):
+    def __init__(self,env,totalTimeSteps):
+        startState = env.startState
+        points = env.desiredState
         self.points = points
         self.totalTimeSteps = totalTimeSteps
     def getDesiredState(self,step):

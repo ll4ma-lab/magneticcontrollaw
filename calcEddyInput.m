@@ -33,13 +33,13 @@
 %
 function [AllFT, AllFT_A, AllFT_B] = calcEddyInput(omnimagnets, sigma, DO, freq)
     % Matrix Pre-allocation
-    AllFT_A = zeros(6, 3*size(omnimagnets,2)); 
+    AllFT_A = zeros(6, 3*size(omnimagnets,1)); 
     AllFT_B = AllFT_A; 
 
 
     % Calculate the Modeled Input Matrix from Omnimagnet Locations 
     for omni = 1:size(omnimagnets,1)
-        pos = omnimagnets(omni,:)';
+        pos = omnimagnets(omni,:)'
         [ omni_A, omni_B, omniFrame ]= omniAB_matrix(pos,sigma,DO,freq);
         
         % Rotate Omnimagnet FT to the World Frame of the tool 
