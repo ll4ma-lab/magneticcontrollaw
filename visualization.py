@@ -38,7 +38,7 @@ def drawCubes(allMagnets,magnets,ax):
         op = 0.2
         if magnet in magnets:
             op = 0.8
-        addCube(np.array(magnet)*1,0.05,op,ax)
+        addCube(np.array(magnet)*1,0.065,op,ax)
     
 def plot_cube(cube_definition,colorinfo,ax):
     cube_definition_array = [
@@ -104,7 +104,7 @@ def visualize2DPath(environment,states,name='path'):
     
     drawCubes(allMagnets,magnets,ax)
     plt.plot(states[0,:],states[1,:],states[2,:]*0,linewidth=4,color='g')
-    addRect((0,0,environment.lims[2][0]/2),l=environment.lims[0][1],w=environment.lims[1][1],
+    addRect((0,0,environment.lims[2][0]/2),w=environment.lims[0][1],l=environment.lims[1][1],
             h=environment.lims[2][1],color=(0,0,1,0.1),ax=ax)
     plt.show()
     

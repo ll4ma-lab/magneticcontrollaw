@@ -25,11 +25,10 @@ class pythonModel(object):
     def getAB(self,pose):
         if(self.fast and self.A is not None):
             return self.A,self.B
-        position = pose[:3]
-        newMagnets = (np.array(self.magnets) - np.transpose(position)).tolist()
         
+        newMagnets = self.getOffsetMagnets(pose)
         start = time.time()
-        allFT,A,B = self.calcEddyInput(newMagnets,self.sigma,self.do,15)
+        frames,A,B = self.calcEddyInput(newMagnets,self.sigma,self.do,15)
         runTime = time.time() - start
         self.time = self.time + runTime
         A=A[:,:self.dims] #* 10**6
@@ -37,6 +36,11 @@ class pythonModel(object):
         self.A = A
         self.B = B
         return A,B
+    
+    def getOffsetMagnets(self,pose):
+        position = pose[:3]
+        newMagnets = (np.array(self.magnets) - np.transpose(position)).tolist()
+        return newMagnets
     def forwardPass(self,pose,control):
         A,B = self.getAB(pose)
         #print(A.shape)
@@ -49,8 +53,8 @@ class pythonModel(object):
         # Calculate the Modeled Input Matrix from Omnimagnet Locations 
         As = []
         Bs = []
+        frames = []
         for omni in range(len(omnimagnets)):
-            print(omni)
             pos = omnimagnets[omni]
             omni_A, omni_B, omniFrame = self.omniAB_matrix(pos,sigma,DO,freq)
             #print(omni_A.shape)
@@ -62,11 +66,11 @@ class pythonModel(object):
             #print(AllFT_A[:,(3*(omni)):(3*(omni+1))].shape)
             As.append(omniworld_A)
             Bs.append(omniworld_B)
+            frames.append(omniFrame)
         newAs = np.concatenate(As,1)
         newBs = np.concatenate(Bs,1)
 
-        AllFT = None
-        return [AllFT, newAs, newBs]
+        return [frames, newAs, newBs]
     def omniPreCompute(self,sigma,Do,freq):
         pi = 3.1416
         
@@ -154,21 +158,11 @@ class pythonModel(object):
         self.BConstant = BConstant
         self.BPower = BPower
         
-        
-    def omniAB_matrix(self,omni_pos, sigma, Do, freq):
-        pos = omni_pos
-        dist = np.sqrt(np.dot(pos,pos))
-        D = dist;
-        #
-        P2 = D/Do;
-        omni_A = np.zeros((6,3))
-        omni_B = np.zeros((6,3))
-        for i in range(6):
-            for j in range(3):
-                omni_A[i,j] = self.AConstant[i,j]* (P2**self.APower[i,j])
-                omni_B[i,j] = self.BConstant[i,j]* (P2**self.BPower[i,j])
+    def getFrame(self,pos,dist = None):
         # ----- Construct Rotation Vector from Omni Frame to World Frame ---%
         # X vector points toward tool
+        if(dist is None):
+            dist = np.sqrt(np.dot(pos,pos))
         omni_X = -1*(pos/dist);
         
         # Set default Z vector as upward
@@ -191,8 +185,22 @@ class pythonModel(object):
                 
         
         # Obtain Y axis by crossing Z and X
-        omni_Y = np.cross(omni_Z,omni_X);
+        omni_Y = np.cross(omni_Z,omni_X)
         
         # Combine to build rotation matrix
-        omniFrame = np.transpose(np.array([omni_X, omni_Y, omni_Z]));
+        omniFrame = np.transpose(np.array([omni_X, omni_Y, omni_Z]))
+        return omniFrame
+    def omniAB_matrix(self,omni_pos, sigma, Do, freq):
+        pos = omni_pos
+        dist = np.sqrt(np.dot(pos,pos))
+        D = dist;
+        #
+        P2 = D/Do;
+        omni_A = np.zeros((6,3))
+        omni_B = np.zeros((6,3))
+        for i in range(6):
+            for j in range(3):
+                omni_A[i,j] = self.AConstant[i,j]* (P2**self.APower[i,j])
+                omni_B[i,j] = self.BConstant[i,j]* (P2**self.BPower[i,j])
+        omniFrame = self.getFrame(pos,dist)
         return (omni_A,omni_B,omniFrame)        

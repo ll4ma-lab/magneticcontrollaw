@@ -20,8 +20,10 @@ class PlanarProblem:
         xOffset = -0.05
         yOffset = -0.15
         z = 0.12
-        magnets = np.array([(-width/2 -xOffset, -length/2-yOffset, z),(width/2 +xOffset, -length/2-yOffset, z),
-                   (-width/2 -xOffset, length/2+yOffset, z),(width/2 +xOffset, +length/2+yOffset, z)])
+        magnets = np.array([(0.12, 0.120, 0.15)
+                            ,(-0.120, 0.120,0.15)
+                            ,(-0.120, -0.120, 0.15)
+                            ,(0.12, -0.120, 0.15)])
         self.magnets = magnets.tolist()
         
 
