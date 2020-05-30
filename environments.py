@@ -31,11 +31,11 @@ class PlanarProblem:
         
         if(challengeID==0 or challengeID==1):
             self.TrueDesiredState = np.zeros((12,5))
-            self.TrueDesiredState[:3,0] = [0.075,-0.15,0]
-            self.TrueDesiredState[:3,1] = [-0.075,-0.15,0]
-            self.TrueDesiredState[:3,2] = [-0.075,0.15,0]
-            self.TrueDesiredState[:3,3] = [0.075,0.15,0]
-            self.TrueDesiredState[:3,4] = [0.075,-0.15,0]
+            self.TrueDesiredState[:3,0] = [0.075,-0.075,0]
+            self.TrueDesiredState[:3,1] = [-0.075,-0.075,0]
+            self.TrueDesiredState[:3,2] = [-0.075,0.075,0]
+            self.TrueDesiredState[:3,3] = [0.075,0.075,0]
+            self.TrueDesiredState[:3,4] = [0.075,-0.075,0]
 
         
             self.desiredState= self.TrueDesiredState

@@ -6,7 +6,7 @@ Created on Fri Nov 15 11:41:12 2019
 """
 import numpy as np
 import time
-from oct2py import octave
+#from oct2py import octave
 import numpy as np
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]="-1" 
@@ -118,7 +118,7 @@ class cylinderSolver():
         _,bestCost,magChoice,bestThetas, ps, fts,rs,carts = self.sess.run(self.ops,feed_dict=myDict)
 
         #print('start Thetas',bestThetas)
-        for i in range(20):
+        for i in range(50):
             _,bestCost,magChoice,bestThetas, ps, fts,rs,carts = self.sess.run(self.ops,feed_dict=myDict)
 #            if(np.min(bestCost)>0.01):            
 #                print(magChoice,[bestCost[j][0,0] for j in range(len(bestCost))])
@@ -157,15 +157,17 @@ class cylinderModel(object):
             # F Rho
             [1, -1.27, -0.300,-7.26],      
           # Xaxis: Fx
-            [1, -1.13, -0.220,-7.22],                # Xaxis: Fz
             
-            [0,0,0, 0],    
+            [0,0,0, 0],
+            [-1, -1.13, -0.220,-7.22],                # Xaxis: Fz
+ 
                        # Xaxis: Fy = 0
             # F Phi 
             [0,0,0, 0],                           # Xaxis: Tx = 0
             # T X
-            [0,0,0, 0],                           # Xaxis: Tz
             [1, -1.44, -0.185, -6.23],                # Xaxis: Ty
+
+            [0,0,0, 0],                           # Xaxis: Tz
 
             # --- +Z Configuration
             # F Z

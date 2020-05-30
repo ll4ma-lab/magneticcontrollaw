@@ -8,7 +8,7 @@ import numpy as np
 import gurobi
 #from matlabModel import matlabModel
 from pythonModel import pythonModel
-from matlabModel import matlabModel
+#from matlabModel import matlabModel
 from cylinderModel import cylinderSolver,cylinderModel
 from PDController import PDController
 from exponentialSimulator import exponentialSimulator, sphereProperties
@@ -24,7 +24,7 @@ magnetLimit = 1
 
 
 
-env = PlanarProblem(3)
+env = PlanarProblem()
 simTime = 180 * env.desiredState.shape[1]
 dt = 1
 numSteps = int(simTime/dt)
