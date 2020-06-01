@@ -37,6 +37,9 @@ class PlanarProblem:
 
         
             self.desiredState= self.TrueDesiredState
+            self.times = [180]* self.desiredState.shape[1]
+            self.times[0] = 180
+
         if(challengeID==1):
             angle = 45 /(180/np.pi) 
             R = np.array([[np.cos(angle),-np.sin(angle)],
@@ -46,6 +49,7 @@ class PlanarProblem:
                 self.TrueDesiredState[:2,i] = np.dot(R,self.TrueDesiredState[:2,i])
         
             self.desiredState= self.TrueDesiredState
+            self.times = [180]* self.desiredState.shape[1]
 
         if(challengeID==2):
             self.TrueDesiredState = np.zeros((12,5))
@@ -57,6 +61,8 @@ class PlanarProblem:
 
         
             self.desiredState= self.TrueDesiredState
+            self.times = [180]* self.desiredState.shape[1]
+
         if(challengeID==3):
             self.TrueDesiredState = np.zeros((12,10))
             self.TrueDesiredState[:3,0] = [0.075,-0.15,0]
@@ -86,8 +92,6 @@ class PlanarProblem:
             self.TrueDesiredState[:3,9] = self.TrueDesiredState[:3,8]
             self.TrueDesiredState[5,9] = 2.0 *np.pi + np.pi/2
 
-
-            
-
         
             self.desiredState= self.TrueDesiredState
+            self.times = [180]* self.desiredState.shape[1]

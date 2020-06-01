@@ -24,8 +24,8 @@ magnetLimit = 1
 
 
 
-env = PlanarProblem(3)
-simTime = 180 * env.desiredState.shape[1]
+env = PlanarProblem()
+simTime = np.sum(env.times)
 dt = 1
 numSteps = int(simTime/dt)
 #model = matlabModel(env.magnets,False)
@@ -41,7 +41,7 @@ else:
     
 controller = PDController(env.startState,0.003,0.00001,0.3,0.001)
 simulator = exponentialSimulator(env.startState,dt,sphereProperties(8940,0.05)) #density, diamter
-velocityProfile = SplineProfile.SplineProfile(env,simTime)
+velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
 numControls = []
 controls = []
 wrenches = []
