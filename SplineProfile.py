@@ -34,10 +34,7 @@ class SplineProfile:
         Bs = xd
         Cs = 3*y - yd -2 * xd -3*x
         Ds = xd + 2*x - yd - (y-yd)*2
-        TperSteps= (self.points.shape[1]-1)/(1.0*self.totalTimeSteps)
-        print(TperSteps)
         t = (step -  self.switchingTimes[stateIndex])/float(self.times[stateIndex])
-        print(step -  self.switchingTimes[stateIndex],t)
         spline = np.concatenate((Ds * (t**3) + Cs*(t**2) + Bs*t + As,
                                (3*Ds * (t**2) + 2*Cs*(t) + Bs) /float(self.times[stateIndex])))
         self.time += time.time() - start
