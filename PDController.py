@@ -19,15 +19,17 @@ class PDController:
         dims = state.shape[0]
         halfDims = dims/2
         quarterDims = halfDims/2
-        self.gains = np.zeros((halfDims,dims))
+        self.Pgains = np.zeros((halfDims,halfDims))
+        self.Dgains = np.zeros((halfDims,halfDims))
 
-        self.gains[:quarterDims,:quarterDims] = np.eye(quarterDims) * linearKP
-        self.gains[quarterDims:,quarterDims:halfDims] = np.eye(quarterDims) * rotationalKP
-        self.gains[:quarterDims,halfDims:halfDims+quarterDims] = np.eye(quarterDims) * linearKD
-        self.gains[quarterDims:,halfDims+quarterDims:] = np.eye(quarterDims) * rotationalKD
+        self.Pgains[:quarterDims,:quarterDims] = np.eye(quarterDims) * linearKP
+        self.Pgains[quarterDims:,quarterDims:halfDims] = np.eye(quarterDims) * rotationalKP
+        self.Dgains[:quarterDims,:quarterDims] = np.eye(quarterDims) * linearKD
+        self.Dgains[quarterDims:,quarterDims:halfDims] = np.eye(quarterDims) * rotationalKD
 
     
     def getDesiredWrench(self,current,desired):
             error = desired - current 
-            wrench = np.matmul(self.gains,error)
-            return wrench
+            Pstuff = np.matmul(self.Pgains,error[:6])
+            Dstuff = np.matmul(self.Dgains,error[6:])
+            return Pstuff + Dstuff, Pstuff,Dstuff
