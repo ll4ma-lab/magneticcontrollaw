@@ -45,6 +45,8 @@ velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
 numControls = []
 controls = []
 wrenches = []
+pComponents = []
+dComponents = []
 desiredStates = []
 state = env.startState
 states = np.copy(state)
@@ -53,7 +55,9 @@ start = time.time()
 
 for i in range(numSteps):
     desiredState = velocityProfile.getDesiredState(i*dt)
-    desired_wrench = controller.getDesiredWrench(state,desiredState)
+    desired_wrench,p,d = controller.getDesiredWrench(state,desiredState)
+    pComponents.append(p)
+    dComponents.append(d)
     desiredStates.append(desiredState)
     state[2] = 0
     #print(i)
