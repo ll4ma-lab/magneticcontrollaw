@@ -18,13 +18,19 @@ import time
 import visualization
 import DummyProfile
 import SplineProfile
+
 magnetLimit = 1
-
-
+cheat = True
+velNoise = True
 
 
 
 env = PlanarProblem()
+#env.times = (np.array(env.times) * 1.5).tolist()
+if True or velNoise:
+    env.startState[6:8,0] = (np.random.random((2)) - 0.5) * 0.005
+
+
 simTime = np.sum(env.times)
 dt = 1
 numSteps = int(simTime/dt)
@@ -33,16 +39,17 @@ new_model = True
 if(new_model):
     model = cylinderModel(env.magnets)
     solver = cylinderSolver(env.magnets)
-    solver.setup(model,'xyt')
+    solver.setup(model,'xy')
 
 else:
     model = pythonModel(env.magnets,False)
     solver = gurobi.gurobiSolver(len(env.magnets)*3,magnetLimit)
-    
-controller = PDController(env.startState,0.003,0.00001,0.3,0.001)
+
+controller = PDController(env.startState,0.01,0.00001,0.01,0.001,0.1,0.0)
+
+#controller = PDController(env.startState,0.003,0.00001,0.3,0.001)
 simulator = exponentialSimulator(env.startState,dt,sphereProperties(8940,0.05)) #density, diamter
 velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
-numControls = []
 controls = []
 wrenches = []
 pComponents = []
@@ -54,26 +61,33 @@ simulator.setState(state)
 start = time.time()
 
 for i in range(numSteps):
-    desiredState = velocityProfile.getDesiredState(i*dt)
-    desired_wrench,p,d = controller.getDesiredWrench(state,desiredState)
+    desiredState = velocityProfile.getDesiredState(i*dt,state)
+    controlState = np.copy(state)
+    if(velNoise):
+        noise = np.zeros(state.shape)
+        noise[6:8,0] = (np.random.random((2)) - 0.5) * 0.003
+        controlState += noise
+    desired_wrench,p,d = controller.getDesiredWrench(controlState,desiredState)
     pComponents.append(p)
     dComponents.append(d)
     desiredStates.append(desiredState)
     state[2] = 0
     #print(i)
-#    if(i ==200):
-#        break
-    control =  solver.solveWrench(model,state,desired_wrench,env.trajectoryDimensions)
+    #if(i ==200):
+    #    break
+    if(cheat):
+        control = [0,0,0,0]
+        trueWrench = desired_wrench
+    else:
+       control =  solver.solveWrench(model,state,desired_wrench,env.trajectoryDimensions)
+       trueWrench = model.forwardPass(state,control)
     controls.append(control)
-    trueWrench = model.forwardPass(state,control)
+
     wrenches.append(trueWrench)
     state = simulator.simulate(trueWrench)
     states = np.concatenate((states,state),1)
     
-    ControlOn = abs(np.array(control))>0.000000000001
-    #print(np.where(ControlOn==1))
-    numControl = ControlOn.sum()
-    numControls.append(numControl)
+
 runTime = time.time() - start
 print(runTime)
 print('Time spent doing model ' + str(model.time))
@@ -81,12 +95,12 @@ print('Time spent doing velocity ' + str(velocityProfile.time))
 
 modified_controls = np.zeros((i,4))
 for j in range(i):
-    modified_controls[j,controls[j][0]] = controls[j][2] **2
+    modified_controls[j,controls[j][0]] = controls[j][2]
 npdesiredStates = np.array(desiredStates)
 Plots = {'Position (m)':states[:2,:],
          'Orientation (radians)':states[5:6,:]*(180/np.pi),
          'Velocity (m/s)':states[6:8,:],
-         'Control (A)': np.transpose(modified_controls[:,:]),
+         'Control (Am^2)': np.transpose(modified_controls[:,:]),
 
          "Force ":np.transpose(np.array(wrenches)[:,:3,0]),
          "Torque ":np.transpose(np.array(wrenches)[:,3:,0]),
@@ -97,7 +111,7 @@ visualization.plotStuff(Plots,'Controller')
 fig = plt.figure()
 fig.suptitle('Path (m)')
 plt.plot(states[0,:],states[1,:])
-plt.plot(npdesiredStates[:,0,0],npdesiredStates[:,1,0])
+plt.scatter(npdesiredStates[:,0,0],npdesiredStates[:,1,0])
 plt.show()
 visualization.visualize2DPath(env,states,'Controller Path')
 #visualization.animate2DPath(env,states,'Controller Path')
