@@ -5,7 +5,6 @@ Created on Mon Nov 18 15:27:35 2019
 @author: tabor
 """
 import numpy as np
-import gurobi
 #from matlabModel import matlabModel
 from pythonModel import pythonModel
 #from matlabModel import matlabModel
@@ -42,6 +41,8 @@ if(new_model):
     solver.setup(model,'xy')
 
 else:
+    import gurobi
+
     model = pythonModel(env.magnets,False)
     solver = gurobi.gurobiSolver(len(env.magnets)*3,magnetLimit)
 
@@ -117,3 +118,6 @@ plt.show()
 visualization.visualize2DPath(env,states,'Controller Path')
 #visualization.animate2DPath(env,states,'Controller Path')
 
+import dataloader
+from datetime import datetime
+dataloader.save("data/sim_" +str(datetime.now()),globals(),dir())

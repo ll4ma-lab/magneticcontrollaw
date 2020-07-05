@@ -1,0 +1,27 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Jul  5 16:41:44 2020
+
+@author: tabor
+"""
+import shelve
+
+
+    
+def save(filename,globals_in,dir_in):
+    
+    my_shelf = shelve.open(filename,'n') # 'n' for new
+    for key in dir_in:
+        try:
+            my_shelf[key] = globals_in[key]
+        except:
+            #
+            # __builtins__, my_shelf, and imported modules can not be shelved.
+            #
+            print('ERROR shelving: {0}'.format(key))
+    my_shelf.close()
+def load(filename,globals_in):
+    my_shelf = shelve.open(filename)
+    for key in my_shelf:
+        globals_in[key]=my_shelf[key]
+    my_shelf.close()
