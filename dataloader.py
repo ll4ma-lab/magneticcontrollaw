@@ -23,5 +23,11 @@ def save(filename,globals_in,dir_in):
 def load(filename,globals_in):
     my_shelf = shelve.open(filename)
     for key in my_shelf:
-        globals_in[key]=my_shelf[key]
+        try:
+            globals_in[key]=my_shelf[key]
+        except:
+            #
+            # __builtins__, my_shelf, and imported modules can not be shelved.
+            #
+            print('ERROR unshelving: {0}'.format(key))
     my_shelf.close()
