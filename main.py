@@ -22,7 +22,7 @@ import SplineProfile
 magnetLimit = 1
 cheat = True
 velNoise = True
-
+controlNoise = True
 
 
 env = PlanarProblem()
@@ -61,12 +61,11 @@ simulator.setState(state)
 start = time.time()
 
 for i in range(numSteps):
-    desiredState = velocityProfile.getDesiredState(i*dt,state)
     controlState = np.copy(state)
-    if(velNoise):
-        noise = np.zeros(state.shape)
-        noise[6:8,0] = (np.random.random((2)) - 0.5) * 0.003
-        controlState += noise
+    if velNoise:
+        controlState[6:8,0] *= (np.random.random((2))*2 + 0.5)
+    
+    desiredState = velocityProfile.getDesiredState(i*dt,controlState)
     desired_wrench,p,d = controller.getDesiredWrench(controlState,desiredState)
     pComponents.append(p)
     dComponents.append(d)
@@ -81,7 +80,9 @@ for i in range(numSteps):
     else:
        control =  solver.solveWrench(model,state,desired_wrench,env.trajectoryDimensions)
        trueWrench = model.forwardPass(state,control)
-    controls.append(control)
+    if controlNoise:
+        trueWrench[:2,0] += (np.random.random(2) - 0.5) * 0.00015
+    controls.append(control) 
 
     wrenches.append(trueWrench)
     state = simulator.simulate(trueWrench)
@@ -110,7 +111,7 @@ Plots = {'Position (m)':states[:2,:],
 visualization.plotStuff(Plots,'Controller')
 fig = plt.figure()
 fig.suptitle('Path (m)')
-plt.plot(states[0,:],states[1,:])
+plt.plot(states[0,:],states[1,:],c='orange')
 plt.scatter(npdesiredStates[:,0,0],npdesiredStates[:,1,0])
 plt.show()
 visualization.visualize2DPath(env,states,'Controller Path')
