@@ -20,15 +20,22 @@ class PlanarProblem:
         xOffset = -0.05
         yOffset = -0.15
         z = 0.12
-        magnets = np.array([(0.12, 0.120, 0.15)
-                            ,(-0.120, 0.120,0.15)
-                            ,(-0.120, -0.120, 0.15)
-                            ,(0.12, -0.120, 0.15)])
+        magnets = np.array([(0.10, 0.100, 0.15)
+                            ,(-0.100, 0.100,0.15)
+                            ,(-0.100, -0.100, 0.15)
+                            ,(0.100, -0.100, 0.15)])
         self.magnets = magnets.tolist()
         
 
         self.startState = np.zeros((12,1))
-        
+        if(challengeID==-1):
+            self.TrueDesiredState = np.zeros((12,2))
+            self.TrueDesiredState[:3,0] = [0.075,-0.075,0]
+            #self.TrueDesiredState[:3,1] = [0.075,-0.075,0]
+            self.TrueDesiredState[:3,1] = [-0.075,-0.075,0]
+            self.desiredState= self.TrueDesiredState
+            self.times = [180]* self.desiredState.shape[1]
+            self.times[0] = 180
         if(challengeID==0 or challengeID==1):
             self.TrueDesiredState = np.zeros((12,5))
             self.TrueDesiredState[:3,0] = [0.075,-0.075,0]
