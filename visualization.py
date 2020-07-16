@@ -15,9 +15,9 @@ def addCube(center,radius,op,ax):
     cube_definition = buildRectangularPrism(center,radius,radius,radius)
     if(center[2] == 0):
         color = (102/256.0,0,0,op)
-    if(center[2] >0):
+    if(True or center[2] >0):
         color = (119/256.0,27/256.0,12/256.0,op)
-    if(center[2] <0):
+    elif(center[2] <0):
         color = (0,0,1,op)
     plot_cube(cube_definition,color,ax)
 def addRect(center,l,w,h,color,ax):
@@ -35,12 +35,12 @@ def buildRectangularPrism(center,l,w,h):
         nextPoint = tuple(center+offset)
         cube_definition.append(nextPoint)
     return cube_definition
-def drawCubes(allMagnets,magnets,ax):
+def drawCubes(allMagnets,magnets,ax,radius=0.065):
     for magnet in allMagnets:
         op = 0.2
         if magnet in magnets:
             op = 0.8
-        addCube(np.array(magnet)*1,0.065,op,ax)
+        addCube(np.array(magnet)*1,radius,op,ax)
     
 def plot_cube(cube_definition,colorinfo,ax):
     cube_definition_array = [
@@ -108,12 +108,12 @@ def visualize2DPath(environment,states,name='path'):
     fig = plt.figure()
     fig.suptitle(name)
     ax = fig.add_subplot(111, projection='3d')
-    ax.set_xlim(*environment.lims[1])
-    ax.set_ylim(*environment.lims[1])
-    ax.set_zlim(*environment.lims[1])
+    ax.set_xlim(*environment.visualizationBoundary)
+    ax.set_ylim(*environment.visualizationBoundary)
+    ax.set_zlim(*environment.visualizationBoundary)
     
-    drawCubes(allMagnets,magnets,ax)
-    plt.plot(states[0,:],states[1,:],states[2,:]*0,linewidth=4,color='g')
+    drawCubes(allMagnets,[],ax,environment.radius)
+    plt.plot(states[0,:],states[1,:],states[2,:],linewidth=4,color='g')
     addRect((0,0,environment.lims[2][0]/2),w=environment.lims[0][1],l=environment.lims[1][1],
             h=environment.lims[2][1],color=(0,0,1,0.1),ax=ax)
     plt.show()
@@ -121,35 +121,39 @@ def animate2DPath(environment,states,name='path'):
     # Attaching 3D axis to the figure
     fig = plt.figure()
     ax = p3.Axes3D(fig)
-    ax.set_xlim(*environment.lims[1])
-    ax.set_ylim(*environment.lims[1])
-    ax.set_zlim(*environment.lims[1])
+    ax.set_xlim(*environment.visualizationBoundary)
+    ax.set_ylim(*environment.visualizationBoundary)
+    ax.set_zlim(*environment.visualizationBoundary)
     
-    drawCubes(environment.magnets,environment.magnets,ax)
+    drawCubes(environment.magnets,[],ax,environment.radius)
     addRect((0,0,environment.lims[2][0]/2),l=environment.lims[0][1],w=environment.lims[1][1],
             h=environment.lims[2][1],color=(0,0,1,0.1),ax=ax)
     ax.set_title(name)
     
-    def update_lines(num, dataLines, lines):
+    def update_lines(num, states, traj_plot, scatter):
     
-        lines.set_data(dataLines[0:2, :num])
-        lines.set_3d_properties(dataLines[2, :num])
-        return lines
-    lines = ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=4,color='g')[0] 
+        traj_plot.set_data(states[0:2, :num])
+        traj_plot.set_3d_properties(states[2, :num])
+        scatter._offsets3d = (states[0:1, num-1],states[1:2, num-1],states[2:3, num-1])
+
+        return traj_plot,scatter
+    traj_plot = ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=4,color='g')[0] 
+    scatter = ax.scatter(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=10,color='orange') 
     # Creating the Animation object
-    line_ani = animation.FuncAnimation(fig, update_lines, 900, fargs=(states, lines),
+    line_ani = animation.FuncAnimation(fig, update_lines, states.shape[1], fargs=(states, traj_plot, scatter),
                                        interval=1, blit=False)
     plt.show()
     line_ani.save('animation.gif', writer='imagemagick', fps=30)
+    return line_ani
 def animateOptimization2DPath(environment,states,name='path'):
 
     fig = plt.figure()
     
     ax = fig.gca(projection="3d")
     
-    ax.set_xlim(*environment.lims[1])
-    ax.set_ylim(*environment.lims[1])
-    ax.set_zlim(*environment.lims[1])
+    ax.set_xlim(*environment.visualizationBoundary)
+    ax.set_ylim(*environment.visualizationBoundary)
+    ax.set_zlim(*environment.visualizationBoundary)
     
     drawCubes(environment.magnets,environment.magnets,ax)
     addRect((0,0,environment.lims[2][0]/2),l=environment.lims[0][1],w=environment.lims[1][1],

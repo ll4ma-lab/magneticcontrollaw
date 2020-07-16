@@ -11,7 +11,7 @@ from pythonModel import pythonModel
 from cylinderModel import cylinderSolver,cylinderModel
 from PDController import PDController
 from exponentialSimulator import exponentialSimulator, sphereProperties
-from environments import PlanarProblem
+from environments import PlanarProblem,SpaceProblem
 import matplotlib.pyplot as plt
 import time
 import visualization
@@ -19,26 +19,27 @@ import DummyProfile
 import SplineProfile
 
 magnetLimit = 1
-cheat = True
-velNoise = True
-controlNoise = True
+cheat = False
+velNoise = False
+controlNoise = False
 
 
-env = PlanarProblem()
+env = SpaceProblem(1)
 #env.times = (np.array(env.times) * 1.5).tolist()
-if True or velNoise:
-    env.startState[6:8,0] = (np.random.random((2)) - 0.5) * 0.005
+if velNoise:
+    env.startState[6:12,0] = (np.random.random((2)) - 0.5) * 0.005
 
 
 simTime = np.sum(env.times)
 dt = 1
-numSteps = int(simTime/dt)
+numSteps = int(simTime/dt)      
+objectProperties = sphereProperties(8940,0.05)
 #model = matlabModel(env.magnets,False)
 new_model = True
 if(new_model):
     model = cylinderModel(env.magnets)
     solver = cylinderSolver(env.magnets)
-    solver.setup(model,'xy')
+    solver.setup(model,env.trajectoryDimensions,objectProperties,env.tolerances)
 
 else:
     import gurobi
@@ -46,10 +47,10 @@ else:
     model = pythonModel(env.magnets,False)
     solver = gurobi.gurobiSolver(len(env.magnets)*3,magnetLimit)
 
-controller = PDController(env.startState,0.01,0.00001,0.01,0.001,0.1,0.0)
+controller = PDController(env.startState,0.004,0.00001,0.035,0.001,0.0,0.00025)
 
 #controller = PDController(env.startState,0.003,0.00001,0.3,0.001)
-simulator = exponentialSimulator(env.startState,dt,sphereProperties(8940,0.05)) #density, diamter
+simulator = exponentialSimulator(env.startState,dt,objectProperties) #density, diamter
 velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
 controls = []
 wrenches = []
@@ -64,14 +65,14 @@ start = time.time()
 for i in range(numSteps):
     controlState = np.copy(state)
     if velNoise:
-        controlState[6:8,0] *= (np.random.random((2))*2 + 0.5)
+        controlState[6:12,0] *= (np.random.random((2))*2 + 0.5)
     
     desiredState = velocityProfile.getDesiredState(i*dt,controlState)
     desired_wrench,p,d = controller.getDesiredWrench(controlState,desiredState)
     pComponents.append(p)
     dComponents.append(d)
     desiredStates.append(desiredState)
-    state[2] = 0
+    env.problem_specific_modification(state)
     #print(i)
     #if(i ==200):
     #    break
@@ -95,13 +96,13 @@ print(runTime)
 print('Time spent doing model ' + str(model.time))
 print('Time spent doing velocity ' + str(velocityProfile.time))
 
-modified_controls = np.zeros((i,4))
+modified_controls = np.zeros((i,len(env.magnets)))
 for j in range(i):
     modified_controls[j,controls[j][0]] = controls[j][2]
 npdesiredStates = np.array(desiredStates)
-Plots = {'Position (m)':states[:2,:],
-         'Orientation (radians)':states[5:6,:]*(180/np.pi),
-         'Velocity (m/s)':states[6:8,:],
+Plots = {'Position (m)':states[:3,:],
+         'Orientation (degrees)':states[3:6,:]*(180/np.pi),
+         'Velocity (m/s)':states[6:9,:],
          'Control (Am^2)': np.transpose(modified_controls[:,:]),
 
          "Force ":np.transpose(np.array(wrenches)[:,:3,0]),
@@ -113,10 +114,10 @@ visualization.plotStuff(Plots,'Controller')
 fig = plt.figure()
 fig.suptitle('Path (m)')
 plt.plot(states[0,:],states[1,:],c='orange')
-plt.scatter(npdesiredStates[:,0,0],npdesiredStates[:,1,0])
+plt.plot(npdesiredStates[:,0,0],npdesiredStates[:,1,0])
 plt.show()
 visualization.visualize2DPath(env,states,'Controller Path')
-#visualization.animate2DPath(env,states,'Controller Path')
+anim = visualization.animate2DPath(env,states,'Controller Path')
 
 import dataloader
 from datetime import datetime
