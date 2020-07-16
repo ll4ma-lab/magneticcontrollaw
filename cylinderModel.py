@@ -16,8 +16,7 @@ class cylinderSolver():
         self.magnets = magnets
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,use_per_session_threads=True))
-    
-    def buildQ(self,stateCostString,loops = 1):
+    def buildQ(self,stateCostString,objectProperties,tolerances,loops=1):
         
         activated = [0]*(loops * 6)
         if("all" in stateCostString):
@@ -28,11 +27,16 @@ class cylinderSolver():
                 if(letterOptions[i] in stateCostString):
                     index = j*6+i
                     #print(index)
-                    activated[index] = 1.0
+                    if i < 3:   
+                        activated[index] = 1.0 #/ (objectProperties[0] * tolerances[0])
+                    else: 
+                        activated[index] = 6.0 #/ (objectProperties[1][0,0] * tolerances[1])
+
         Q = np.diag(activated)
+        print(Q)
         return Q
 
-    def setup(self,model,stateCostString):
+    def setup(self,model,stateCostString,objectProperties,tolerances):
         s = time.time()
         powers = []
         thetas = []
@@ -47,12 +51,12 @@ class cylinderSolver():
         
         Y = tf.placeholder(tf.float64,shape = [6,1]) 
         magPoses = tf.placeholder(tf.float64,shape = np.array(self.magnets).shape) 
-        Q = self.buildQ(stateCostString)
+        Q = self.buildQ(stateCostString,objectProperties=objectProperties,tolerances=tolerances)
 
         self.Y = Y
         self.magPoses = magPoses
         self.allowedModels = 3
-        for i in range(4):
+        for i in range(len(self.magnets)):
             
             chosenMagnetPose = magPoses[i]
             omniFrame = model.getOmniFrame(chosenMagnetPose,True)
