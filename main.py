@@ -90,7 +90,6 @@ for i in range(numSteps):
     state = simulator.simulate(trueWrench)
     states = np.concatenate((states,state),1)
     
-
 runTime = time.time() - start
 print(runTime)
 print('Time spent doing model ' + str(model.time))
@@ -104,20 +103,28 @@ Plots = {'Position (m)':states[:3,:],
          'Orientation (degrees)':states[3:6,:]*(180/np.pi),
          'Velocity (m/s)':states[6:9,:],
          'Control (Am^2)': np.transpose(modified_controls[:,:]),
-
          "Force ":np.transpose(np.array(wrenches)[:,:3,0]),
          "Torque ":np.transpose(np.array(wrenches)[:,3:,0]),
          'Desired position (m)':np.transpose(npdesiredStates[:,:3,0]),
          'Desired velocity (m/s) ':np.transpose(npdesiredStates[:,6:9,0])}
 
 visualization.plotStuff(Plots,'Controller')
+
+errorPlots = {'Position error (m)':np.transpose(npdesiredStates[:,:3,0])-states[:3,:-1],
+         'Orientation error (degrees)':(np.transpose(npdesiredStates[:,3:6,0]) -states[3:6,:-1])*(180/np.pi)}
+
+visualization.plotStuff(errorPlots,'Controller Error')
+
 fig = plt.figure()
 fig.suptitle('Path (m)')
 plt.plot(states[0,:],states[1,:],c='orange')
 plt.plot(npdesiredStates[:,0,0],npdesiredStates[:,1,0])
 plt.show()
 visualization.visualize2DPath(env,states,'Controller Path')
-anim = visualization.animate2DPath(env,states,'Controller Path')
+
+# anim = visualization.animate2DPath(env,states,'Controller Path')
+
+print('Time spent doing visualization ' + str(time.time() - start - runTime))
 
 import dataloader
 from datetime import datetime

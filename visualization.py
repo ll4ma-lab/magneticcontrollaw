@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import mpl_toolkits.mplot3d.axes3d as p3
 from matplotlib import animation
-
+from scipy.spatial.transform import Rotation as R
 def addCube(center,radius,op,ax):
     cube_definition = buildRectangularPrism(center,radius,radius,radius)
     if(center[2] == 0):
@@ -117,6 +117,18 @@ def visualize2DPath(environment,states,name='path'):
     addRect((0,0,environment.lims[2][0]/2),w=environment.lims[0][1],l=environment.lims[1][1],
             h=environment.lims[2][1],color=(0,0,1,0.1),ax=ax)
     plt.show()
+def getRotationAxis(euler,length):
+    rotation = R.from_euler('xyz',euler)
+    matrix = rotation.as_dcm()
+    axis = []
+    for i in range(3):
+        vector = np.zeros((3,1))
+        line = np.zeros((3,2))
+
+        vector[i] = length
+        line[:,1] = np.dot(matrix,vector)[:,0]
+        axis.append(line)
+    return axis
 def animate2DPath(environment,states,name='path'):
     # Attaching 3D axis to the figure
     fig = plt.figure()
@@ -130,17 +142,27 @@ def animate2DPath(environment,states,name='path'):
             h=environment.lims[2][1],color=(0,0,1,0.1),ax=ax)
     ax.set_title(name)
     
-    def update_lines(num, states, traj_plot, scatter):
+    def update_lines(num, states, traj_plot, scatter,lines):
     
         traj_plot.set_data(states[0:2, :num])
         traj_plot.set_3d_properties(states[2, :num])
         scatter._offsets3d = (states[0:1, num-1],states[1:2, num-1],states[2:3, num-1])
+        axis = getRotationAxis(states[3:6,num-1],0.1)
+        for i in range(3):
+            vertices = axis[i] + np.reshape(states[:3,num-1],(3,1))
+            lines[i].set_data(vertices[0:2, :])
+            lines[i].set_3d_properties(vertices[2, :])
 
-        return traj_plot,scatter
+        return traj_plot,scatter,lines
     traj_plot = ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=4,color='g')[0] 
+    
+    lines = [ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=2,color='r')[0] ,
+            ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=2,color='g')[0] ,
+            ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=2,color='b')[0] ]
+            
     scatter = ax.scatter(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=10,color='orange') 
     # Creating the Animation object
-    line_ani = animation.FuncAnimation(fig, update_lines, states.shape[1], fargs=(states, traj_plot, scatter),
+    line_ani = animation.FuncAnimation(fig, update_lines, states.shape[1], fargs=(states, traj_plot, scatter,lines),
                                        interval=1, blit=False)
     plt.show()
     line_ani.save('animation.gif', writer='imagemagick', fps=30)

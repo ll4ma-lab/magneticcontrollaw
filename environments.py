@@ -136,7 +136,7 @@ class SpaceProblem:
         rotationalTolerance =  np.pi * degTolerance/180.0
         
         self.tolerances = (linearTolerance,rotationalTolerance)
-        self.radius = 0.015
+        self.radius = 0.065
 
         num_pts = 6
         from numpy import pi, cos, sin, arccos, arange
@@ -168,7 +168,7 @@ class SpaceProblem:
         
         
             self.desiredState= self.TrueDesiredState
-            self.times = [180]* self.desiredState.shape[1]
+            self.times = [240]* self.desiredState.shape[1]
         
         if(challengeID==1):
             self.TrueDesiredState = np.zeros((12,12))
@@ -185,7 +185,7 @@ class SpaceProblem:
             self.TrueDesiredState[5,10] = np.pi/2
         
             self.desiredState= self.TrueDesiredState
-            self.times = [18]* self.desiredState.shape[1]
+            self.times = [180]* self.desiredState.shape[1]
 
 
     def problem_specific_modification(self,state):
