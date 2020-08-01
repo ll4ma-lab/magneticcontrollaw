@@ -17,17 +17,18 @@ import time
 import visualization
 import DummyProfile
 import SplineProfile
-
+import TrapProfile
 magnetLimit = 1
 cheat = False
 velNoise = False
 controlNoise = False
 
 
-env = SpaceProblem(1)
+#env = SpaceProblem(1)
+env = PlanarProblem()
 #env.times = (np.array(env.times) * 1.5).tolist()
-if velNoise:
-    env.startState[6:12,0] = (np.random.random((2)) - 0.5) * 0.005
+if True or velNoise:
+    env.startState[6:8,0] = (np.random.random((2)) - 0.5) * 0.005
 
 
 simTime = np.sum(env.times)
@@ -47,11 +48,13 @@ else:
     model = pythonModel(env.magnets,False)
     solver = gurobi.gurobiSolver(len(env.magnets)*3,magnetLimit)
 
-controller = PDController(env.startState,0.004,0.00001,0.035,0.001,0.0,0.00025)
+controller = PDController(env.startState,0.004,0.00001,0.085,0.001,0.0,0.00025)
 
 #controller = PDController(env.startState,0.003,0.00001,0.3,0.001)
 simulator = exponentialSimulator(env.startState,dt,objectProperties) #density, diamter
-velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
+#velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
+velocityProfile = TrapProfile.TrapProfile(env,simTime,env.times)
+
 controls = []
 wrenches = []
 pComponents = []
