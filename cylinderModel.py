@@ -149,7 +149,7 @@ class cylinderModel(object):
         sigma_copper = 5.8E+07;
         sigma_al = 3.77E+07;
         self.sigma = sigma_copper;
-        self.do = 0.05;
+        self.do = 0.04;
         self.freq = 15
     def eddyFTRotated(self, dist, dipole_strength, freq, radii,use_tf=False):
         #Constants 
