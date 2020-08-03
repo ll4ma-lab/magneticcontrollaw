@@ -34,7 +34,7 @@ if True or velNoise:
 simTime = np.sum(env.times)
 dt = 1
 numSteps = int(simTime/dt)      
-objectProperties = sphereProperties(8940,0.05)
+objectProperties = sphereProperties(8940,0.04)
 #model = matlabModel(env.magnets,False)
 new_model = True
 if(new_model):
@@ -52,8 +52,8 @@ controller = PDController(env.startState,0.004,0.00001,0.085,0.001,0.0,0.00025)
 
 #controller = PDController(env.startState,0.003,0.00001,0.3,0.001)
 simulator = exponentialSimulator(env.startState,dt,objectProperties) #density, diamter
-#velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
-velocityProfile = TrapProfile.TrapProfile(env,simTime,env.times)
+velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
+#velocityProfile = TrapProfile.TrapProfile(env,simTime,env.times)
 
 controls = []
 wrenches = []

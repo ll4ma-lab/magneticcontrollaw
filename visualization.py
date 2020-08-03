@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import mpl_toolkits.mplot3d.axes3d as p3
 from matplotlib import animation
-from scipy.spatial.transform import Rotation as R
 def addCube(center,radius,op,ax):
     cube_definition = buildRectangularPrism(center,radius,radius,radius)
     if(center[2] == 0):
@@ -118,6 +117,8 @@ def visualize2DPath(environment,states,name='path'):
             h=environment.lims[2][1],color=(0,0,1,0.1),ax=ax)
     plt.show()
 def getRotationAxis(euler,length):
+    from scipy.spatial.transform import Rotation as R
+
     rotation = R.from_euler('xyz',euler)
     matrix = rotation.as_dcm()
     axis = []
