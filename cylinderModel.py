@@ -142,14 +142,14 @@ class cylinderSolver():
     
     
 class cylinderModel(object):
-    def __init__(self,magnets):
+    def __init__(self,magnets,diameter):
         self.magnets = magnets
         self.dims = len(magnets)*3
         self.time = 0.0
         sigma_copper = 5.8E+07;
         sigma_al = 3.77E+07;
         self.sigma = sigma_copper;
-        self.do = 0.04;
+        self.do = diameter;
         self.freq = 15
     def eddyFTRotated(self, dist, dipole_strength, freq, radii,use_tf=False):
         #Constants 
@@ -159,39 +159,39 @@ class cylinderModel(object):
         model_C = np.array([
             # --- Rho Configuration 
             # F Rho
-            [1, -1.27, -0.300,-7.26],      
+            [1, -1.9998, -0.2948,-6.4659],      
           # Xaxis: Fx
             
             [0,0,0, 0],
-            [-1, -1.13, -0.220,-7.22],                # Xaxis: Fz
+            [-1, -1.3048, -0.2791,-7.0116],                # Xaxis: Fz
  
                        # Xaxis: Fy = 0
             # F Phi 
             [0,0,0, 0],                           # Xaxis: Tx = 0
             # T X
-            [1, -1.44, -0.185, -6.23],                # Xaxis: Ty
+            [1, -1.6837, -0.2001, -6.0185],                # Xaxis: Ty
 
             [0,0,0, 0],                           # Xaxis: Tz
 
             # --- +Z Configuration
             # F Z
-            [1, -1.86, -0.238,  -6.88 ],              # Yaxis: Fy
+            [1, -2.2593, -0.2340,  -6.8637],              # Yaxis: Fy
             [0,0,0, 0],                           #  Yaxis: Fz
             [0,0,0, 0],                           # Yaxis: Fx = 0
         
             # T Z 
-            [1, -2.05, -0.153,  -5.67],               # Yaxis: Ty
+            [1, -1.9354, -0.1903,  -5.9659],               # Yaxis: Ty
             [0,0,0,0,],
             [0,0,0, 0],                           # Yaxis: Tx = 0
         
              # --- -Z Configuration
             # F Z
-            [1, -1.86, -0.238,  -6.88 ],              # Yaxis: Fy
+            [1, -2.2593, -0.2340,  -6.8637],              # Yaxis: Fy
             [0,0,0, 0],                           # Yaxis: Fz
             [0,0,0,0,],                           # Yaxis: Fx = 0
         
             # T Z 
-            [-1, -2.05, -0.153,  -5.67],               # Yaxis: Ty
+            [-1, -1.9354, -0.1903,  -5.9659],               # Yaxis: Ty
             [0,0,0,0],
             [0,0,0, 0]])                           # Yaxis: Tx = 0
         P1 = sig*mu*freq*radii*radii
