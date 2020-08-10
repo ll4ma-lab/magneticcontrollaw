@@ -33,12 +33,13 @@ if True or velNoise:
 
 simTime = np.sum(env.times)
 dt = 1
-numSteps = int(simTime/dt)      
-objectProperties = sphereProperties(8940,0.05)
+numSteps = int(simTime/dt)
+diameter = 0.04
+objectProperties = sphereProperties(8940,diameter)
 #model = matlabModel(env.magnets,False)
 new_model = True
 if(new_model):
-    model = cylinderModel(env.magnets)
+    model = cylinderModel(env.magnets,diameter)
     solver = cylinderSolver(env.magnets)
     solver.setup(model,env.trajectoryDimensions,objectProperties,env.tolerances)
 
@@ -48,12 +49,11 @@ else:
     model = pythonModel(env.magnets,False)
     solver = gurobi.gurobiSolver(len(env.magnets)*3,magnetLimit)
 
-controller = PDController(env.startState,0.004,0.00001,0.085,0.001,0.0,0.00025)
-
+controller = PDController(env.startState,0.005,0.00004,0.005,0.00003,0.0,0.000)
 #controller = PDController(env.startState,0.003,0.00001,0.3,0.001)
 simulator = exponentialSimulator(env.startState,dt,objectProperties) #density, diamter
-#velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
-velocityProfile = TrapProfile.TrapProfile(env,simTime,env.times)
+velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
+#velocityProfile = TrapProfile.TrapProfile(env,simTime,env.times)
 
 controls = []
 wrenches = []
