@@ -49,11 +49,11 @@ Plots = {'Position error (m)':np.transpose(npdesiredStates[:,:3,0])-np.transpose
          'Oreintation error (degrees)':(180/np.pi) * (np.transpose(npdesiredStates[:,3:6,0])-np.transpose(npStates[:,3:6,0]))}
 visualization.plotStuff(Plots,'Controller')
 
-    fig = plt.figure()
-    fig.suptitle('Path (m)')
-    plt.plot(npStates[:,0,0],npStates[:,1,0])
-    plt.plot(npdesiredStates[:,0,0],npdesiredStates[:,1,0])
-    plt.show()
-    visualization.visualize2DPath(env,np.transpose(npStates[:,:,0]),'Controller Path')
+fig = plt.figure()
+fig.suptitle('Path (m)')
+plt.plot(npStates[:,0,0],npStates[:,1,0])
+plt.plot(npdesiredStates[:,0,0],npdesiredStates[:,1,0])
+plt.show()
+visualization.visualize2DPath(env,np.transpose(npStates[:,:,0]),'Controller Path')
     
 #anim = visualization.animate2DPath(env,states,'Controller Path')
