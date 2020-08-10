@@ -81,6 +81,9 @@ for i in range(numSteps):
     #    break
     if(cheat):
         control = [0,0,0,0]
+        maxForce = 0.00001
+        desired_wrench[np.where(desired_wrench > maxForce)] = maxForce
+        desired_wrench[np.where(desired_wrench < -maxForce)] = -maxForce
         trueWrench = desired_wrench
     else:
        control =  solver.solveWrench(model,state,desired_wrench,env.trajectoryDimensions)
