@@ -13,6 +13,11 @@ class PlanarProblem:
         length = 0.62
         height = 0.15
         self.visualizationBoundary = (-length/2,length/2)
+        self.visualizationBoundaryX = (-length/2,length/2)
+        self.visualizationBoundaryY = (-width/2,width/2)
+        self.visualizationBoundaryZ = (-width/2,width/2)        
+        self.az = -90
+        self.el = -90
         self.lims = [(-width/2,width/2)
                ,(-length/2,length/2)
                ,(-height/2,height/2)]
@@ -30,7 +35,7 @@ class PlanarProblem:
         self.tolerances = (linearTolerance,rotationalTolerance)
         
         self.startState = np.zeros((12,1))
-        if(challengeID==-1):
+        if(challengeID==-1): #line 
             self.TrueDesiredState = np.zeros((12,2))
             self.TrueDesiredState[:3,0] = [0.075,-0.075,0]
             #self.TrueDesiredState[:3,1] = [0.075,-0.075,0]
@@ -38,7 +43,7 @@ class PlanarProblem:
             self.desiredState= self.TrueDesiredState
             self.times = [180]* self.desiredState.shape[1]
             self.times[0] = 180
-        if(challengeID==0 or challengeID==1):
+        if(challengeID==0 or challengeID==1): #square
             self.TrueDesiredState = np.zeros((12,5))
             self.TrueDesiredState[:3,0] = [0.075,-0.075,0]
             self.TrueDesiredState[:3,1] = [-0.075,-0.075,0]
@@ -52,7 +57,7 @@ class PlanarProblem:
             self.times[0] = 180
             self.trajectoryDimensions = 'xy'
 
-        if(challengeID==1):
+        if(challengeID==1): #diamond
             angle = 45 /(180/np.pi) 
             R = np.array([[np.cos(angle),-np.sin(angle)],
                           [np.sin(angle),np.cos(angle)]])
@@ -62,10 +67,11 @@ class PlanarProblem:
         
             self.desiredState= self.TrueDesiredState
             self.times = [180]* self.desiredState.shape[1]
+            self.trajectoryDimensions = 'xyt'
 
-        if(challengeID==2):
+        if(challengeID==2): #stationary rotation
             self.TrueDesiredState = np.zeros((12,5))
-            self.TrueDesiredState[1,:] = -0.075
+            #self.TrueDesiredState[1,:] = -0.075
 
             self.TrueDesiredState[5,0] = -np.pi /4
             self.TrueDesiredState[5,1] = 0 
@@ -79,7 +85,7 @@ class PlanarProblem:
             self.times = [180]* self.desiredState.shape[1]
             self.times[0] = 360
 
-        if(challengeID==3):
+        if(challengeID==3): # rotate while square
             self.TrueDesiredState = np.zeros((12,10))
             self.TrueDesiredState[:3,0] = [0.075,-0.075,0]
             self.TrueDesiredState[:3,1] = self.TrueDesiredState[:3,0]
@@ -111,6 +117,77 @@ class PlanarProblem:
         
             self.desiredState= self.TrueDesiredState
             self.times = [180]* self.desiredState.shape[1]
+            
+        if(challengeID==4): #infinity
+            vel = 0.0005            
+            
+            self.TrueDesiredState = np.zeros((12,8))
+            self.TrueDesiredState[:3,0] = [-0.06,0.04,0]
+            self.TrueDesiredState[6:9,0] = [-vel,0,0]
+
+            self.TrueDesiredState[:3,1] = [-0.12,0,0] #left
+            self.TrueDesiredState[6:9,1] = [0,-vel/2,0]
+
+            self.TrueDesiredState[:3,2] = [-0.06,-0.04,0]
+            self.TrueDesiredState[6:9,2] = [vel,0,0]
+
+            self.TrueDesiredState[:3,3] = [-0.0,0.0,0] # center
+
+
+            self.TrueDesiredState[:3,4] = [0.06,0.04,0]
+            self.TrueDesiredState[6:9,4] = [vel,0,0]
+
+            self.TrueDesiredState[:3,5] = [0.12,0,0] #left
+            self.TrueDesiredState[6:9,5] = [0,-vel/2,0]
+
+            self.TrueDesiredState[:3,6] = [0.06,-0.04,0]
+            self.TrueDesiredState[6:9,6] = [-vel,0,0]
+
+            self.TrueDesiredState[:3,7] = [-0.0,0.0,0] # center
+        
+            self.desiredState= self.TrueDesiredState
+            self.times = [180]* self.desiredState.shape[1]
+            self.times[0] = 180
+            #self.trajectoryDimensions = 'xy'
+        if(challengeID==5): #U
+            vel = 0.1       
+            self.TrueDesiredState = np.zeros((12,15))
+            self.TrueDesiredState[:3,0] = [5,-7,0] 
+            self.TrueDesiredState[:3,1] = [3,-7,0]
+            self.TrueDesiredState[:3,2] = [3,-11,0]
+            self.TrueDesiredState[:3,3] = [13,-11,0]
+            self.TrueDesiredState[:3,4] = [13,-7,0]
+            self.TrueDesiredState[:3,5] = [11,-7,0]
+            
+            self.TrueDesiredState[:3,6] = [0,13,0]
+            self.TrueDesiredState[6:9,6] = [-0.2,0,0]
+
+            
+            
+            self.TrueDesiredState[:3,7] = [-11,-7,0]
+            self.TrueDesiredState[:3,8] = [-13,-7,0]
+            self.TrueDesiredState[:3,9] = [-13,-11,0]
+            self.TrueDesiredState[:3,10] = [-3,-11,0]
+            self.TrueDesiredState[:3,11] = [-3,-7,0]
+            self.TrueDesiredState[:3,12] = [-5,-7,0] 
+            
+            self.TrueDesiredState[:3,13] = [-0,9,0] 
+            self.TrueDesiredState[:3,14] = [5,-7,0] 
+            self.TrueDesiredState[6:9,13] = [0.08,0,0]
+
+            self.TrueDesiredState = self.TrueDesiredState * 0.005
+
+        
+            self.desiredState= self.TrueDesiredState
+            self.times = [180]* self.desiredState.shape[1]
+            self.times[6] = 240
+            self.times[7] = 240
+            
+            self.times[13] = 240
+            self.times[14] = 240
+
+
+            #self.trajectoryDimensions = 'xy'
     def problem_specific_modification(self,state):
         #set z rp + their velocity to 0
 
@@ -129,7 +206,11 @@ class SpaceProblem:
         width = 0.001
         length = 0.001
         height = 0.001
-        self.visualizationBoundary = (-0.3,0.3)
+        self.visualizationBoundaryX = (-0.3,0.3)
+        self.visualizationBoundaryY = (-0.3,0.3)
+        self.visualizationBoundaryZ = (-0.3,0.3)
+        self.az = 14
+        self.el = -150
         self.lims = [(-width/2,width/2)
                ,(-length/2,length/2)
                ,(-height/2,height/2)]
@@ -161,7 +242,7 @@ class SpaceProblem:
         self.magnets = magnets.tolist()
         self.startState = np.zeros((12,1))
         
-        if(challengeID==0):
+        if(challengeID==0): #floating square
             self.TrueDesiredState = np.zeros((12,5))
             self.TrueDesiredState[:3,0] = [0.075,-0.075,-0.075]
             self.TrueDesiredState[:3,1] = [-0.075,-0.075,-0.075]
@@ -173,7 +254,7 @@ class SpaceProblem:
             self.desiredState= self.TrueDesiredState
             self.times = [240]* self.desiredState.shape[1]
         
-        if(challengeID==1):
+        if(challengeID==1): # individual axis
             self.TrueDesiredState = np.zeros((12,12))
             self.TrueDesiredState[0,0] = 0.1
             
@@ -189,7 +270,17 @@ class SpaceProblem:
         
             self.desiredState= self.TrueDesiredState
             self.times = [180]* self.desiredState.shape[1]
-
+        if(challengeID==0): #floating square
+            self.TrueDesiredState = np.zeros((12,5))
+            self.TrueDesiredState[:3,0] = [0.075,-0.075,-0.075]
+            self.TrueDesiredState[:3,1] = [-0.075,-0.075,-0.075]
+            self.TrueDesiredState[:3,2] = [-0.075,0.075,0.075]
+            self.TrueDesiredState[:3,3] = [0.075,0.075,0.075]
+            self.TrueDesiredState[:3,4] = [0.075,-0.075,0]
+        
+        
+            self.desiredState= self.TrueDesiredState
+            self.times = [240]* self.desiredState.shape[1]
 
     def problem_specific_modification(self,state):
         pass

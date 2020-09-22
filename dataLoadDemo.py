@@ -8,7 +8,7 @@ Created on Sun Jul  5 16:02:00 2020
 import dataloader
 import sys
 sys.path.append("..") # Adds higher directory to python modules path.
-dataloader.load("data/sim_2020-07-12 16:58:22.181063",globals())
+dataloader.load("data/sim_2020-08-20 15:48:42.534580",globals())
 import visualization
 import matplotlib.pyplot as plt
 

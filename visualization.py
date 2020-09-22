@@ -107,14 +107,18 @@ def visualize2DPath(environment,states,name='path'):
     fig = plt.figure()
     fig.suptitle(name)
     ax = fig.add_subplot(111, projection='3d')
-    ax.set_xlim(*environment.visualizationBoundary)
-    ax.set_ylim(*environment.visualizationBoundary)
-    ax.set_zlim(*environment.visualizationBoundary)
-    
+    ax.set_xlim(*environment.visualizationBoundaryX)
+    ax.set_ylim(*environment.visualizationBoundaryY)
+    ax.set_zlim(*environment.visualizationBoundaryZ)
+    ax.set_aspect('equal')
+
     drawCubes(allMagnets,[],ax,environment.radius)
     plt.plot(states[0,:],states[1,:],states[2,:],linewidth=4,color='g')
     addRect((0,0,environment.lims[2][0]/2),w=environment.lims[0][1],l=environment.lims[1][1],
             h=environment.lims[2][1],color=(0,0,1,0.1),ax=ax)
+            
+    ax.view_init(elev=environment.el, azim=environment.az)
+
     plt.show()
 def getRotationAxis(euler,length):
     from scipy.spatial.transform import Rotation as R
@@ -134,17 +138,19 @@ def animate2DPath(environment,states,name='path'):
     # Attaching 3D axis to the figure
     fig = plt.figure()
     ax = p3.Axes3D(fig)
-    ax.set_xlim(*environment.visualizationBoundary)
-    ax.set_ylim(*environment.visualizationBoundary)
-    ax.set_zlim(*environment.visualizationBoundary)
-    
+    ax.set_xlim(*environment.visualizationBoundaryX)
+    ax.set_ylim(*environment.visualizationBoundaryY)
+    ax.set_zlim(*environment.visualizationBoundaryZ)
+    ax.set_aspect('equal')
+
     drawCubes(environment.magnets,[],ax,environment.radius)
-    addRect((0,0,environment.lims[2][0]/2),l=environment.lims[0][1],w=environment.lims[1][1],
+    addRect((0,0,environment.lims[2][0]/2),w=environment.lims[0][1],l=environment.lims[1][1],
             h=environment.lims[2][1],color=(0,0,1,0.1),ax=ax)
     ax.set_title(name)
-    
+
+
     def update_lines(num, states, traj_plot, scatter,lines):
-    
+        num = num + states.shape[1]/2
         traj_plot.set_data(states[0:2, :num])
         traj_plot.set_3d_properties(states[2, :num])
         scatter._offsets3d = (states[0:1, num-1],states[1:2, num-1],states[2:3, num-1])
@@ -163,10 +169,13 @@ def animate2DPath(environment,states,name='path'):
             
     scatter = ax.scatter(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=10,color='orange') 
     # Creating the Animation object
-    line_ani = animation.FuncAnimation(fig, update_lines, states.shape[1], fargs=(states, traj_plot, scatter,lines),
+    line_ani = animation.FuncAnimation(fig, update_lines, states.shape[1]/2, fargs=(states, traj_plot, scatter,lines),
                                        interval=1, blit=False)
+    
+    ax.view_init(elev=environment.el, azim=environment.az)
     plt.show()
-    line_ani.save('animation.gif', writer='imagemagick', fps=30)
+    print('newer dpi')
+    line_ani.save('animation.mp4', writer='imagemagick', fps=30,dpi=200)
     return line_ani
 def animateOptimization2DPath(environment,states,name='path'):
 
