@@ -159,54 +159,52 @@ class cylinderModel(object):
         model_C = np.array([
             # --- Rho Configuration 
             # F Rho
-            [1, -1.9998, -0.2948,-6.4659],      
+            [1, 0.0718, 1.56,7.22],      
           # Xaxis: Fx
             
             [0,0,0, 0],
-            [-1, -1.3048, -0.2791,-7.0116],                # Xaxis: Fz
+            [-1, 0.0858, 0.935,7.16],                # Xaxis: Fz
  
                        # Xaxis: Fy = 0
             # F Phi 
             [0,0,0, 0],                           # Xaxis: Tx = 0
             # T X
-            [1, -1.6837, -0.2001, -6.0185],                # Xaxis: Ty
+            [1, 0.0408, 0.943, 6.17],                # Xaxis: Ty
 
             [0,0,0, 0],                           # Xaxis: Tz
 
             # --- +Z Configuration
             # F Z
-            [1, -2.2593, -0.2340,  -6.8637],              # Yaxis: Fy
+            [1, 0.0146, 1.50,  6.82],              # Yaxis: Fy
             [0,0,0, 0],                           #  Yaxis: Fz
             [0,0,0, 0],                           # Yaxis: Fx = 0
         
             # T Z 
-            [1, -1.9354, -0.1903,  -5.9659],               # Yaxis: Ty
+            [1, 0.000917, 0.956,  5.64],               # Yaxis: Ty
             [0,0,0,0,],
             [0,0,0, 0],                           # Yaxis: Tx = 0
         
              # --- -Z Configuration
             # F Z
-            [1, -2.2593, -0.2340,  -6.8637],              # Yaxis: Fy
+            [1, 0.0146, 1.50,  6.82],              # Yaxis: Fy
             [0,0,0, 0],                           # Yaxis: Fz
             [0,0,0,0,],                           # Yaxis: Fx = 0
         
             # T Z 
-            [-1, -1.9354, -0.1903,  -5.9659],               # Yaxis: Ty
+            [-1, 0.000917, 0.956,  5.64],               # Yaxis: Ty
             [0,0,0,0],
             [0,0,0, 0]])                           # Yaxis: Tx = 0
         P1 = sig*mu*freq*radii*radii
 
-        P0_temp_1_1 = np.power(P1,model_C[:,2:3])
-        P0_temp_1_2 =  model_C[:,1:2]*P0_temp_1_1 
-        P0_temp_1 =  np.power(10,P0_temp_1_2)
-        
+        numerator = np.power(P1,model_C[:,2:3])
         
         P2 = dist/radii;
-        P0_temp_2_1 = np.power(P2,model_C[:,3:4] )
-        P0_temp_2_2 = P0_temp_1*P0_temp_2_1
-        P0_temp_2 = model_C[:, 0:1]*P0_temp_2_2
+        denominator = np.power(P2,model_C[:,3:4] )
+
+
+        P0_temp = model_C[:, 0:1]*model_C[:, 1:2]*numerator/denominator
         
-        P0 = np.stack([P0_temp_2[:6] , P0_temp_2[6:12] , P0_temp_2[12:18] ],1)[:,:,0]
+        P0 = np.stack([P0_temp[:6] , P0_temp[6:12] , P0_temp[12:18] ],1)[:,:,0]
 
         FT_Cycle = np.copy(P0)
         c=  mu*np.power(dipole_strength,2)*np.power(radii,-4)
