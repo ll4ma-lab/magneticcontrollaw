@@ -150,7 +150,7 @@ def animate2DPath(environment,states,name='path'):
 
 
     def update_lines(num, states, traj_plot, scatter,lines):
-        num = num + states.shape[1]/2
+        #num = num + states.shape[1]/2
         traj_plot.set_data(states[0:2, :num])
         traj_plot.set_3d_properties(states[2, :num])
         scatter._offsets3d = (states[0:1, num-1],states[1:2, num-1],states[2:3, num-1])
@@ -169,7 +169,7 @@ def animate2DPath(environment,states,name='path'):
             
     scatter = ax.scatter(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=10,color='orange') 
     # Creating the Animation object
-    line_ani = animation.FuncAnimation(fig, update_lines, states.shape[1]/2, fargs=(states, traj_plot, scatter,lines),
+    line_ani = animation.FuncAnimation(fig, update_lines, states.shape[1], fargs=(states, traj_plot, scatter,lines),
                                        interval=1, blit=False)
     
     ax.view_init(elev=environment.el, azim=environment.az)
