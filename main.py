@@ -19,13 +19,13 @@ import DummyProfile
 import SplineProfile
 import TrapProfile
 magnetLimit = 1
-cheat = True
+cheat = False
 velNoise = False
 controlNoise = False
 
 
 #env = SpaceProblem(1)
-env = PlanarProblem(3)
+env = PlanarProblem()
 #env.times = (np.array(env.times) * 1.5).tolist()
 if velNoise:
     env.startState[6:8,0] = (np.random.random((2)) - 0.5) * 0.005
@@ -49,7 +49,7 @@ else:
     model = pythonModel(env.magnets,False)
     solver = gurobi.gurobiSolver(len(env.magnets)*3,magnetLimit)
 
-controller = PDController(env.startState,0.005,0.00004,0.005,0.00003,0.0,0.000)
+controller = PDController(env.startState,0.005,0.00004,0.015,0.00003,0.0,0.000)
 #controller = PDController(env.startState,0.003,0.00001,0.3,0.001)
 simulator = exponentialSimulator(env.startState,dt,objectProperties) #density, diamter
 velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)

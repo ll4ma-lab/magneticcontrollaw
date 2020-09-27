@@ -35,21 +35,22 @@ class PlanarProblem:
         self.tolerances = (linearTolerance,rotationalTolerance)
         
         self.startState = np.zeros((12,1))
+        squareRadius = 0.075
         if(challengeID==-1): #line 
             self.TrueDesiredState = np.zeros((12,2))
-            self.TrueDesiredState[:3,0] = [0.075,-0.075,0]
+            self.TrueDesiredState[:3,0] = [squareRadius,-squareRadius,0]
             #self.TrueDesiredState[:3,1] = [0.075,-0.075,0]
-            self.TrueDesiredState[:3,1] = [-0.075,-0.075,0]
+            self.TrueDesiredState[:3,1] = [-squareRadius,-squareRadius,0]
             self.desiredState= self.TrueDesiredState
             self.times = [180]* self.desiredState.shape[1]
             self.times[0] = 180
         if(challengeID==0 or challengeID==1): #square
             self.TrueDesiredState = np.zeros((12,5))
-            self.TrueDesiredState[:3,0] = [0.075,-0.075,0]
-            self.TrueDesiredState[:3,1] = [-0.075,-0.075,0]
-            self.TrueDesiredState[:3,2] = [-0.075,0.075,0]
-            self.TrueDesiredState[:3,3] = [0.075,0.075,0]
-            self.TrueDesiredState[:3,4] = [0.075,-0.075,0]
+            self.TrueDesiredState[:3,0] = [squareRadius,-squareRadius,0]
+            self.TrueDesiredState[:3,1] = [-squareRadius,-squareRadius,0]
+            self.TrueDesiredState[:3,2] = [-squareRadius,squareRadius,0]
+            self.TrueDesiredState[:3,3] = [squareRadius,squareRadius,0]
+            self.TrueDesiredState[:3,4] = [squareRadius,-squareRadius,0]
 
         
             self.desiredState= self.TrueDesiredState
@@ -92,30 +93,30 @@ class PlanarProblem:
             self.TrueDesiredState[5,0] = -np.pi/4
 
 
-            self.TrueDesiredState[:3,0] = [0.075,-0.075,0]
+            self.TrueDesiredState[:3,0] = [squareRadius,-squareRadius,0]
             self.TrueDesiredState[:3,1] = self.TrueDesiredState[:3,0]
             self.TrueDesiredState[5,1] = -np.pi
             self.TrueDesiredState[5,2] = -np.pi
 
-            self.TrueDesiredState[:3,2] = [-0.075,-0.075,0]
+            self.TrueDesiredState[:3,2] = [-squareRadius,-squareRadius,0]
             self.TrueDesiredState[:3,3] = self.TrueDesiredState[:3,2]
             self.TrueDesiredState[5,3] = -3.0 *np.pi /2.0
             self.TrueDesiredState[5,4] = -3.0 *np.pi /2.0
 
 
-            self.TrueDesiredState[:3,4] = [-0.075,0.075,0]
+            self.TrueDesiredState[:3,4] = [-squareRadius,squareRadius,0]
             self.TrueDesiredState[:3,5] = self.TrueDesiredState[:3,4]
             self.TrueDesiredState[5,5] = -2.0 *np.pi
             self.TrueDesiredState[5,6] = -2.0 *np.pi
 
 
-            self.TrueDesiredState[:3,6] = [0.075,0.075,0]
+            self.TrueDesiredState[:3,6] = [squareRadius,squareRadius,0]
             self.TrueDesiredState[:3,7] = self.TrueDesiredState[:3,6]
             self.TrueDesiredState[5,7] = -2.5 *np.pi
             self.TrueDesiredState[5,8] = -2.5 *np.pi
 
             
-            self.TrueDesiredState[:3,8] = [0.075,-0.075,0]
+            self.TrueDesiredState[:3,8] = [squareRadius,-squareRadius,0]
             self.TrueDesiredState[:3,9] = self.TrueDesiredState[:3,8]
             self.TrueDesiredState[5,9] = -3.0 *np.pi
 
