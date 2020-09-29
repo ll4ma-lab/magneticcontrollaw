@@ -28,7 +28,7 @@ class exponentialSimulator:
         #Ac[halfStateDims:,:halfStateDims] = np.eye(halfStateDims) 
         linearFriction = 0.0
         rotationalFriction = 0.00000
-        Ac[halfStateDims:halfStateDims + quarterDims,halfStateDims:halfStateDims+quarterDims] = np.eye(quarterDims)*(-1.0/self.mass) *linearFriction
+        #Ac[halfStateDims:halfStateDims + quarterDims,halfStateDims:halfStateDims+quarterDims] = np.eye(quarterDims)*(-1.0/self.mass) *linearFriction
         #Ac[halfStateDims + quarterDims:,quarterDims:halfStateDims] = np.eye(quarterDims)*np.linalg.inv(self.MOI) * rotationalFriction
         #print(Ac)
 #        a=b
@@ -36,7 +36,7 @@ class exponentialSimulator:
         Bc = np.zeros((stateDims,halfStateDims))
         Bc[halfStateDims:,:halfStateDims] = np.eye(halfStateDims)
         Bc[halfStateDims:halfStateDims + quarterDims,:quarterDims] *= (self.unitFactor/self.mass)
-        Bc[halfStateDims + quarterDims:,quarterDims:] = self.unitFactor*np.linalg.inv(self.MOI)
+        Bc[halfStateDims + quarterDims:,quarterDims:] *= self.unitFactor*np.linalg.inv(self.MOI)
 
         #Bc[halfStateDims:halfStateDims+quarterDims,:quarterDims] = np.eye(quarterDims) * 1.0/self.mass
         

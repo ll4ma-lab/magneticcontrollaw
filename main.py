@@ -34,7 +34,7 @@ if velNoise:
 simTime = np.sum(env.times)
 dt = 1
 numSteps = int(simTime/dt)
-diameter = 0.05
+diameter = 0.04
 objectProperties = sphereProperties(8940,diameter)
 #model = matlabModel(env.magnets,False)
 new_model = True

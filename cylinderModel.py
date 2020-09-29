@@ -169,7 +169,7 @@ class cylinderModel(object):
             # F Phi 
             [0,0,0, 0],                           # Xaxis: Tx = 0
             # T X
-            [1, 0.0408, 0.943, 6.17],                # Xaxis: Ty
+            [-1, 0.0408, 0.943, 6.17],                # Xaxis: Ty
 
             [0,0,0, 0],                           # Xaxis: Tz
 
