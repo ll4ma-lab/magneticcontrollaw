@@ -29,7 +29,7 @@ class PlanarProblem:
         
         self.radius = 0.065
         linearTolerance = 0.005
-        degTolerance = 10.0
+        degTolerance = 5.0
         rotationalTolerance =  np.pi * degTolerance/180.0
         
         self.tolerances = (linearTolerance,rotationalTolerance)
@@ -54,10 +54,19 @@ class PlanarProblem:
 
         
             self.desiredState= self.TrueDesiredState
-            self.times = [180]* self.desiredState.shape[1]
-            self.times[0] = 180
+            self.times = [240]* self.desiredState.shape[1]
             self.trajectoryDimensions = 'xy'
+        if(challengeID==6): #square fixed rotation
+            self.TrueDesiredState = np.zeros((12,5))
+            self.TrueDesiredState[:3,0] = [squareRadius,-squareRadius,0]
+            self.TrueDesiredState[:3,1] = [-squareRadius,-squareRadius,0]
+            self.TrueDesiredState[:3,2] = [-squareRadius,squareRadius,0]
+            self.TrueDesiredState[:3,3] = [squareRadius,squareRadius,0]
+            self.TrueDesiredState[:3,4] = [squareRadius,-squareRadius,0]
 
+        
+            self.desiredState= self.TrueDesiredState
+            self.times = [240]* self.desiredState.shape[1]
         if(challengeID==1): #diamond
             angle = 45 /(180/np.pi) 
             R = np.array([[np.cos(angle),-np.sin(angle)],
@@ -122,7 +131,7 @@ class PlanarProblem:
 
         
             self.desiredState= self.TrueDesiredState
-            self.times = [180]* self.desiredState.shape[1]
+            self.times = [240]* self.desiredState.shape[1]
             
         if(challengeID==4): #infinity
             vel = 0.0005            

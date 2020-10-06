@@ -30,7 +30,7 @@ class cylinderSolver():
                     if i < 3:   
                         activated[index] = 1.0 #/ (objectProperties[0] * tolerances[0])
                     else: 
-                        activated[index] = 6.0 #/ (objectProperties[1][0,0] * tolerances[1])
+                        activated[index] = 380.0 #/ (objectProperties[1][0,0] * tolerances[1])
 
         Q = np.diag(activated)
         print(Q)
