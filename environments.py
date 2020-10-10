@@ -194,12 +194,12 @@ class PlanarProblem:
 
         
             self.desiredState= self.TrueDesiredState
-            self.times = [180]* self.desiredState.shape[1]
-            self.times[6] = 240
-            self.times[7] = 240
+            self.times = [240]* self.desiredState.shape[1]
+            self.times[6] = 360
+            self.times[7] = 360
             
-            self.times[13] = 240
-            self.times[14] = 240
+            self.times[13] = 360
+            self.times[14] = 360
 
 
             #self.trajectoryDimensions = 'xy'
@@ -235,7 +235,7 @@ class SpaceProblem:
         rotationalTolerance =  np.pi * degTolerance/180.0
         
         self.tolerances = (linearTolerance,rotationalTolerance)
-        self.radius = 0.065
+        self.radius = 0.01
 
         num_pts = 6
         from numpy import pi, cos, sin, arccos, arange
@@ -285,17 +285,32 @@ class SpaceProblem:
         
             self.desiredState= self.TrueDesiredState
             self.times = [180]* self.desiredState.shape[1]
-        if(challengeID==0): #floating square
-            self.TrueDesiredState = np.zeros((12,5))
-            self.TrueDesiredState[:3,0] = [0.075,-0.075,-0.075]
-            self.TrueDesiredState[:3,1] = [-0.075,-0.075,-0.075]
-            self.TrueDesiredState[:3,2] = [-0.075,0.075,0.075]
-            self.TrueDesiredState[:3,3] = [0.075,0.075,0.075]
-            self.TrueDesiredState[:3,4] = [0.075,-0.075,0]
-        
-        
+        if(challengeID==2): #floating square
+            i = 0
+            self.startState[:,0] = self.spiralHelper(0) 
+            components = 40
+            self.TrueDesiredState = np.zeros((12,components))
+            for i in range(components):
+                self.TrueDesiredState[:,i] = self.spiralHelper(i*2*np.pi/components)
             self.desiredState= self.TrueDesiredState
-            self.times = [240]* self.desiredState.shape[1]
+            self.times = [120]* self.desiredState.shape[1]
+    def spiralHelper(self, t):
+        xyz = np.zeros((12))
+        scale = 0.02
+        rotationScale = 2
+        
+        velocityScale = 0.002        
+        
+        xyz[0] = scale*t*np.cos(t*rotationScale)
+        xyz[1] = scale*t*np.sin(t*rotationScale)
+        xyz[2] = scale*(t - np.pi)
+        
+        xyz[6] = velocityScale*scale*(np.cos(t*rotationScale) - velocityScale*rotationScale*t*np.sin(rotationScale*t))
+        xyz[7] = velocityScale*scale*(np.sin(t*rotationScale) + velocityScale*rotationScale*t*np.cos(rotationScale*t))
+        xyz[8] = velocityScale*scale
+        
+        return xyz
 
+        
     def problem_specific_modification(self,state):
         pass
