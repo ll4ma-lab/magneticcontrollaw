@@ -129,7 +129,7 @@ class cylinderSolver():
 #                print(magChoice,[bestCost[j][0,0] for j in range(len(bestCost))])
         #print('wrench solve ',time.time()-s)
         mag = magChoice[0,0]
-        magNum = mag/self.allowedModels
+        magNum = int(mag/self.allowedModels)
         modelNumber = mag%self.allowedModels 
         theta = bestThetas[magNum]
         power = ps[mag]

@@ -21,8 +21,8 @@ class exponentialSimulator:
         return newSim
     def matrixExponential(self,timestep):
         stateDims = len(self.state)
-        halfStateDims = stateDims/2
-        quarterDims = halfStateDims/2
+        halfStateDims = int(stateDims/2)
+        quarterDims = int(halfStateDims/2)
         Ac = np.zeros((stateDims,stateDims))
         Ac[:halfStateDims,halfStateDims:] = np.eye(halfStateDims) 
         #Ac[halfStateDims:,:halfStateDims] = np.eye(halfStateDims) 

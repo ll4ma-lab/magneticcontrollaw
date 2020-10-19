@@ -81,7 +81,7 @@ def plot_cube(cube_definition,colorinfo,ax):
     # Plot the points themselves to force the scaling of the axes
     ax.scatter(points[:,0], points[:,1], points[:,2], s=0)
 
-    ax.set_aspect('equal')
+    #ax.set_aspect('equal')
 def drawArrows(vectors,errors,threshold,ax,torque = False):
     ifSuccess = np.array(errors) < threshold
     sucess = np.sum(ifSuccess)
@@ -110,7 +110,7 @@ def visualize2DPath(environment,states,name='path'):
     ax.set_xlim(*environment.visualizationBoundaryX)
     ax.set_ylim(*environment.visualizationBoundaryY)
     ax.set_zlim(*environment.visualizationBoundaryZ)
-    ax.set_aspect('equal')
+    #ax.set_aspect('equal')
 
     drawCubes(allMagnets,[],ax,environment.radius)
     plt.plot(states[0,:],states[1,:],states[2,:],linewidth=4,color='g')
@@ -141,7 +141,7 @@ def animate2DPath(environment,states,name='path',save=False):
     ax.set_xlim(*environment.visualizationBoundaryX)
     ax.set_ylim(*environment.visualizationBoundaryY)
     ax.set_zlim(*environment.visualizationBoundaryZ)
-    ax.set_aspect('equal')
+    #ax.set_aspect('equal')
 
     drawCubes(environment.magnets,[],ax,environment.radius)
     addRect((0,0,environment.lims[2][0]/2),w=environment.lims[0][1],l=environment.lims[1][1],
@@ -218,7 +218,7 @@ def plotStuff(dataDict,name):
     fig,axs = plt.subplots(len(keys))
     fig.suptitle(name)
     for index in range(len(keys)):
-        key = keys[index]
+        key = list(keys)[index]
         axs[index].set_title(key)
 
         data = dataDict[key]

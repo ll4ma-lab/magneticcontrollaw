@@ -17,8 +17,8 @@ class PDController:
     def __init__(self,state,linearKP,rotationalKP,linearKD,rotationalKD,linearFFD=0.0,rotationalFFD=0.0):
         self.lastError = None
         dims = state.shape[0]
-        halfDims = dims/2
-        quarterDims = halfDims/2
+        halfDims = int(dims/2)
+        quarterDims = int(halfDims/2)
         self.Pgains = np.zeros((halfDims,halfDims))
         self.Dgains = np.zeros((halfDims,halfDims))
         self.FFDgains = np.zeros((halfDims,halfDims))
