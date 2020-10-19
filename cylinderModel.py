@@ -16,6 +16,7 @@ class cylinderSolver():
         self.magnets = magnets
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,use_per_session_threads=True))
+        self.time = 0
     def buildQ(self,stateCostString,objectProperties,tolerances,loops=1):
         
         activated = [0]*(loops * 6)
@@ -136,6 +137,7 @@ class cylinderSolver():
         #print('')
         #model.forwardPass(state,control)
         #print(control)
+        self.time +=  (time.time() - s)
         return control
 
         
@@ -240,6 +242,7 @@ class cylinderModel(object):
             #control[1] = modelNumber
             #control[2] = power
             #control[3] = theta
+        s = time.time()
         position = pose[0:3]
         chosenMagnetPose = (np.array(self.magnets) - np.transpose(position)).tolist()[control[0]]
         omniFrame = self.getOmniFrame(chosenMagnetPose)
@@ -256,6 +259,7 @@ class cylinderModel(object):
             FT = np.concatenate([np.dot(omniFrame,cart[:3,1]),np.dot(omniFrame,cart[3:,1])])
         if(control[1]==2):
             FT = np.concatenate([np.dot(omniFrame,cart[:3,2]),np.dot(omniFrame,cart[3:,2])])
+        self.time +=  (time.time() - s)
         return np.reshape(FT,(6,1))
     def getOmniFrame(self,pos,use_tf=False):
         Z = np.array([0, 0, 1])

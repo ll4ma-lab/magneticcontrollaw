@@ -5,9 +5,6 @@ Created on Mon Nov 18 15:27:35 2019
 @author: tabor
 """
 import numpy as np
-#from matlabModel import matlabModel
-from pythonModel import pythonModel
-#from matlabModel import matlabModel
 from cylinderModel import cylinderSolver,cylinderModel
 from PDController import PDController
 from exponentialSimulator import exponentialSimulator, sphereProperties
@@ -18,14 +15,13 @@ import visualization
 import DummyProfile
 import SplineProfile
 import TrapProfile
-magnetLimit = 1
 cheat = False
 velNoise = False
 controlNoise = False
 
 
 #env = SpaceProblem(1)
-env = PlanarProblem(3)
+env = PlanarProblem()
 #env.times = (np.array(env.times) * 1.5).tolist()
 if velNoise:
     env.startState[6:8,0] = (np.random.random((2)) - 0.5) * 0.005
@@ -36,18 +32,12 @@ dt = 1
 numSteps = int(simTime/dt)
 diameter = 0.04
 objectProperties = sphereProperties(8940,diameter)
-#model = matlabModel(env.magnets,False)
-new_model = True
-if(new_model):
-    model = cylinderModel(env.magnets,diameter)
-    solver = cylinderSolver(env.magnets)
-    solver.setup(model,env.trajectoryDimensions,objectProperties,env.tolerances)
 
-else:
-    import gurobi
+model = cylinderModel(env.magnets,diameter)
+solver = cylinderSolver(env.magnets)
+solver.setup(model,env.trajectoryDimensions,objectProperties,env.tolerances)
 
-    model = pythonModel(env.magnets,False)
-    solver = gurobi.gurobiSolver(len(env.magnets)*3,magnetLimit)
+
 
 controller = PDController(env.startState,0.005,0.00004,0.005,0.00004,0.0,0.000)
 #controller = PDController(env.startState,0.003,0.00001,0.3,0.001)
@@ -77,9 +67,7 @@ for i in range(numSteps):
     dComponents.append(d)
     desiredStates.append(desiredState)
     env.problem_specific_modification(state)
-    #print(i)
-    #if(i ==200):
-    #    break
+
     if(cheat):
         control = [0,0,0,0]
         maxForce = 0.00001
@@ -101,7 +89,8 @@ for i in range(numSteps):
     
 runTime = time.time() - start
 print(runTime)
-print('Time spent doing model ' + str(model.time))
+print('Time spent doing forwad model ' + str(model.time))
+print('Time spent doing solving model ' + str(solver.time))
 print('Time spent doing velocity ' + str(velocityProfile.time))
 
 modified_controls = np.zeros((i,len(env.magnets)))
@@ -146,9 +135,7 @@ plt.plot(npdesiredStates[:,0,0],npdesiredStates[:,1,0])
 plt.show()
 visualization.visualize2DPath(env,states,'Controller Path')
 
-#plt.plot(npmodelF[:,:2,0])
-#plt.plot(npdesiredF[:,:2,0])
-#anim = visualization.animate2DPath(env,states,'Controller Path')
+anim = visualization.animate2DPath(env,states,'Controller Path')
 
 print('Time spent doing visualization ' + str(time.time() - start - runTime))
 

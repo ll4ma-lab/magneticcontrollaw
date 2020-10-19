@@ -134,7 +134,7 @@ def getRotationAxis(euler,length):
         line[:,1] = np.dot(matrix,vector)[:,0]
         axis.append(line)
     return axis
-def animate2DPath(environment,states,name='path'):
+def animate2DPath(environment,states,name='path',save=False):
     # Attaching 3D axis to the figure
     fig = plt.figure()
     ax = p3.Axes3D(fig)
@@ -175,7 +175,8 @@ def animate2DPath(environment,states,name='path'):
     ax.view_init(elev=environment.el, azim=environment.az)
     plt.show()
     print('newer dpi')
-    line_ani.save('animation.mp4', writer='imagemagick', fps=30,dpi=200)
+    if(save):
+        line_ani.save('animation.mp4', writer='imagemagick', fps=30,dpi=200)
     return line_ani
 def animateOptimization2DPath(environment,states,name='path'):
 
