@@ -107,9 +107,9 @@ def visualize2DPath(environment,states,name='path'):
     fig = plt.figure()
     fig.suptitle(name)
     ax = fig.add_subplot(111, projection='3d')
-    ax.set_xlim(*environment.visualizationBoundaryX)
+    ax.set_xlim(*environment.visualizationBoundaryY)
     ax.set_ylim(*environment.visualizationBoundaryY)
-    ax.set_zlim(*environment.visualizationBoundaryZ)
+    ax.set_zlim(*environment.visualizationBoundaryY)
     #ax.set_aspect('equal')
 
     drawCubes(allMagnets,[],ax,environment.radius)
@@ -138,9 +138,9 @@ def animate2DPath(environment,states,name='path',save=False):
     # Attaching 3D axis to the figure
     fig = plt.figure()
     ax = p3.Axes3D(fig)
-    ax.set_xlim(*environment.visualizationBoundaryX)
+    ax.set_xlim(*environment.visualizationBoundaryY)
     ax.set_ylim(*environment.visualizationBoundaryY)
-    ax.set_zlim(*environment.visualizationBoundaryZ)
+    ax.set_zlim(*environment.visualizationBoundaryY)
     #ax.set_aspect('equal')
 
     drawCubes(environment.magnets,[],ax,environment.radius)
