@@ -285,7 +285,7 @@ class SpaceProblem:
         
             self.desiredState= self.TrueDesiredState
             self.times = [180]* self.desiredState.shape[1]
-        if(challengeID==2): #floating square
+        if(challengeID==2): #spiral WIP
             i = 0
             self.startState[:,0] = self.spiralHelper(0) 
             components = 40
@@ -294,6 +294,16 @@ class SpaceProblem:
                 self.TrueDesiredState[:,i] = self.spiralHelper(i*2*np.pi/components)
             self.desiredState= self.TrueDesiredState
             self.times = [120]* self.desiredState.shape[1]
+        if(challengeID==3):
+            self.startState[:3,0] = np.linspace(0.05,0.15,3) 
+            self.startState[3:6,0] = np.linspace(0.5,1.5,3)
+ 
+            self.TrueDesiredState = np.zeros((12,1))
+
+            self.desiredState= self.TrueDesiredState
+            self.times = [600]
+
+
     def spiralHelper(self, t):
         xyz = np.zeros((12))
         scale = 0.02

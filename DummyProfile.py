@@ -13,6 +13,6 @@ class DummyProfile:
         self.totalTimeSteps = totalTimeSteps
         self.time = 0
     def getDesiredState(self,step,state):
-        currIndex = step/(self.totalTimeSteps/5)
+        currIndex = step/(self.totalTimeSteps)
         #print(currIndex)
         return np.reshape(self.points[:,currIndex],(-1,1))
