@@ -8,12 +8,14 @@ Created on Fri Oct  9 17:42:34 2020
 import dataloader
 import sys
 sys.path.append("..") # Adds higher directory to python modules path.
+sys.path.append("../scripts") # Adds higher directory to python modules path.
 import visualization
 import numpy as np
 import matplotlib.pyplot as plt
 
 from os import listdir
 from os.path import isfile, join
+from matplotlib.patches import Ellipse
 
 folder = 'orientation'
 #folder = 'no_orientation'
@@ -29,7 +31,8 @@ allStates = []
 
 
 fig = plt.figure()
-fig.suptitle('Paths ' + folder)
+name = 'Paths ' + folder
+#fig.suptitle(name)
 
 for fileName in onlyfiles:
     if('bag' not in fileName):
@@ -39,8 +42,11 @@ for fileName in onlyfiles:
 
         npdesiredStates = np.array(desiredStates)
         npStates = np.array(states)
+        #npStates[:,1,:] *=-1
+        #npdesiredStates[:,1,:] *=-1
+
         allStates.append(npStates)
-        plt.plot(npStates[:,0,0],npStates[:,1,0])
+        plt.plot(npStates[:,0,0],npStates[:,1,0],'k',alpha=0.5)
 
         error = npdesiredStates - npStates
         sqError =  np.power(error,2)
@@ -66,28 +72,31 @@ print('max position error ' + str(np.max(PositionErrors)))
 print('average velocity error ' + str(np.average(VelocityErrors)) +' std '+ str(np.std(VelocityErrors)))
 print('average orientation error ' + str(np.average(orientationErrors)) +' std '+ str(np.std(orientationErrors)))
 print('average orientation velocity error ' + str(np.average(rotationalVelocityErrors)) +' std '+ str(np.std(rotationalVelocityErrors)))
-plt.plot(npdesiredStates[:,0,0],npdesiredStates[:,1,0])
 
 averagedStates = np.average(allStates,0)[:,:,0]
 stdStates = np.std(allStates,0)
 print('average(across time) of std(across trials) x ' +str(np.average(stdStates[:,0,0]))+ ' y ' +str(np.average(stdStates[:,1,0])))
 
+plt.plot(npdesiredStates[env.times[0]:,0,0],npdesiredStates[env.times[0]:,1,0],'g',linewidth=3)
 
 stateAbove = averagedStates + 2 * stdStates[:,:,0]
 stateBelow = averagedStates - 2 * stdStates[:,:,0]
-plt.plot(averagedStates[:,0],averagedStates[:,1],'k--', linewidth=2)
+#plt.plot(averagedStates[:,0],averagedStates[:,1],'y--', linewidth=2)
 #plt.plot(stateAbove[:,0],stateAbove[:,1],'k--', linewidth=2)
 #plt.plot(stateBelow[:,0],stateBelow[:,1],'k--', linewidth=2)
 
-splitNumb = 1
-aboveSplits = np.split(stateAbove,splitNumb)
-belowSplits = np.split(stateBelow,splitNumb)
-averageSplits = np.split(averagedStates,splitNumb)
 
-for i in range(splitNumb):
-    
-    total = np.concatenate([aboveSplits[i],np.flip(belowSplits[i],0)])
-    plt.fill(total[:,0],total[:,1],'k',alpha=0.3)
-    
 
+multiplier = 2.0
+for i in range(numSteps):
+    ells = Ellipse(xy=averagedStates[i,:2],
+                    width=stdStates[i,0,0]*multiplier*2, height=stdStates[i,1,0]*multiplier*2,#2x to get to radius from diameter 
+                    angle=0)
+    fig.axes[0].add_artist(ells)
+    ells.set_alpha(1)
+    ells.set_facecolor('y')
+    ells.set_clip_box(fig.axes[0].bbox)
+fig.set_size_inches(8,8)
+fig.axes[0].set_aspect('equal')
 plt.show()
+fig.savefig(name + '.pdf')

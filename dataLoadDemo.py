@@ -8,7 +8,7 @@ Created on Sun Jul  5 16:02:00 2020
 import dataloader
 import sys
 sys.path.append("..") # Adds higher directory to python modules path.
-dataloader.load("data/sim_2020-08-20 15:48:42.534580",globals())
+dataloader.load("/hdd/magnet_bags/real_2020-10-06 16_12_43.575527",globals())
 import visualization
 import matplotlib.pyplot as plt
 
@@ -55,5 +55,8 @@ plt.plot(npStates[:,0,0],npStates[:,1,0])
 plt.plot(npdesiredStates[:,0,0],npdesiredStates[:,1,0])
 plt.show()
 visualization.visualize2DPath(env,np.transpose(npStates[:,:,0]),'Controller Path')
-    
+
+
+states = np.transpose(npStates[:,:,0])
+numSteps -=1
 #anim = visualization.animate2DPath(env,states,'Controller Path')

@@ -17,6 +17,10 @@ class cylinderSolver():
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,use_per_session_threads=True))
         self.time = 0
+        
+        self.epochs = 75
+        self.lr = 0.5e-1
+        
     def buildQ(self,stateCostString,objectProperties,tolerances,loops=1):
         
         activated = [0]*(loops * 6)
@@ -96,7 +100,7 @@ class cylinderSolver():
                 ft.append(FT)
                 powers.append(clippedPower)
                 costs.append(cost)
-                train_ops.append(tf.train.AdamOptimizer(0.5e-1).minimize(cost))
+                train_ops.append(tf.train.AdamOptimizer(self.lr).minimize(cost))
                 tf_vars.append(powerPercent)
 
         print(3,time.time()-s)
@@ -123,7 +127,7 @@ class cylinderSolver():
         _,bestCost,magChoice,bestThetas, ps, fts,rs,carts = self.sess.run(self.ops,feed_dict=myDict)
 
         #print('start Thetas',bestThetas)
-        for i in range(50):
+        for i in range(self.epochs):
             _,bestCost,magChoice,bestThetas, ps, fts,rs,carts = self.sess.run(self.ops,feed_dict=myDict)
 #            if(np.min(bestCost)>0.01):            
 #                print(magChoice,[bestCost[j][0,0] for j in range(len(bestCost))])
