@@ -67,7 +67,7 @@ class cylinderSolver():
             omniFrame = model.getOmniFrame(chosenMagnetPose,True)
             _,cart = model.modelCall(chosenMagnetPose,1,use_tf = True)
             omniFrame_t = tf.convert_to_tensor(omniFrame)
-            cart = tf.stack([tf.stack(cart[i].tolist()) for i in range(6)])
+            #cart = tf.stack([tf.stack(cart[i].tolist()) for i in range(6)])
             for j in range(self.allowedModels):
 
                 powerPercent = tf.Variable(0,dtype=tf.float64)
@@ -205,19 +205,36 @@ class cylinderModel(object):
         numerator = np.power(P1,model_C[:,2:3])
         
         P2 = dist/radii;
-        denominator = np.power(P2,model_C[:,3:4] )
+        if(use_tf):
+            denominator = tf.math.pow(P2,model_C[:,3:4] )
+
+        else:
+            denominator = np.power(P2,model_C[:,3:4] )
+
 
 
         P0_temp = model_C[:, 0:1]*model_C[:, 1:2]*numerator/denominator
-        
-        P0 = np.stack([P0_temp[:6] , P0_temp[6:12] , P0_temp[12:18] ],1)[:,:,0]
-
-        FT_Cycle = np.copy(P0)
+        if(use_tf):
+            P0 = tf.stack([P0_temp[:6] , P0_temp[6:12] , P0_temp[12:18] ],1)[:,:,0]
+            FT_Cycle = tf.identity(P0)
+        else:
+            P0 = np.stack([P0_temp[:6] , P0_temp[6:12] , P0_temp[12:18] ],1)[:,:,0]
+            FT_Cycle = np.copy(P0)
+            
         c=  mu*np.power(dipole_strength,2)*np.power(radii,-4)
-        FT_Cycle[:3,:] *= c
-        FT_Cycle[3:,:] *= mu*np.power(dipole_strength,2)*np.power(radii,-3)
         
-        FT_Cartesian = np.copy(FT_Cycle)
+        forces = FT_Cycle[:3,:] * c
+        torques = FT_Cycle[3:,:] * mu*np.power(dipole_strength,2)*np.power(radii,-3)
+        
+        if(use_tf):
+            FT_Cycle = tf.concat([forces,torques],0)
+            FT_Cartesian = tf.identity(FT_Cycle)
+
+        else:
+            FT_Cycle = np.concatenate([forces,torques],0)
+            FT_Cartesian = np.copy(FT_Cycle)
+
+        
         #FT_Cartesian[2,0] *= -1
         return FT_Cycle,FT_Cartesian
         #model_C[:, 1] .*  .*P2.^( model_C[:,4]) 
