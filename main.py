@@ -20,8 +20,8 @@ velNoise = False
 controlNoise = False
 
 
-#env = SpaceProblem(1)
-env = PlanarProblem()
+env = SpaceProblem(3)
+#env = PlanarProblem()
 #env.times = (np.array(env.times) * 1.5).tolist()
 if velNoise:
     env.startState[6:8,0] = (np.random.random((2)) - 0.5) * 0.005
@@ -56,7 +56,7 @@ simulator.setState(state)
 start = time.time()
 modeledForces = []
 desiredForces = []
-for i in range(numSteps):
+for i in range(0):
     controlState = np.copy(state)
     if velNoise:
         controlState[6:12,0] *= (np.random.random((2))*2 + 0.5)
@@ -75,7 +75,8 @@ for i in range(numSteps):
         desired_wrench[np.where(desired_wrench < -maxForce)] = -maxForce
         trueWrench = desired_wrench
     else:
-       control =  solver.solveWrench(model,state,desired_wrench,env.trajectoryDimensions)
+       #control =  solver.solveWrench(model,state,desired_wrench,env.trajectoryDimensions)
+       control = [0,0,20,0]
        trueWrench = model.forwardPass(state,control)
     modeledForces.append(trueWrench)
     desiredForces.append(desired_wrench)
@@ -133,12 +134,15 @@ fig.suptitle('Path (m)')
 plt.plot(states[0,:],states[1,:],c='orange')
 plt.plot(npdesiredStates[:,0,0],npdesiredStates[:,1,0])
 plt.show()
+env.radius*=0.5
 visualization.visualize2DPath(env,states,'Controller Path')
 
-anim = visualization.animate2DPath(env,states,'Controller Path')
+anim = visualization.animate2DPath(env,states,'',save=True)
 
 print('Time spent doing visualization ' + str(time.time() - start - runTime))
 
 import dataloader
 from datetime import datetime
-dataloader.save("data/sim_" +str(datetime.now()),globals(),dir())
+dataloader.save("data/sim_" +str(datetime.now()).replace(":","."),globals(),dir())
+
+

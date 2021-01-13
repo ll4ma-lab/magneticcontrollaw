@@ -224,8 +224,8 @@ class SpaceProblem:
         self.visualizationBoundaryX = (-0.3,0.3)
         self.visualizationBoundaryY = (-0.3,0.3)
         self.visualizationBoundaryZ = (-0.3,0.3)
-        self.az = 14
-        self.el = -150
+        self.az = -43
+        self.el = -160
         self.lims = [(-width/2,width/2)
                ,(-length/2,length/2)
                ,(-height/2,height/2)]
@@ -235,7 +235,7 @@ class SpaceProblem:
         rotationalTolerance =  np.pi * degTolerance/180.0
         
         self.tolerances = (linearTolerance,rotationalTolerance)
-        self.radius = 0.01
+        self.radius = 0.065
 
         num_pts = 6
         from numpy import pi, cos, sin, arccos, arange
@@ -248,12 +248,12 @@ class SpaceProblem:
         x, y, z = cos(theta) * sin(phi), sin(theta) * sin(phi), cos(phi);
         magnets = np.transpose(np.array((x,y,z))) * 0.15
         
-#        magnets = np.array([(0.15, 0.00, 0)
-#                    ,(-0.15, 0.0,0)
-#                    ,(0.00, 0.150, 0.0)
-#                    ,(0.00, -0.150, 0.0)
-#                    ,(0.000, 0.000, 0.15)
-#                    ,(0.00, 0.00, -0.15)])
+        magnets = np.array([(0.15, 0.00, 0)
+                    ,(-0.15, 0.0,0)
+                    ,(0.00, 0.150, 0.0)
+                    ,(0.00, -0.150, 0.0)
+                   ,(0.000, 0.000, 0.15)
+                    ,(0.00, 0.00, -0.15)])
         self.magnets = magnets.tolist()
         self.startState = np.zeros((12,1))
         

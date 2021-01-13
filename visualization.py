@@ -10,6 +10,14 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import mpl_toolkits.mplot3d.axes3d as p3
 from matplotlib import animation
+
+
+
+
+Lanc1 = (0,0.4470,0.7410)
+Lanc2 = (0.8500,0.3250,0.0980)
+Lanc3 = (0.9290,0.6940,0.1250)
+
 def addCube(center,radius,op,ax):
     cube_definition = buildRectangularPrism(center,radius,radius,radius)
     if(center[2] == 0):
@@ -163,10 +171,13 @@ def animate2DPath(environment,states,name='path',save=False):
         return traj_plot,scatter,lines
     traj_plot = ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=4,color='g')[0] 
     
-    lines = [ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=2,color='r')[0] ,
-            ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=2,color='g')[0] ,
-            ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=2,color='b')[0] ]
-            
+    lines = [ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=2,color=Lanc1)[0] ,
+            ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=2,color=Lanc2)[0] ,
+            ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=2,color=Lanc3)[0] ]
+    
+    Fixedlines = [ax.plot((0,0.1), (0,0), (0,0),linewidth=2,color=Lanc1)[0] ,
+            ax.plot((0,0), (0,0.1), (0,0),linewidth=2,color=Lanc2)[0] ,
+            ax.plot((0,0), (0,0), (0,0.1),linewidth=2,color=Lanc3)[0] ]
     scatter = ax.scatter(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=10,color='orange') 
     # Creating the Animation object
     line_ani = animation.FuncAnimation(fig, update_lines, states.shape[1], fargs=(states, traj_plot, scatter,lines),
@@ -176,7 +187,7 @@ def animate2DPath(environment,states,name='path',save=False):
     plt.show()
     print('newer dpi')
     if(save):
-        line_ani.save('animation.mp4', writer='imagemagick', fps=30,dpi=200)
+        line_ani.save('animation.gif', writer='imagemagick', fps=30,dpi=200)
     return line_ani
 def animateOptimization2DPath(environment,states,name='path'):
 
