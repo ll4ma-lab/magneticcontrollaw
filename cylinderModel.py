@@ -18,7 +18,7 @@ class cylinderSolver():
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,use_per_session_threads=True))
         self.time = 0
         
-        self.epochs = 75
+        self.epochs = 100
         self.lr = 0.5e-1
         
     def buildQ(self,stateCostString,objectProperties,tolerances,loops=1):
