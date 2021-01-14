@@ -165,55 +165,60 @@ class cylinderModel(object):
         model_C = np.array([
             # --- Rho Configuration 
             # F Rho
-            [1, 0.0718, 1.56,7.22],      
+            [633, 3.11, -0.102,-10.1,7,1],      
           # Xaxis: Fx
             
-            [0,0,0, 0],
-            [-1, 0.0858, 0.935,7.16],                # Xaxis: Fz
+            [0,0,0,0,0,0],
+            [6780, 4.00, -0.107,-16.7,7,-1],                # Xaxis: Fz
  
                        # Xaxis: Fy = 0
             # F Phi 
-            [0,0,0, 0],                           # Xaxis: Tx = 0
+            [0,0,0,0,0,0],                           # Xaxis: Tx = 0
             # T X
-            [-1, 0.0408, 0.943, 6.17],                # Xaxis: Ty
+            [7930, 4.12, -0.105, -17.7,6,-1],                # Xaxis: Ty
 
-            [0,0,0, 0],                           # Xaxis: Tz
+            [0,0,0,0,0,0],                           # Xaxis: Tz
 
             # --- +Z Configuration
             # F Z
-            [1, 0.0146, 1.50,  6.82],              # Yaxis: Fy
-            [0,0,0, 0],                           #  Yaxis: Fz
-            [0,0,0, 0],                           # Yaxis: Fx = 0
+            [356, 2.89, -0.104,  -8.81,7,1],              # Yaxis: Fy
+            [0,0,0,0,0,0],                           #  Yaxis: Fz
+            [0,0,0,0,0,0],                           # Yaxis: Fx = 0
         
             # T Z 
-            [1, 0.000917, 0.956,  5.64],               # Yaxis: Ty
-            [0,0,0,0,],
-            [0,0,0, 0],                           # Yaxis: Tx = 0
+            [4270, 3.25, -0.107, -13.5,6,1],               # Yaxis: Ty
+            [0,0,0,0,0,0],
+            [0,0,0,0,0,0],                           # Yaxis: Tx = 0
         
              # --- -Z Configuration
             # F Z
-            [1, 0.0146, 1.50,  6.82],              # Yaxis: Fy
-            [0,0,0, 0],                           # Yaxis: Fz
-            [0,0,0,0,],                           # Yaxis: Fx = 0
+            [356, 2.89, -0.104,  -8.81,7,1],              # Yaxis: Fy
+            [0,0,0,0,0,0],                           # Yaxis: Fz
+            [0,0,0,0,0,0],                           # Yaxis: Fx = 0
         
             # T Z 
-            [-1, 0.000917, 0.956,  5.64],               # Yaxis: Ty
-            [0,0,0,0],
-            [0,0,0, 0]])                           # Yaxis: Tx = 0
+            [4270, 3.25, -0.107, -13.5,6,-1],               # Yaxis: Ty
+            [0,0,0,0,0,0],
+            [0,0,0,0,0,0]])                           # Yaxis: Tx = 0
         P1 = sig*mu*freq*radii*radii
+        
+        
+        numeratorBase = P1* model_C[:,0:1] # p1*c0
+        numeratorPower = model_C[:,1:2] * np.power(P1,model_C[:,2:3]) #c1 * p1^c2
 
-        numerator = np.power(P1,model_C[:,2:3])
+        tenPowerBit = np.power(10,model_C[:,3:4]) # 10^c3
+        numerator = np.power(numeratorBase,numeratorPower) * tenPowerBit  #base^power * tenPowerBit
         
         P2 = dist/radii;
         if(use_tf):
-            denominator = tf.math.pow(P2,model_C[:,3:4] )
+            denominator = tf.math.pow(P2,model_C[:,4:5] )
 
         else:
-            denominator = np.power(P2,model_C[:,3:4] )
+            denominator = np.power(P2,model_C[:,4:5] )
 
+        length = np.shape(model_C)[1]
 
-
-        P0_temp = model_C[:, 0:1]*model_C[:, 1:2]*numerator/denominator
+        P0_temp = model_C[:,length-1:length] * numerator/denominator
         if(use_tf):
             P0 = tf.stack([P0_temp[:6] , P0_temp[6:12] , P0_temp[12:18] ],1)[:,:,0]
             FT_Cycle = tf.identity(P0)
