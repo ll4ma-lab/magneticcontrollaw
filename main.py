@@ -56,7 +56,7 @@ simulator.setState(state)
 start = time.time()
 modeledForces = []
 desiredForces = []
-for i in range(0):
+for i in range(numSteps):
     controlState = np.copy(state)
     if velNoise:
         controlState[6:12,0] *= (np.random.random((2))*2 + 0.5)
@@ -75,8 +75,7 @@ for i in range(0):
         desired_wrench[np.where(desired_wrench < -maxForce)] = -maxForce
         trueWrench = desired_wrench
     else:
-       #control =  solver.solveWrench(model,state,desired_wrench,env.trajectoryDimensions)
-       control = [0,0,20,0]
+       control =  solver.solveWrench(model,state,desired_wrench,env.trajectoryDimensions)
        trueWrench = model.forwardPass(state,control)
     modeledForces.append(trueWrench)
     desiredForces.append(desired_wrench)
