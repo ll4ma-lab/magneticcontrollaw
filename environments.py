@@ -21,10 +21,10 @@ class PlanarProblem:
         self.lims = [(-width/2,width/2)
                ,(-length/2,length/2)
                ,(-height/2,height/2)]
-        magnets = np.array([(0.10, 0.100, 0.165)
-                            ,(-0.100, 0.100,0.165)
-                            ,(-0.100, -0.100, 0.165)
-                            ,(0.100, -0.100, 0.165)])
+        magnets = np.array([(0.10, 0.100, 0.15) #marker 0.365m away
+                            ,(-0.100, 0.100,0.15)
+                            ,(-0.100, -0.100, 0.15)
+                            ,(0.100, -0.100, 0.15)])
         self.magnets = magnets.tolist()
         
         self.radius = 0.065

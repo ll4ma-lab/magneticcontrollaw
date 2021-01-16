@@ -21,7 +21,7 @@ controlNoise = False
 
 
 env = SpaceProblem(3)
-#env = PlanarProblem()
+#env = PlanarProblem(3)
 #env.times = (np.array(env.times) * 1.5).tolist()
 if velNoise:
     env.startState[6:8,0] = (np.random.random((2)) - 0.5) * 0.005
