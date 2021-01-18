@@ -162,44 +162,65 @@ class cylinderModel(object):
         sig = 5.8e7;          # conductivity of copper 
         mu = 4*np.pi*1e-7;        # Magnetic Permittivity of Free Space
         # --- Model Coefficients --- # 
-        model_C = np.array([
+        experimental_C = np.array([
             # --- Rho Configuration 
             # F Rho
-            [633, 3.11, -0.102,-10.1,7,0.0775,0.147,1],      
-          # Xaxis: Fx
-            
-            [0,0,0,0,0,0,0,0],
-            [6780, 4.00, -0.107,-16.7,7,0.117,0.191,-1],                # Xaxis: Fz
- 
-                       # Xaxis: Fy = 0
+            [224,3.08,-0.0996,-8.87,7,1],      # Xaxis: Fx
+            [0,0,0,0,0,0],
+            [6040, 3.27, -0.0948,-13.8,7,-1],                # Xaxis: Fz
             # F Phi 
-            [0,0,0,0,0,0,0,0],                           # Xaxis: Tx = 0
-            # T X
-            [7930, 4.12, -0.105, -17.7,6,0.116,0.225,-1],                # Xaxis: Ty
-
-            [0,0,0,0,0,0,0,0],                           # Xaxis: Tz
-
+            [0,0,0,0,0,0],                           # Xaxis: Tx = 0
+            [7540, 3.45, -0.0936, -15.1,6,-1],                # Xaxis: Ty
+            [0,0,0,0,0,0],                           # Xaxis: Tz
             # --- +Z Configuration
             # F Z
-            [356, 2.89, -0.104,  -8.81,7,0.0200,0.432,1],              # Yaxis: Fy
-            [0,0,0,0,0,0,0,0],                           #  Yaxis: Fz
-            [0,0,0,0,0,0,0,0],                           # Yaxis: Fx = 0
-        
+            [408, 3.25, -0.100,  -10.6,7,1],              # Yaxis: Fy
+            [0,0,0,0,0,0],                           #  Yaxis: Fz
+            [0,0,0,0,0,0],                           # Yaxis: Fx = 0
             # T Z 
-            [4270, 3.25, -0.107, -13.5,6,0.0367,0.395,1],               # Yaxis: Ty
-            [0,0,0,0,0,0,0,0],
-            [0,0,0,0,0,0,0,0],                           # Yaxis: Tx = 0
-        
+            [6600, 3.11, -0.0970, -13.9,6,1],               # Yaxis: Ty
+            [0,0,0,0,0,0],
+            [0,0,0,0,0,0],                           # Yaxis: Tx = 0
              # --- -Z Configuration
             # F Z
-            [356, 2.89, -0.104,  -8.81,7,0.0200,0.432,1],              # Yaxis: Fy
-            [0,0,0,0,0,0,0,0],                           # Yaxis: Fz
-            [0,0,0,0,0,0,0,0],                           # Yaxis: Fx = 0
-        
+            [408, 3.25, -0.100,  -10.6,7,1],              # Yaxis: Fy
+            [0,0,0,0,0,0],                           # Yaxis: Fz
+            [0,0,0,0,0,0],                           # Yaxis: Fx = 0
             # T Z 
-            [4270, 3.25, -0.107, -13.5,6,0.0367,0.395,-1],               # Yaxis: Ty
-            [0,0,0,0,0,0,0,0],
-            [0,0,0,0,0,0,0,0]])                           # Yaxis: Tx = 0
+            [6600, 3.11, -0.0970, -13.9,6,-1],               # Yaxis: Ty
+            [0,0,0,0,0,0],
+            [0,0,0,0,0,0]])                  # Yaxis: Tx = 0
+            
+            
+        simulated_C = np.array([
+            # --- Rho Configuration 
+            # F Rho
+            [207,2.51,-0.103,-7.13,7,1],      # Xaxis: Fx
+            [0,0,0,0,0,0],
+            [6040, 3.45, -0.102,-14.3,7,-1],                # Xaxis: Fz
+            # F Phi 
+            [0,0,0,0,0,0],                           # Xaxis: Tx = 0
+            [7540, 3.58, -0.0993, -15.5,6,-1],                # Xaxis: Ty
+            [0,0,0,0,0,0],                           # Xaxis: Tz
+            # --- +Z Configuration
+            # F Z
+            [395, 2.92, -0.102,  -9.05,7,1],              # Yaxis: Fy
+            [0,0,0,0,0,0],                           #  Yaxis: Fz
+            [0,0,0,0,0,0],                           # Yaxis: Fx = 0
+            # T Z 
+            [6680, 3.00, -0.0989, -13.2,6,1],               # Yaxis: Ty
+            [0,0,0,0,0,0],
+            [0,0,0,0,0,0],                           # Yaxis: Tx = 0
+             # --- -Z Configuration
+            # F Z
+            [395, 2.92, -0.102,  -9.05,7,1],              # Yaxis: Fy
+            [0,0,0,0,0,0],                           # Yaxis: Fz
+            [0,0,0,0,0,0],                           # Yaxis: Fx = 0
+            # T Z 
+            [6680, 3.00, -0.0989, -13.2,6,-1],               # Yaxis: Ty
+            [0,0,0,0,0,0],
+            [0,0,0,0,0,0]])                  # Yaxis: Tx = 0
+        model_C = (experimental_C + simulated_C)/2
         P1 = sig*mu*freq*radii*radii
         
         
@@ -209,32 +230,32 @@ class cylinderModel(object):
         tenPowerBit = np.power(10,model_C[:,3:4]) # 10^c3
         numerator = np.power(numeratorBase,numeratorPower) * tenPowerBit  #base^power * tenPowerBit
         
-        nearCorrectionPowerNumerator = model_C[:,5:6] * np.power(P1,model_C[:,6:7] )
+        #nearCorrectionPowerNumerator = model_C[:,5:6] * np.power(P1,model_C[:,6:7] )
 
         
         P2 = dist/radii;
         if(use_tf):
             denominator = tf.math.pow(P2,model_C[:,4:5] )
-            temp_numerator = tf.log(P2)
-            temp_denominator = tf.log(tf.constant(10.0, dtype=tf.float64))
-            nearCorrectionPowerDenominator = temp_numerator/temp_denominator
+            #temp_numerator = tf.log(P2)
+            #temp_denominator = tf.log(tf.constant(10.0, dtype=tf.float64))
+            #nearCorrectionPowerDenominator = temp_numerator/temp_denominator
             #print(temp_numerator)
             #print(temp_denominator)
 
-            nearCorrection = tf.math.pow(tf.constant(10.0, dtype=tf.float64),nearCorrectionPowerNumerator/nearCorrectionPowerDenominator)
+            #nearCorrection = tf.math.pow(tf.constant(10.0, dtype=tf.float64),nearCorrectionPowerNumerator/nearCorrectionPowerDenominator)
 
         else:
             denominator = np.power(P2,model_C[:,4:5] )
-            temp_numerator = np.log(P2)
-            temp_denominator = np.log(10.0, dtype=np.float64)
-            nearCorrectionPowerDenominator = temp_numerator/temp_denominator
-            nearCorrection = np.power(10.0,nearCorrectionPowerNumerator/nearCorrectionPowerDenominator)
+            #temp_numerator = np.log(P2)
+            #temp_denominator = np.log(10.0, dtype=np.float64)
+            #nearCorrectionPowerDenominator = temp_numerator/temp_denominator
+            #nearCorrection = np.power(10.0,nearCorrectionPowerNumerator/nearCorrectionPowerDenominator)
 
         length = np.shape(model_C)[1]
 
-        nearCorrection = 1
+        #nearCorrection = 1
 
-        P0_temp = model_C[:,length-1:length] * (numerator/denominator) * nearCorrection
+        P0_temp = model_C[:,length-1:length] * (numerator/denominator) #* nearCorrection
         if(use_tf):
             P0 = tf.stack([P0_temp[:6] , P0_temp[6:12] , P0_temp[12:18] ],1)[:,:,0]
             FT_Cycle = tf.identity(P0)
