@@ -39,7 +39,7 @@ solver.setup(model,env.trajectoryDimensions,objectProperties,env.tolerances)
 
 
 
-controller = PDController(env.startState,0.005,0.00004,0.005,0.00004,0.0,0.000)
+controller = PDController(env.startState,0.005,0.00001,0.005,0.00001,0.0,0.000)
 #controller = PDController(env.startState,0.003,0.00001,0.3,0.001)
 simulator = exponentialSimulator(env.startState,dt,objectProperties) #density, diamter
 velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
