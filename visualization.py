@@ -128,28 +128,15 @@ def visualize2DPath(environment,states,name='path'):
     ax.view_init(elev=environment.el, azim=environment.az)
 
     plt.show()
-def getRotationAxis(euler,length):
-    from scipy.spatial.transform import Rotation as R
 
-    rotation = R.from_euler('xyz',euler)
-    matrix = rotation.as_dcm()
-    axis = []
-    for i in range(3):
-        vector = np.zeros((3,1))
-        line = np.zeros((3,2))
-
-        vector[i] = length
-        line[:,1] = np.dot(matrix,vector)[:,0]
-        axis.append(line)
-    return axis
-def animate2DPath(environment,states,name='path',save=False):
+def animate2DPath(environment,positions,transforms,name='path',save=False):
     # Attaching 3D axis to the figure
     fig = plt.figure()
     ax = p3.Axes3D(fig)
     ax.set_xlim(*environment.visualizationBoundaryY)
     ax.set_ylim(*environment.visualizationBoundaryY)
     ax.set_zlim(*environment.visualizationBoundaryY)
-    #ax.set_aspect('equal')
+    ax.set_aspect('equal')
 
     drawCubes(environment.magnets,[],ax,environment.radius)
     addRect((0,0,environment.lims[2][0]/2),w=environment.lims[0][1],l=environment.lims[1][1],
@@ -157,37 +144,38 @@ def animate2DPath(environment,states,name='path',save=False):
     ax.set_title(name)
 
 
-    def update_lines(num, states, traj_plot, scatter,lines):
+    def update_lines(num, positions, transforms, traj_plot, scatter,lines):
         #num = num + states.shape[1]/2
-        traj_plot.set_data(states[0:2, :num])
-        traj_plot.set_3d_properties(states[2, :num])
-        scatter._offsets3d = (states[0:1, num-1],states[1:2, num-1],states[2:3, num-1])
-        axis = getRotationAxis(states[3:6,num-1],0.1)
+        traj_plot.set_data(np.transpose(positions[:num+1,0:2]))
+        traj_plot.set_3d_properties(positions[:num+1,2])
+        scatter._offsets3d = (positions[num,0:1],positions[num,1:2],positions[num,2:3])
         for i in range(3):
-            vertices = axis[i] + np.reshape(states[:3,num-1],(3,1))
+            vector = np.zeros((4,2))
+            vector[i,0] = 0.1
+            vector[3,:] = 1
+            vertices = np.dot(transforms[num],vector)
             lines[i].set_data(vertices[0:2, :])
             lines[i].set_3d_properties(vertices[2, :])
-
         return traj_plot,scatter,lines
-    traj_plot = ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=4,color='g')[0] 
+    traj_plot = ax.plot(positions[0:1,0], positions[0:1,1], positions[0:1,2],linewidth=2,color='g')[0] 
     
-    lines = [ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=2,color=Lanc1)[0] ,
-            ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=2,color=Lanc2)[0] ,
-            ax.plot(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=2,color=Lanc3)[0] ]
+    lines = [ax.plot(positions[0:1,0], positions[0:1,1], positions[0:1,2],linewidth=2,color=Lanc1)[0] ,
+            ax.plot(positions[0:1,0], positions[0:1,1], positions[0:1,2],linewidth=2,color=Lanc2)[0] ,
+            ax.plot(positions[0:1,0], positions[0:1,1], positions[0:1,2],linewidth=2,color=Lanc3)[0] ]
     
     Fixedlines = [ax.plot((0,0.1), (0,0), (0,0),linewidth=2,color=Lanc1)[0] ,
             ax.plot((0,0), (0,0.1), (0,0),linewidth=2,color=Lanc2)[0] ,
             ax.plot((0,0), (0,0), (0,0.1),linewidth=2,color=Lanc3)[0] ]
-    scatter = ax.scatter(states[0, 0:1], states[1, 0:1], states[2, 0:1],linewidth=10,color='orange') 
+    scatter = ax.scatter(positions[0:1,0], positions[0:1,1], positions[0:1,2],linewidth=10,color='orange') 
     # Creating the Animation object
-    line_ani = animation.FuncAnimation(fig, update_lines, states.shape[1], fargs=(states, traj_plot, scatter,lines),
+    line_ani = animation.FuncAnimation(fig, update_lines, positions.shape[0], fargs=(positions, transforms, traj_plot, scatter,lines),
                                        interval=1, blit=False)
     
     ax.view_init(elev=environment.el, azim=environment.az)
     plt.show()
     print('newer dpi')
     if(save):
-        line_ani.save('animation.gif', writer='imagemagick', fps=30,dpi=200)
+        line_ani.save('animation.mp4', writer='ffmpeg', fps=20,dpi=400)
     return line_ani
 def animateOptimization2DPath(environment,states,name='path'):
 
