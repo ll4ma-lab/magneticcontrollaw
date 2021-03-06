@@ -113,9 +113,8 @@ class cylinderSolver():
         print(4,time.time()-s)
         self.ops = [train_ops,costs,magNum,thetas,powers,ft,Rs,carts]
         self.tf_vars = tf_vars
-    def solveWrench(self,model,state,wrench,other=False):
+    def solveWrench(self,model,position,wrench,other=False):
         s = time.time()
-        position = state[0:3]
         
         myDict = {}
         myDict[self.Y] = wrench
@@ -300,13 +299,12 @@ class cylinderModel(object):
         
         cycle,cart = self.eddyFTRotated(np.linalg.norm(chosenMagnetPose),power,self.freq,self.do/2.0)
         return cycle,cart
-    def forwardPass(self,pose,control):
+    def forwardPass(self,position,control):
             #control[0] = magnetNumber
             #control[1] = modelNumber
             #control[2] = power
             #control[3] = theta
         s = time.time()
-        position = pose[0:3]
         chosenMagnetPose = (np.array(self.magnets) - np.transpose(position)).tolist()[control[0]]
         omniFrame = self.getOmniFrame(chosenMagnetPose)
         _,cart = self.modelCall(chosenMagnetPose,control[2])

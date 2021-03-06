@@ -7,25 +7,23 @@ Created on Mon Nov 18 15:27:35 2019
 import numpy as np
 from cylinderModel import cylinderSolver,cylinderModel
 from PDController import PDController
-from exponentialSimulator import exponentialSimulator, sphereProperties
+from exponentialSimulator import  sphereProperties
+from discreteTimeSimulator import discreteTimeSimulator
 from environments import PlanarProblem,SpaceProblem
+from se3Utils import buildTF
 import matplotlib.pyplot as plt
 import time
 import visualization
 import DummyProfile
 import SplineProfile
 import TrapProfile
+
 cheat = False
 velNoise = False
 controlNoise = False
 
 
 env = SpaceProblem(3)
-#env = PlanarProblem(3)
-#env.times = (np.array(env.times) * 1.5).tolist()
-if velNoise:
-    env.startState[6:8,0] = (np.random.random((2)) - 0.5) * 0.005
-
 
 simTime = np.sum(env.times)
 dt = 1
@@ -40,76 +38,55 @@ solver.setup(model,env.trajectoryDimensions,objectProperties,env.tolerances)
 
 
 controller = PDController(env.startState,0.005,0.00001,0.005,0.00001,0.0,0.000)
-#controller = PDController(env.startState,0.003,0.00001,0.3,0.001)
-simulator = exponentialSimulator(env.startState,dt,objectProperties) #density, diamter
+
+simulator = discreteTimeSimulator(env.startState,dt,objectProperties) #density, diamter
+
+
 velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
-#velocityProfile = TrapProfile.TrapProfile(env,simTime,env.times)
 
-controls = []
+state = simulator.state
+states = []
 wrenches = []
-pComponents = []
-dComponents = []
 desiredStates = []
-state = env.startState
-states = np.copy(state)
-simulator.setState(state)
+
+
 start = time.time()
-modeledForces = []
-desiredForces = []
+
 for i in range(numSteps):
-    controlState = np.copy(state)
-    if velNoise:
-        controlState[6:12,0] *= (np.random.random((2))*2 + 0.5)
-    
-    desiredState = velocityProfile.getDesiredState(i*dt,controlState)
-    desired_wrench,p,d = controller.getDesiredWrench(controlState,desiredState)
-    pComponents.append(p)
-    dComponents.append(d)
+
+    desiredState = velocityProfile.getDesiredState(i*dt,state)
+    desired_wrench,p,d = controller.getDesiredWrench(state,desiredState)
+    #env.problem_specific_modification(state)
+    control =  solver.solveWrench(model,state[0][:3,3],desired_wrench,env.trajectoryDimensions)
+    trueWrench = model.forwardPass(state[0][:3,3],control)
     desiredStates.append(desiredState)
-    env.problem_specific_modification(state)
-
-    if(cheat):
-        control = [0,0,0,0]
-        maxForce = 0.00001
-        desired_wrench[np.where(desired_wrench > maxForce)] = maxForce
-        desired_wrench[np.where(desired_wrench < -maxForce)] = -maxForce
-        trueWrench = desired_wrench
-    else:
-       control =  solver.solveWrench(model,state,desired_wrench,env.trajectoryDimensions)
-       trueWrench = model.forwardPass(state,control)
-    modeledForces.append(trueWrench)
-    desiredForces.append(desired_wrench)
-    if controlNoise:
-        trueWrench[:2,0] += (np.random.random(2) - 0.5) * 0.00015
-    controls.append(control) 
-
+    #trueWrench = desired_wrench
     wrenches.append(trueWrench)
+
     state = simulator.simulate(trueWrench)
-    states = np.concatenate((states,state),1)
+    states.append(state)
     
 runTime = time.time() - start
 print(runTime)
 print('Time spent doing forwad model ' + str(model.time))
 print('Time spent doing solving model ' + str(solver.time))
 print('Time spent doing velocity ' + str(velocityProfile.time))
+print('Time spent doing simulation ' + str(simulator.time))
 
-modified_controls = np.zeros((i,len(env.magnets)))
-forceError = np.zeros((i,3))
-npmodelF = np.array(modeledForces)
-npdesiredF = np.array(desiredForces)
-for j in range(i):
-    modified_controls[j,controls[j][0]] = controls[j][2]
-    edims = 2
-    forceError[j,0] = np.arccos(np.dot(modeledForces[j][:edims,0],desiredForces[j][:edims,0])
-            /(np.linalg.norm(desiredForces[j][:edims,0])*np.linalg.norm(modeledForces[j][:edims,0])))
-    forceError[j,1] = np.linalg.norm(modeledForces[j][:edims]) / np.linalg.norm(desiredForces[j][:edims])
-    forceError[j,2] = np.linalg.norm(modeledForces[j][:edims]-desiredForces[j][:edims])
+positions = np.array([state[0][:3,3] for state in states])
+linearVelocity = np.array([np.dot(state[0][:3,:3],state[1][:,0]) for state in states])
+rotationalVelocity = np.array([np.dot(state[0][:3,:3],state[2][:,0]) for state in states])
+transforms = np.array([state[0] for state in states])
+desiredFinalTF = buildTF(desiredState[:3,0],desiredState[3:6,0])
+remainingError = np.array([controller.computeError(desiredFinalTF,state[0]) for state in states])
 
+#visualization stuff
+env.radius*=0.5
+anim = visualization.animate2DPath(env,positions,transforms,"",save=True)
 npdesiredStates = np.array(desiredStates)
-Plots = {'Position (m)':states[:3,:],
-         'Orientation (degrees)':states[3:6,:]*(180/np.pi),
-         'Velocity (m/s)':states[6:9,:],
-         'Control (Am^2)': np.transpose(modified_controls[:,:]),
+
+Plots = {'Position (m)':np.transpose(positions),
+         'Velocity (m/s)':np.transpose(linearVelocity),
          "Force ":np.transpose(np.array(wrenches)[:,:3,0]),
          "Torque ":np.transpose(np.array(wrenches)[:,3:,0]),
          'Desired position (m)':np.transpose(npdesiredStates[:,:3,0]),
@@ -117,31 +94,7 @@ Plots = {'Position (m)':states[:3,:],
 
 visualization.plotStuff(Plots,'Controller')
 
-errorPlots = {'Position error (m)':np.transpose(npdesiredStates[:,:3,0])-states[:3,:-1],
-         'Orientation error (degrees)':(np.transpose(npdesiredStates[:,3:6,0]) -states[3:6,:-1])*(180/np.pi)}
+Plots = {'Position Error(m)':np.abs(np.transpose(remainingError[:,:3,0])),
+         'Orientation Error(radians)':np.abs(np.transpose(remainingError[:,3:6,0]))}
 
-visualization.plotStuff(errorPlots,'Controller Error')
-
-forceErrorPlots = {'force angle error (degrees)':np.transpose(forceError[:,0:1] * (180/np.pi)),
-         'force magnitude ratio':np.transpose(forceError[:,1:2]),
-         'force error magnitude':np.transpose(forceError[:,2:3])}
-
-visualization.plotStuff(forceErrorPlots,'Controller Force Stats')
-
-fig = plt.figure()
-fig.suptitle('Path (m)')
-plt.plot(states[0,:],states[1,:],c='orange')
-plt.plot(npdesiredStates[:,0,0],npdesiredStates[:,1,0])
-plt.show()
-env.radius*=0.5
-visualization.visualize2DPath(env,states,'Controller Path')
-
-anim = visualization.animate2DPath(env,states,'',save=True)
-
-print('Time spent doing visualization ' + str(time.time() - start - runTime))
-
-import dataloader
-from datetime import datetime
-dataloader.save("data/sim_" +str(datetime.now()).replace(":","."),globals(),dir())
-
-
+visualization.plotStuff(Plots,'Error')
