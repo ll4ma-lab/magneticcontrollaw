@@ -33,7 +33,9 @@ orientationErrors = []
 rotationalVelocityErrors = []
 allStates = []
 
-
+Lanc1 = (0,0.4470,0.7410)
+Lanc2 = (0.8500,0.3250,0.0980)
+Lanc3 = (0.9290,0.6940,0.1250)
 fig = plt.figure()
 name = 'Paths ' + folder
 #fig.suptitle(name)
@@ -46,8 +48,8 @@ for fileName in onlyfiles:
 
         npdesiredStates = np.array(desiredStates)
         npStates = np.array(states)
-        #npStates[:,1,:] *=-1
-        #npdesiredStates[:,1,:] *=-1
+        npStates[:,1,:] *=-1
+        npdesiredStates[:,1,:] *=-1
 
         allStates.append(npStates)
         plt.plot(npStates[:,0,0],npStates[:,1,0],'k',alpha=0.5)
@@ -80,7 +82,16 @@ averagedStates = np.average(allStates,0)[:,:,0]
 stdStates = np.std(allStates,0)
 print('average(across time) of std(across trials) x ' +str(np.average(stdStates[:,0,0]))+ ' y ' +str(np.average(stdStates[:,1,0])))
 
-plt.plot(npdesiredStates[240:,0,0],npdesiredStates[240:,1,0],'g',linewidth=3)
+plt.plot(npdesiredStates[240:,0,0],npdesiredStates[240:,1,0],color=Lanc1,linewidth=4)
+fig.axes[0].tick_params(axis='both', which='major', labelsize=20)
+fig.axes[0].tick_params(axis='both', which='minor', labelsize=20)
+
+num = 5
+width = 0.08
+
+plt.xticks(np.linspace(-width,width,num))
+plt.yticks(np.linspace(-width,width,num))
+
 
 stateAbove = averagedStates + 2 * stdStates[:,:,0]
 stateBelow = averagedStates - 2 * stdStates[:,:,0]
@@ -96,7 +107,7 @@ npAllCov = np.zeros((6,6,numSteps))
 
 npPrecisionValues =np.zeros((4,numSteps))
 
-multiplier = 2.0
+multiplier = 5.991
 for i in range(numSteps):
     
     
@@ -117,15 +128,15 @@ for i in range(numSteps):
     
     maxIndex = np.argmax(abs(eigval)) #cant remember if eigvals are always positive
     angle = np.rad2deg(np.arctan2(eigvec[1,maxIndex],eigvec[0,maxIndex]))
-    width = np.sqrt(eigval[maxIndex])*multiplier*2/1000 #large axis   * numberSTDs * 2(radius to diamter) * m/mm
-    height = np.sqrt(eigval[maxIndex-1])*multiplier*2/1000 #small axis   * numberSTDs * 2(radius to diamter) * m/mm
+    width = np.sqrt(multiplier*eigval[maxIndex])*2/1000 #large axis   * numberSTDs * 2(radius to diamter) * m/mm
+    height = np.sqrt(multiplier*eigval[maxIndex-1])*2/1000 #small axis   * numberSTDs * 2(radius to diamter) * m/mm
     #print(width,stdStates[i,0,0]*multiplier*2)
     ells = Ellipse(xy=averagedStates[i,:2],
                 width=width, height=height,#2x to get to radius from diameter 
                 angle=angle)
     fig.axes[0].add_artist(ells)
     ells.set_alpha(1)
-    ells.set_facecolor('y')
+    ells.set_facecolor(Lanc3)
     ells.set_clip_box(fig.axes[0].bbox)
 fig.set_size_inches(8,8)
 fig.axes[0].set_aspect('equal')

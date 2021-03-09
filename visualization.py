@@ -26,7 +26,8 @@ def addCube(center,radius,op,ax):
         color = (119/256.0,27/256.0,12/256.0,op)
     elif(center[2] <0):
         color = (0,0,1,op)
-    plot_cube(cube_definition,color,ax)
+    faces = plot_cube(cube_definition,color,ax)
+    return faces
 def addRect(center,l,w,h,color,ax):
     cube_definition = buildRectangularPrism(center,l,w,h)
     plot_cube(cube_definition,color,ax)
@@ -43,11 +44,14 @@ def buildRectangularPrism(center,l,w,h):
         cube_definition.append(nextPoint)
     return cube_definition
 def drawCubes(allMagnets,magnets,ax,radius=0.065):
+    allFaces = []
     for magnet in allMagnets:
         op = 0.2
         if magnet in magnets:
             op = 0.8
-        addCube(np.array(magnet)*1,radius,op,ax)
+        face = addCube(np.array(magnet)*1,radius,op,ax)
+        allFaces.append(face)
+    return allFaces
     
 def plot_cube(cube_definition,colorinfo,ax):
     cube_definition_array = [
@@ -88,7 +92,7 @@ def plot_cube(cube_definition,colorinfo,ax):
 
     # Plot the points themselves to force the scaling of the axes
     ax.scatter(points[:,0], points[:,1], points[:,2], s=0)
-
+    return faces
     #ax.set_aspect('equal')
 def drawArrows(vectors,errors,threshold,ax,torque = False):
     ifSuccess = np.array(errors) < threshold
@@ -129,7 +133,7 @@ def visualize2DPath(environment,states,name='path'):
 
     plt.show()
 
-def animate2DPath(environment,positions,transforms,name='path',save=False):
+def animate2DPath(environment,positions,transforms,controls,name='path',save=False):
     # Attaching 3D axis to the figure
     fig = plt.figure()
     ax = p3.Axes3D(fig)
@@ -138,16 +142,24 @@ def animate2DPath(environment,positions,transforms,name='path',save=False):
     ax.set_zlim(*environment.visualizationBoundaryY)
     ax.set_aspect('equal')
 
-    drawCubes(environment.magnets,[],ax,environment.radius)
+    cubes = drawCubes(environment.magnets,[],ax,environment.radius)
     addRect((0,0,environment.lims[2][0]/2),w=environment.lims[0][1],l=environment.lims[1][1],
             h=environment.lims[2][1],color=(0,0,1,0.1),ax=ax)
     ax.set_title(name)
 
 
-    def update_lines(num, positions, transforms, traj_plot, scatter,lines):
+    def update_lines(num, positions, transforms, controls, traj_plot, scatter,lines,cubes):
         #num = num + states.shape[1]/2
-        traj_plot.set_data(np.transpose(positions[:num+1,0:2]))
-        traj_plot.set_3d_properties(positions[:num+1,2])
+        for i in   range(len(cubes)):
+            cube = cubes[i]
+            colorinfo = [119/256.0,27/256.0,12/256.0,0.2]
+            #print(controls[num][0],i)
+            if(controls[num][0] ==i):
+                colorinfo[3] = 0.8
+            cube.set_facecolor(colorinfo)
+
+        #traj_plot.set_data(np.transpose(positions[:num+1,0:2]))
+        #traj_plot.set_3d_properties(positions[:num+1,2])
         scatter._offsets3d = (positions[num,0:1],positions[num,1:2],positions[num,2:3])
         for i in range(3):
             vector = np.zeros((4,2))
@@ -168,7 +180,7 @@ def animate2DPath(environment,positions,transforms,name='path',save=False):
             ax.plot((0,0), (0,0), (0,0.1),linewidth=2,color=Lanc3)[0] ]
     scatter = ax.scatter(positions[0:1,0], positions[0:1,1], positions[0:1,2],linewidth=10,color='orange') 
     # Creating the Animation object
-    line_ani = animation.FuncAnimation(fig, update_lines, positions.shape[0], fargs=(positions, transforms, traj_plot, scatter,lines),
+    line_ani = animation.FuncAnimation(fig, update_lines, positions.shape[0], fargs=(positions, transforms,controls, traj_plot, scatter,lines,cubes),
                                        interval=1, blit=False)
     
     ax.view_init(elev=environment.el, azim=environment.az)

@@ -24,6 +24,7 @@ controlNoise = False
 
 
 env = SpaceProblem(3)
+a=b
 
 simTime = np.sum(env.times)
 dt = 1
@@ -48,7 +49,7 @@ state = simulator.state
 states = []
 wrenches = []
 desiredStates = []
-
+controls = []
 
 start = time.time()
 
@@ -62,6 +63,7 @@ for i in range(numSteps):
     desiredStates.append(desiredState)
     #trueWrench = desired_wrench
     wrenches.append(trueWrench)
+    controls.append(control)
 
     state = simulator.simulate(trueWrench)
     states.append(state)
@@ -82,7 +84,7 @@ remainingError = np.array([controller.computeError(desiredFinalTF,state[0]) for 
 
 #visualization stuff
 env.radius*=0.5
-anim = visualization.animate2DPath(env,positions,transforms,"",save=True)
+anim = visualization.animate2DPath(env,positions,transforms,controls,"")
 npdesiredStates = np.array(desiredStates)
 
 Plots = {'Position (m)':np.transpose(positions),
