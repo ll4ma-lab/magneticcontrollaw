@@ -21,8 +21,8 @@ from os import listdir
 from os.path import isfile, join
 from matplotlib.patches import Ellipse
 
-folder = 'orientation'
-#folder = 'no_orientation'
+#folder = 'orientation'
+folder = 'no_orientation'
 
 mypath = "C:/Users/Griffin Tabor/Documents/experiments/" + folder + "/"
 onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
@@ -41,16 +41,18 @@ name = 'Paths ' + folder
 #fig.suptitle(name)
 
 for fileName in onlyfiles:
-    if('bag' not in fileName):
+    if('bag' not in fileName and 'pdf' not in fileName and 'csv' not in fileName):
         dataloader.load(mypath+fileName,globals())
         #print("vel error ",totalVelSquaredError/numSteps)
         #print("pos error ",totalPosSquaredError/numSteps)
 
         npdesiredStates = np.array(desiredStates)
         npStates = np.array(states)
-        npStates[:,1,:] *=-1
+        npStates[:,1,:] *=-1 #flip y to make plots z down
         npdesiredStates[:,1,:] *=-1
-
+        print(npStates[0,5,:])
+        #npStates[:,5,:] -= npStates[0,5,:]
+        
         allStates.append(npStates)
         plt.plot(npStates[:,0,0],npStates[:,1,0],'k',alpha=0.5)
 
@@ -60,14 +62,18 @@ for fileName in onlyfiles:
         
         
         positionError = np.sqrt(sqError[:,0,0] + sqError[:,1,0])
+        print(npStates[:5,5,:])
+
         PositionErrors.append(positionError)
         
         
         velocityError = np.sqrt(sqError[:,6,0] + sqError[:,7,0])
+        print(np.min(velocityError))
         VelocityErrors.append(velocityError)
         
         orientationErrors.append(absError[:,5,0]) 
-        
+
+
         
         rotationalVelocityErrors.append(absError[:,11,0])
     
@@ -87,7 +93,7 @@ fig.axes[0].tick_params(axis='both', which='major', labelsize=20)
 fig.axes[0].tick_params(axis='both', which='minor', labelsize=20)
 
 num = 5
-width = 0.08
+width = 0.1
 
 plt.xticks(np.linspace(-width,width,num))
 plt.yticks(np.linspace(-width,width,num))
@@ -108,6 +114,7 @@ npAllCov = np.zeros((6,6,numSteps))
 npPrecisionValues =np.zeros((4,numSteps))
 
 multiplier = 5.991
+ellipseDataset = []
 for i in range(numSteps):
     
     
@@ -134,16 +141,34 @@ for i in range(numSteps):
     ells = Ellipse(xy=averagedStates[i,:2],
                 width=width, height=height,#2x to get to radius from diameter 
                 angle=angle)
+    if i > 240:
+        desired = [npdesiredStates[i,0,0],npdesiredStates[i,1,0]]
+    else: 
+        desired = [0,0]
+        
+    trials_data = np.concatenate([[npAllStates[k,i,0,0],npAllStates[k,i,1,0]] for k in range(5)]).tolist()
+    #print(trials_data)
+    ellipseDatum = [averagedStates[i,0],averagedStates[i,1], desired[0],desired[1],width,height,angle]
+    ellipseDataset.append(trials_data+ellipseDatum[:7])
     fig.axes[0].add_artist(ells)
     ells.set_alpha(1)
     ells.set_facecolor(Lanc3)
     ells.set_clip_box(fig.axes[0].bbox)
 fig.set_size_inches(8,8)
 fig.axes[0].set_aspect('equal')
+print('showing')
 plt.show()
 fig.savefig(name + '.pdf')
-
-
+header = []
+for i in range(5):
+    header.append('x_trial_'+str(i))
+    header.append('y_trial_'+str(i))
+header = header + ['x_average','y_average','x_desired','y_desired','ellipse_width','elipse_height','elipse_rotation']
+print('setup header')
+npellipseDataset = np.array(ellipseDataset)
+print(npellipseDataset.shape)
+np.savetxt(mypath+'/ellipse_dataset.csv',npellipseDataset,delimiter=',',header = ','.join(header))
+print('saved csv')
 cov = np.average(npAllCov,2)
 #np.savetxt(folder+'_cov.csv',cov,delimiter=',')
 print(cov)
@@ -153,3 +178,38 @@ print('std of generalized std ' + str(np.std(npPrecisionValues[0,:])))
 print('std of std of rotation ' + str(np.std(npPrecisionValues[1,:])))
 print('std of generalized velocity std ' + str(np.std(npPrecisionValues[2,:])))
 print('std of std of rotation velocity ' + str(np.std(npPrecisionValues[3,:])))
+
+
+
+
+
+
+def boxPlot(data,dataname,constant=1):
+    fig2 = plt.figure(figsize =(1.5, 4))
+    data = abs(np.hstack(data))*constant
+    plt.boxplot(data)
+    fig2.axes[0].tick_params(axis='both', which='major', labelsize=12)
+    fig2.axes[0].tick_params(axis='both', which='minor', labelsize=12)
+    plt.tight_layout()
+    #plt.show()
+    name = mypath + "/" + dataname
+    np.savetxt(name + '.csv',data,delimiter=',')
+
+   #print(name)
+    fig2.savefig(name + '.pdf')
+
+
+
+boxPlot(PositionErrors,'posE',1000)
+boxPlot(VelocityErrors,'velE',1000)
+boxPlot(orientationErrors,'orienE')
+boxPlot(rotationalVelocityErrors,'rotvelE')
+
+boxPlot(npPrecisionValues[0,:],'posP')
+boxPlot(npPrecisionValues[2,:],'velP')
+boxPlot(npPrecisionValues[1,:],'orienP')
+boxPlot(npPrecisionValues[3,:],'rotvelP')
+
+#boxPlot(VelocityErrors,'velE')
+#boxPlot(orientationErrors,'orienE')
+#boxPlot(rotationalVelocityErrors,'rotvelE')
