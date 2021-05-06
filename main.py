@@ -7,8 +7,7 @@ Created on Mon Nov 18 15:27:35 2019
 import numpy as np
 from cylinderModel import cylinderSolver,cylinderModel
 from PDController import PDController
-from exponentialSimulator import  sphereProperties
-from discreteTimeSimulator import discreteTimeSimulator
+from discreteTimeSimulator import discreteTimeSimulator,sphereProperties
 from environments import PlanarProblem,SpaceProblem
 from se3Utils import buildTF
 import matplotlib.pyplot as plt
@@ -23,8 +22,7 @@ velNoise = False
 controlNoise = False
 
 
-env = SpaceProblem(3)
-a=b
+env = PlanarProblem(3)
 
 simTime = np.sum(env.times)
 dt = 1

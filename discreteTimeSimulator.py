@@ -88,3 +88,9 @@ class discreteTimeSimulator:
         return (bodyToWorld,Ωsc,Vsc)
    # def setState(self,state):
    #     self.state = np.copy(state)
+def sphereProperties(density,diameter):
+    radius = diameter / 2.0
+    volume = 4.0/3 * np.pi*np.power(radius,3)
+    mass = volume * density
+    I = np.eye(3)*(2.0/5) *mass * np.power(radius,2)
+    return mass, I

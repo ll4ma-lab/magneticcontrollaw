@@ -8,38 +8,75 @@ import numpy as np
 import time
 #from oct2py import octave
 import numpy as np
-import os
-os.environ["CUDA_VISIBLE_DEVICES"]="-1" 
-import tensorflow as tf
+def buildQ(self,stateCostString,objectProperties,tolerances,loops=1):
+    
+    activated = [0]*(loops * 6)
+    if("all" in stateCostString):
+        activated = [1]*(loops * 6)
+    letterOptions = ["x","y","z","r","p","t"]
+    for j in range(loops):
+        for i in range(len(letterOptions)):
+            if(letterOptions[i] in stateCostString):
+                index = j*6+i
+                #print(index)
+                if i < 3:   
+                    activated[index] = 1.0 #/ (objectProperties[0] * tolerances[0])
+                else: 
+                    activated[index] = 200.0 #/ (objectProperties[1][0,0] * tolerances[1])
+
+    Q = np.diag(activated)
+    print(Q)
+    return Q
+
+try:
+    import os
+    os.environ["CUDA_VISIBLE_DEVICES"]="-1" 
+    import tensorflow as tf
+except:
+    print('no TF, give up')
+    
+def getOmniFrame(pos,use_tf=False):
+    Z = np.array([0, 0, 1])
+
+    if(use_tf):
+        dist = tf.norm(pos)
+        omni_X = -1*(pos/dist);
+        
+
+        omni_Z = tf.cross(omni_X,Z)
+        omni_Z = omni_Z/tf.norm(omni_Z)
+                
+        
+        # Obtain Y axis by crossing Z and X
+        omni_Y = tf.cross(omni_Z,omni_X);
+        # Combine to build rotation matrix
+        omniFrame = tf.transpose(tf.stack([omni_X, omni_Y, omni_Z]));
+    else:
+        dist = np.linalg.norm(pos)
+    
+        omni_X = -1*(pos/dist);
+        
+
+        omni_Z = np.cross(omni_X,Z)
+        omni_Z = omni_Z/np.sqrt(np.dot(omni_Z,omni_Z))
+                
+        
+        # Obtain Y axis by crossing Z and X
+        omni_Y = np.cross(omni_Z,omni_X);
+        # Combine to build rotation matrix
+        omniFrame = np.transpose(np.array([omni_X, omni_Y, omni_Z]));
+    return omniFrame
+
 class cylinderSolver():
     def __init__(self,magnets):
+
+        self.time = 0
         self.magnets = magnets
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,use_per_session_threads=True))
-        self.time = 0
-        
         self.epochs = 100
         self.lr = 0.5e-1
         
-    def buildQ(self,stateCostString,objectProperties,tolerances,loops=1):
-        
-        activated = [0]*(loops * 6)
-        if("all" in stateCostString):
-            activated = [1]*(loops * 6)
-        letterOptions = ["x","y","z","r","p","t"]
-        for j in range(loops):
-            for i in range(len(letterOptions)):
-                if(letterOptions[i] in stateCostString):
-                    index = j*6+i
-                    #print(index)
-                    if i < 3:   
-                        activated[index] = 1.0 #/ (objectProperties[0] * tolerances[0])
-                    else: 
-                        activated[index] = 200.0 #/ (objectProperties[1][0,0] * tolerances[1])
-
-        Q = np.diag(activated)
-        print(Q)
-        return Q
 
     def setup(self,model,stateCostString,objectProperties,tolerances):
         s = time.time()
@@ -56,7 +93,7 @@ class cylinderSolver():
         
         Y = tf.placeholder(tf.float64,shape = [6,1]) 
         magPoses = tf.placeholder(tf.float64,shape = np.array(self.magnets).shape) 
-        Q = self.buildQ(stateCostString,objectProperties=objectProperties,tolerances=tolerances)
+        Q = buildQ(stateCostString,objectProperties=objectProperties,tolerances=tolerances)
 
         self.Y = Y
         self.magPoses = magPoses
@@ -64,7 +101,7 @@ class cylinderSolver():
         for i in range(len(self.magnets)):
             
             chosenMagnetPose = magPoses[i]
-            omniFrame = model.getOmniFrame(chosenMagnetPose,True)
+            omniFrame = getOmniFrame(chosenMagnetPose,True)
             _,cart = model.modelCall(chosenMagnetPose,1,use_tf = True)
             omniFrame_t = tf.convert_to_tensor(omniFrame)
             #cart = tf.stack([tf.stack(cart[i].tolist()) for i in range(6)])
@@ -306,7 +343,7 @@ class cylinderModel(object):
             #control[3] = theta
         s = time.time()
         chosenMagnetPose = (np.array(self.magnets) - np.transpose(position)).tolist()[control[0]]
-        omniFrame = self.getOmniFrame(chosenMagnetPose)
+        omniFrame = getOmniFrame(chosenMagnetPose)
         _,cart = self.modelCall(chosenMagnetPose,control[2])
         if(control[1]==0):
             theta = control[3]
@@ -322,34 +359,5 @@ class cylinderModel(object):
             FT = np.concatenate([np.dot(omniFrame,cart[:3,2]),np.dot(omniFrame,cart[3:,2])])
         self.time +=  (time.time() - s)
         return np.reshape(FT,(6,1))
-    def getOmniFrame(self,pos,use_tf=False):
-        Z = np.array([0, 0, 1])
+    
 
-        if(use_tf):
-            dist = tf.norm(pos)
-            omni_X = -1*(pos/dist);
-            
-    
-            omni_Z = tf.cross(omni_X,Z)
-            omni_Z = omni_Z/tf.norm(omni_Z)
-                    
-            
-            # Obtain Y axis by crossing Z and X
-            omni_Y = tf.cross(omni_Z,omni_X);
-            # Combine to build rotation matrix
-            omniFrame = tf.transpose(tf.stack([omni_X, omni_Y, omni_Z]));
-        else:
-            dist = np.linalg.norm(pos)
-        
-            omni_X = -1*(pos/dist);
-            
-    
-            omni_Z = np.cross(omni_X,Z)
-            omni_Z = omni_Z/np.sqrt(np.dot(omni_Z,omni_Z))
-                    
-            
-            # Obtain Y axis by crossing Z and X
-            omni_Y = np.cross(omni_Z,omni_X);
-            # Combine to build rotation matrix
-            omniFrame = np.transpose(np.array([omni_X, omni_Y, omni_Z]));
-        return omniFrame

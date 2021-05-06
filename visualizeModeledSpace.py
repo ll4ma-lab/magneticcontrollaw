@@ -14,7 +14,7 @@ ax = p3.Axes3D(fig)
 ax.set_xlim(-1,1)
 ax.set_ylim(-1,1)
 ax.set_zlim(-1,1)
-ax.set_aspect('equal')
+#ax.set_aspect('equal')
 
 addCube((0,0,0),0.1,1,ax)
 drawSphere((0,0.5,0),0.1,ax)
