@@ -8,7 +8,7 @@ import numpy as np
 import time
 #from oct2py import octave
 import numpy as np
-def buildQ(self,stateCostString,objectProperties,tolerances,loops=1):
+def buildQ(stateCostString,objectProperties,tolerances,loops=1):
     
     activated = [0]*(loops * 6)
     if("all" in stateCostString):

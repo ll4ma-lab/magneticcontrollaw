@@ -173,8 +173,8 @@ def animate2DPath(environment,positions,transforms,controls,name='path',save=Fal
                 colorinfo[3] = 0.8
             cube.set_facecolor(colorinfo)
         updateAxesWithTF(transforms[num], lines)
-        #traj_plot.set_data(np.transpose(positions[:num+1,0:2]))
-        #traj_plot.set_3d_properties(positions[:num+1,2])
+        traj_plot.set_data(np.transpose(positions[:num+1,0:2]))
+        traj_plot.set_3d_properties(positions[:num+1,2])
         scatter._offsets3d = (positions[num,0:1],positions[num,1:2],positions[num,2:3])
 
         return traj_plot,scatter,lines

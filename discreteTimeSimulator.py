@@ -79,12 +79,12 @@ class discreteTimeSimulator:
             bodyToWorld_dot = np.dot(bodyToStrange,ξscV) #gsc_dot = gsc * ξscV
             
             bodyToWorld+= bodyToWorld_dot*self.dt
-           
+            bodyToWorld = repairRotMatrix(bodyToWorld)
+
             
             Ωsc += ξsc_dot[:3,:] * self.dt
             Vsc += ξsc_dot[3:,:] * self.dt
         self.time += time.time() - start
-        #bodyToWorld = repairRotMatrix(bodyToWorld)
         return (bodyToWorld,Ωsc,Vsc)
    # def setState(self,state):
    #     self.state = np.copy(state)

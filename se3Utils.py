@@ -15,6 +15,11 @@ def buildSkew(vector):
     return skew
 
 def matrixLog(Ae):
+    if(np.abs(np.trace(Ae)-1)>2.0):
+        Ae = np.copy(Ae)
+        Ae[:,0] /= np.linalg.norm(Ae[:,0]) #unit vectorize because numerical issues
+        Ae[:,1] /= np.linalg.norm(Ae[:,1])
+        Ae[:,2] /= np.linalg.norm(Ae[:,2])
     phi = np.arccos(0.5*(np.trace(Ae)-1))
     skew = (1/(2*np.sin(phi)))*(Ae-np.transpose(Ae))
     return skew,phi
@@ -23,9 +28,14 @@ def matrixExponential(w_hat_skew,theta):
     return Rot
 def repairRotMatrix(transform):
     skew,phi = matrixLog(transform[:3,:3])
+    vec = skewToVector(skew)
+    skew /= np.linalg.norm(vec)
     rot = matrixExponential(skew, phi)
     newTransform = np.copy(transform)
     newTransform[:3,:3] = rot[:3,:3]
+    if(np.any(np.isnan(newTransform))):
+        #usually means no reasonable twist
+        return transform
     return newTransform
 
 def skewToVector(skew):

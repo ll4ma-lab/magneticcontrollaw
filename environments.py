@@ -203,17 +203,31 @@ class PlanarProblem:
 
 
             #self.trajectoryDimensions = 'xy'
-    def problem_specific_modification(self,state):
-        #set z rp + their velocity to 0
+        import warnings
+        if(len(self.trajectoryDimensions)<3):
+            warnings.warn('planar environment without yaw control can have numerical issues as yaw vel gets high')
+    def problem_specific_modification(self,state,wrench=None):
 
-        state[2] = 0
-        state[3] = 0
-        state[4] = 0
+        # note state has TF and body frame velocity, trying to modify vel means probably rotating to world frame  
+        bodyToWorld = state[0][:3,:3]
+        linearVelocity = np.dot(bodyToWorld,state[2])
+        rotationalVelocity = np.dot(bodyToWorld,state[1])
         
-        state[2 + 6 ] = 0
-        state[3 + 6 ] = 0
-        state[4 + 6] = 0
+        worldToBody = np.linalg.inv(bodyToWorld)
+        
+        linearVelocity[2] = 0
+        rotationalVelocity[0] = 0
+        rotationalVelocity[1] = 0
+        
+        state[2][:] = np.dot(worldToBody,linearVelocity)
+        state[1][:] = np.dot(worldToBody,rotationalVelocity)
+        
 
+        if(wrench is not None):
+            wrench[2] = 0 #z force
+            wrench[3] = 0 #roll torque
+            wrench[4] = 0 #pitch torque
+            
 
 class SpaceProblem:
     def __init__(self,challengeID=0,):
@@ -267,7 +281,7 @@ class SpaceProblem:
         
         
             self.desiredState= self.TrueDesiredState
-            self.times = [240]* self.desiredState.shape[1]
+            self.times = [480]* self.desiredState.shape[1]
         
         if(challengeID==1): # individual axis
             self.TrueDesiredState = np.zeros((12,12))
@@ -322,5 +336,5 @@ class SpaceProblem:
         return xyz
 
         
-    def problem_specific_modification(self,state):
+    def problem_specific_modification(self,state,wrench):
         pass

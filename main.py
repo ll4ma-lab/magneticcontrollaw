@@ -22,7 +22,11 @@ velNoise = False
 controlNoise = False
 
 
-env = PlanarProblem(3)
+env = PlanarProblem() #SpaceProblem()
+#env.startState[:3] *=1.5
+#env.times[0] = 1200
+#env.trajectoryDimensions = 'xyz'
+
 
 simTime = np.sum(env.times)
 dt = 1
@@ -55,14 +59,18 @@ for i in range(numSteps):
 
     desiredState = velocityProfile.getDesiredState(i*dt,state)
     desired_wrench,p,d = controller.getDesiredWrench(state,desiredState)
-    #env.problem_specific_modification(state)
-    control =  solver.solveWrench(model,state[0][:3,3],desired_wrench,env.trajectoryDimensions)
-    trueWrench = model.forwardPass(state[0][:3,3],control)
+   
     desiredStates.append(desiredState)
-    #trueWrench = desired_wrench
+    if(cheat):
+        trueWrench = desired_wrench
+        control = [0,0,0,0]
+    else:
+         control =  solver.solveWrench(model,state[0][:3,3],desired_wrench,env.trajectoryDimensions)
+         trueWrench = model.forwardPass(state[0][:3,3],control)
     wrenches.append(trueWrench)
     controls.append(control)
-
+   
+    env.problem_specific_modification(state,trueWrench)
     state = simulator.simulate(trueWrench)
     states.append(state)
     
@@ -74,8 +82,8 @@ print('Time spent doing velocity ' + str(velocityProfile.time))
 print('Time spent doing simulation ' + str(simulator.time))
 
 positions = np.array([state[0][:3,3] for state in states])
-linearVelocity = np.array([np.dot(state[0][:3,:3],state[1][:,0]) for state in states])
-rotationalVelocity = np.array([np.dot(state[0][:3,:3],state[2][:,0]) for state in states])
+linearVelocity = np.array([np.dot(state[0][:3,:3],state[2][:,0]) for state in states])
+rotationalVelocity = np.array([np.dot(state[0][:3,:3],state[1][:,0]) for state in states])
 transforms = np.array([state[0] for state in states])
 desiredFinalTF = buildTF(desiredState[:3,0],desiredState[3:6,0])
 remainingError = np.array([controller.computeError(desiredFinalTF,state[0]) for state in states])
@@ -95,6 +103,6 @@ Plots = {'Position (m)':np.transpose(positions),
 visualization.plotStuff(Plots,'Controller')
 
 Plots = {'Position Error(m)':np.abs(np.transpose(remainingError[:,:3,0])),
-         'Orientation Error(radians)':np.abs(np.transpose(remainingError[:,3:6,0]))}
+         'Orientation Error(radians)':-np.transpose(remainingError[:,3:6,0])}
 
 visualization.plotStuff(Plots,'Error')
