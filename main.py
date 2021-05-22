@@ -22,7 +22,7 @@ velNoise = False
 controlNoise = False
 
 
-env = PlanarProblem() #SpaceProblem()
+env = SpaceProblem(5)
 #env.startState[:3] *=1.5
 #env.times[0] = 1200
 #env.trajectoryDimensions = 'xyz'
@@ -80,7 +80,7 @@ print('Time spent doing forwad model ' + str(model.time))
 print('Time spent doing solving model ' + str(solver.time))
 print('Time spent doing velocity ' + str(velocityProfile.time))
 print('Time spent doing simulation ' + str(simulator.time))
-
+visStart = time.time()
 positions = np.array([state[0][:3,3] for state in states])
 linearVelocity = np.array([np.dot(state[0][:3,:3],state[2][:,0]) for state in states])
 rotationalVelocity = np.array([np.dot(state[0][:3,:3],state[1][:,0]) for state in states])
@@ -90,11 +90,12 @@ remainingError = np.array([controller.computeError(desiredFinalTF,state[0]) for 
 
 #visualization stuff
 env.radius*=0.5
-anim = visualization.animate2DPath(env,positions,transforms,controls,"")
+anim = visualization.animate2DPath(env,positions,transforms,controls,"",save=True)
 npdesiredStates = np.array(desiredStates)
 
 Plots = {'Position (m)':np.transpose(positions),
          'Velocity (m/s)':np.transpose(linearVelocity),
+         'Rot velocity (_/s)':np.transpose(rotationalVelocity),
          "Force ":np.transpose(np.array(wrenches)[:,:3,0]),
          "Torque ":np.transpose(np.array(wrenches)[:,3:,0]),
          'Desired position (m)':np.transpose(npdesiredStates[:,:3,0]),
@@ -106,3 +107,4 @@ Plots = {'Position Error(m)':np.abs(np.transpose(remainingError[:,:3,0])),
          'Orientation Error(radians)':-np.transpose(remainingError[:,3:6,0])}
 
 visualization.plotStuff(Plots,'Error')
+print('Time spent doing visualization ' + str(time.time()-visStart))

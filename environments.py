@@ -316,7 +316,82 @@ class SpaceProblem:
 
             self.desiredState= self.TrueDesiredState
             self.times = [600]
+        if(challengeID==4): #floating square
+            self.TrueDesiredState = np.zeros((12,9))
+            r = 0.075
+            self.TrueDesiredState[:3,0] = [r,-r,-r]
+            self.TrueDesiredState[:3,1] = [-r,-r,-r]
+            self.TrueDesiredState[:3,2] = [-r,r,-r]
+            self.TrueDesiredState[:3,3] = [r,r,-r]
+            
+            self.TrueDesiredState[:3,4] = [r,r,r]
+            self.TrueDesiredState[:3,5] = [-r,r,r]
+            self.TrueDesiredState[:3,6] = [-r,-r,r]
+            self.TrueDesiredState[:3,7] = [r,-r,r]
+            
+            self.TrueDesiredState[:3,8] = [r,-r,-r]
 
+            self.desiredState= self.TrueDesiredState
+            self.times = [360]* self.desiredState.shape[1]
+        if(challengeID==5): #floating square
+            self.TrueDesiredState = np.zeros((12,17))
+            r = 0.075
+            self.startState[3,0] = -3*np.pi/4
+            self.startState[4,0] = 0.955 
+            
+            self.TrueDesiredState[3:6,0] = self.startState[3:6,0]
+            self.TrueDesiredState[:3,0] = [r,-r,-r]
+            self.TrueDesiredState[:3,1] = self.TrueDesiredState[:3,0]
+            self.TrueDesiredState[4,1] = np.pi 
+    
+            self.TrueDesiredState[3:6,2] = self.TrueDesiredState[3:6,1]
+            self.TrueDesiredState[:3,2] = [-r,-r,-r]
+            self.TrueDesiredState[:3,3] = self.TrueDesiredState[:3,2]
+            self.TrueDesiredState[4,3] = np.pi 
+            self.TrueDesiredState[5,3] = -np.pi/2 
+
+            self.TrueDesiredState[3:6,4] = self.TrueDesiredState[3:6,3]
+            self.TrueDesiredState[:3,4] = [-r,r,-r]
+            self.TrueDesiredState[:3,5] = self.TrueDesiredState[:3,4]
+            self.TrueDesiredState[4,5] = np.pi 
+            self.TrueDesiredState[5,5] = -np.pi 
+            
+            self.TrueDesiredState[3:6,6] = self.TrueDesiredState[3:6,5]
+            self.TrueDesiredState[:3,6] = [r,r,-r]
+            self.TrueDesiredState[:3,7] = self.TrueDesiredState[:3,6]
+            self.TrueDesiredState[4,7] = 3*np.pi/2 
+            self.TrueDesiredState[5,7] = -np.pi 
+
+            self.TrueDesiredState[3:6,8] = self.TrueDesiredState[3:6,7]
+            self.TrueDesiredState[:3,8] = [r,r,r]
+            self.TrueDesiredState[:3,9] = self.TrueDesiredState[:3,8]
+            self.TrueDesiredState[4,9] = 2*np.pi 
+            self.TrueDesiredState[5,9] = -np.pi 
+                        
+            self.TrueDesiredState[3:6,10] = self.TrueDesiredState[3:6,9]
+            self.TrueDesiredState[:3,10] = [-r,r,r]
+            self.TrueDesiredState[:3,11] = self.TrueDesiredState[:3,10]
+            self.TrueDesiredState[4,11] = 2*np.pi
+            self.TrueDesiredState[5,11] = -3*np.pi/2
+
+            
+            self.TrueDesiredState[3:6,12] = self.TrueDesiredState[3:6,11]
+            self.TrueDesiredState[:3,12] = [-r,-r,r]
+            self.TrueDesiredState[:3,13] = self.TrueDesiredState[:3,12]
+            self.TrueDesiredState[4,13] = 2*np.pi
+            self.TrueDesiredState[5,13] = -2*np.pi
+
+            self.TrueDesiredState[3:6,14] = self.TrueDesiredState[3:6,13]
+            self.TrueDesiredState[:3,14] = [r,-r,r]
+            self.TrueDesiredState[:3,15] = self.TrueDesiredState[:3,14]
+            self.TrueDesiredState[4,15] = 3*np.pi/2
+            self.TrueDesiredState[5,15] = -2*np.pi
+            
+            self.TrueDesiredState[3:6,16] = self.TrueDesiredState[3:6,15]
+            self.TrueDesiredState[:3,16] = [r,-r,-r]
+
+            self.desiredState= self.TrueDesiredState
+            self.times = [360]* self.desiredState.shape[1]
 
     def spiralHelper(self, t):
         xyz = np.zeros((12))
