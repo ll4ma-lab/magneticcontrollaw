@@ -108,3 +108,6 @@ Plots = {'Position Error(m)':np.abs(np.transpose(remainingError[:,:3,0])),
 
 visualization.plotStuff(Plots,'Error')
 print('Time spent doing visualization ' + str(time.time()-visStart))
+import dataloader
+from datetime import datetime
+dataloader.save("data/sim_" + str(numSteps) + 's_' +  str(datetime.now()).replace(":","."),globals(),dir())
