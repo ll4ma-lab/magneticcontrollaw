@@ -22,11 +22,8 @@ velNoise = False
 controlNoise = False
 
 
-env = SpaceProblem(5)
-#env.startState[:3] *=1.5
-#env.times[0] = 1200
+env = SpaceProblem(4)
 #env.trajectoryDimensions = 'xyz'
-
 
 simTime = np.sum(env.times)
 dt = 1
@@ -37,8 +34,6 @@ objectProperties = sphereProperties(8940,diameter)
 model = cylinderModel(env.magnets,diameter)
 solver = cylinderSolver(env.magnets)
 solver.setup(model,env.trajectoryDimensions,objectProperties,env.tolerances)
-
-
 
 controller = PDController(env.startState,0.005,0.00001,0.005,0.00001,0.0,0.000)
 
@@ -52,7 +47,6 @@ states = []
 wrenches = []
 desiredStates = []
 controls = []
-
 start = time.time()
 
 for i in range(numSteps):
@@ -90,7 +84,7 @@ remainingError = np.array([controller.computeError(desiredFinalTF,state[0]) for 
 
 #visualization stuff
 env.radius*=0.5
-anim = visualization.animate2DPath(env,positions,transforms,controls,"",save=True)
+anim = visualization.animate2DPath(env,positions,transforms,controls,name="",savePlotSteps=velocityProfile.switchingTimes,save=False)
 npdesiredStates = np.array(desiredStates)
 
 Plots = {'Position (m)':np.transpose(positions),

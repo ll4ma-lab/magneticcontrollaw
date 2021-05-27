@@ -266,8 +266,8 @@ class SpaceProblem:
                     ,(-0.15, 0.0,0)
                     ,(0.00, 0.150, 0.0)
                     ,(0.00, -0.150, 0.0)
-                   ,(0.000, 0.000, 0.15)
-                    ,(0.00, 0.00, -0.15)])
+                   ,(0.00001, 0.000, 0.15)
+                    ,(0.00001, 0.00, -0.15)])
         self.magnets = magnets.tolist()
         self.startState = np.zeros((12,1))
         
@@ -332,7 +332,7 @@ class SpaceProblem:
             self.TrueDesiredState[:3,8] = [r,-r,-r]
 
             self.desiredState= self.TrueDesiredState
-            self.times = [360]* self.desiredState.shape[1]
+            self.times = [300]* self.desiredState.shape[1]
         if(challengeID==5): #floating square
             self.TrueDesiredState = np.zeros((12,17))
             r = 0.075
@@ -391,7 +391,7 @@ class SpaceProblem:
             self.TrueDesiredState[:3,16] = [r,-r,-r]
 
             self.desiredState= self.TrueDesiredState
-            self.times = [360]* self.desiredState.shape[1]
+            self.times = [300]* self.desiredState.shape[1]
 
     def spiralHelper(self, t):
         xyz = np.zeros((12))

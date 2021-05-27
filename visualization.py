@@ -148,7 +148,7 @@ def updateAxesWithTF(transform,lines,length=0.1):
         lines[i].set_data(vertices[0:2, :])
         lines[i].set_3d_properties(vertices[2, :])
 
-def animate2DPath(environment,positions,transforms,controls,name='path',save=False):
+def animate2DPath(environment,positions,transforms,controls,savePlotSteps = [],name='path',save=False):
     # Attaching 3D axis to the figure
     fig = plt.figure()
     ax = p3.Axes3D(fig)
@@ -161,24 +161,34 @@ def animate2DPath(environment,positions,transforms,controls,name='path',save=Fal
     addRect((0,0,environment.lims[2][0]/2),w=environment.lims[0][1],l=environment.lims[1][1],
             h=environment.lims[2][1],color=(0,0,1,0.1),ax=ax)
     ax.set_title(name)
+    
+    savePlotSteps = savePlotSteps.copy()
 
-
+    print('new2')
     def update_lines(num, positions, transforms, controls, traj_plot, scatter,lines,cubes):
         #num = num + states.shape[1]/2
-        for i in   range(len(cubes)):
+        updateAxesWithTF(transforms[num], lines)
+        traj_plot.set_data(np.transpose(positions[:num+1,0:2]))
+        traj_plot.set_3d_properties(positions[:num+1,2])
+        scatter._offsets3d = (positions[num,0:1],positions[num,1:2],positions[num,2:3])
+        
+        for i in range(len(cubes)):
             cube = cubes[i]
             colorinfo = [119/256.0,27/256.0,12/256.0,0.2]
             #print(controls[num][0],i)
             if(controls[num][0] ==i):
                 colorinfo[3] = 0.8
             cube.set_facecolor(colorinfo)
-        updateAxesWithTF(transforms[num], lines)
-        traj_plot.set_data(np.transpose(positions[:num+1,0:2]))
-        traj_plot.set_3d_properties(positions[:num+1,2])
-        scatter._offsets3d = (positions[num,0:1],positions[num,1:2],positions[num,2:3])
 
+
+        seconds = num+1
+        traj_plot.set_zorder(4)
+        
+        if(seconds in savePlotSteps):
+            savePlotSteps.remove(seconds) #dont keep doing this and save every loop through animation forever
+            plt.savefig('videos/' + str(seconds)+".pdf")
         return traj_plot,scatter,lines
-    traj_plot = ax.plot(positions[0:1,0], positions[0:1,1], positions[0:1,2],linewidth=2,color='g')[0] 
+    traj_plot = ax.plot(positions[0:1,0], positions[0:1,1], positions[0:1,2],linewidth=2,color='k')[0] 
     
     lines = [ax.plot(positions[0:1,0], positions[0:1,1], positions[0:1,2],linewidth=2,color=Lanc1)[0] ,
             ax.plot(positions[0:1,0], positions[0:1,1], positions[0:1,2],linewidth=2,color=Lanc2)[0] ,
@@ -194,7 +204,7 @@ def animate2DPath(environment,positions,transforms,controls,name='path',save=Fal
     plt.show()
     print('newer dpi')
     if(save):
-        line_ani.save('animation.mp4', writer='ffmpeg', fps=20,dpi=400)
+        line_ani.save('videos/animation.mp4', writer='ffmpeg', fps=20,dpi=400)
     return line_ani
 def animateOptimization2DPath(environment,states,name='path'):
 
