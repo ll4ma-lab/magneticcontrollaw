@@ -334,7 +334,7 @@ class SpaceProblem:
             self.desiredState= self.TrueDesiredState
             self.times = [300]* self.desiredState.shape[1]
         if(challengeID==5): #floating square
-            self.TrueDesiredState = np.zeros((12,17))
+            self.TrueDesiredState = np.zeros((12,18))
             r = 0.075
             self.startState[3,0] = -3*np.pi/4
             self.startState[4,0] = 0.955 
@@ -389,6 +389,9 @@ class SpaceProblem:
             
             self.TrueDesiredState[3:6,16] = self.TrueDesiredState[3:6,15]
             self.TrueDesiredState[:3,16] = [r,-r,-r]
+            self.TrueDesiredState[:3,17] = self.TrueDesiredState[:3,16]
+            self.TrueDesiredState[4,17] = 3*np.pi/2
+            self.TrueDesiredState[5,17] = -2.5*np.pi
 
             self.desiredState= self.TrueDesiredState
             self.times = [300]* self.desiredState.shape[1]

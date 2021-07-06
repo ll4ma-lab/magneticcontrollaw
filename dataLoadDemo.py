@@ -8,10 +8,10 @@ Created on Sun Jul  5 16:02:00 2020
 import dataloader
 import sys
 sys.path.append("..") # Adds higher directory to python modules path.
-orientation = True
+orientation = False
 
 if orientation:
-    dataloader.load("C:/Users/Griffin Tabor/Documents/magneticLaw/data/sim_2700s_2021-05-25 14.31.31.094727",globals())
+    dataloader.load("C:/Users/Griffin Tabor/Documents/magneticLaw/data/sim_5400s_2021-06-09 13.24.47.972888",globals())
 else: 
     dataloader.load("C:/Users/Griffin Tabor/Documents/magneticLaw/data/sim_2700s_2021-05-25 14.50.51.553896",globals())
 
@@ -77,6 +77,6 @@ plt.show()
 np.savetxt("Orientation" + str(orientation)+'.csv',remainingError[:,:,0],delimiter=',')
 velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
 
-anim = visualization.animate2DPath(env,np.transpose(positions),transforms,controls,name="",savePlotSteps=velocityProfile.switchingTimes,save=True)
+anim = visualization.animate2DPath(env,np.transpose(positions),transforms,controls,name="",savePlotSteps=velocityProfile.switchingTimes,save=False)
 plt.figure()
 plt.plot(np.linalg.norm(angles,axis=0))
