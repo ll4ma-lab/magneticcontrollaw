@@ -21,6 +21,9 @@ from environments import PlanarProblem,SpaceProblem
 import SplineProfile
 from discreteTimeSimulator import discreteTimeSimulator,sphereProperties
 
+
+from models import cylinderModel as cylinderModel2
+from models import multiMagModel
 class demo(Problem): 
     def __init__(self): 
         super().__init__()
@@ -60,14 +63,15 @@ solver = NewtonMethod(alpha, rho, prob)
 solution, cost, converged, iterates = solver.optimize(prob.initial_solution, max_iterations=max_iterations) 
 model = cylinderModel(env.magnets,0.04)
 
+dist =0.01
+strength =5
 
-strength  = Variable(torch.DoubleTensor([0.0]), requires_grad=True)
+control = [0,1,1,0]
+wrench = model.forwardPass(simulator.state[0][:3,3],control)
+print(wrench)
 
-model.eddyFTRotated(0.01,strength,15,0.25,use_pytorch=True)
-
-
-
-
+newModel = multiMagModel(env.magnets,0.04)
+newModel.forwardPass(simulator.state[0][:3,3],control)
 
 
 # start = time.time() 
