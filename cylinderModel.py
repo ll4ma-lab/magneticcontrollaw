@@ -159,13 +159,16 @@ class cylinderSolver():
         #init_op = tf.global_variables_initializer()
         init_op = [self.tf_vars[i].initializer for i in range(len(self.tf_vars))]
         self.sess.run(init_op)
+        iteratesModel0 = []
 
         _,bestCost,magChoice,bestThetas, ps, fts,rs,carts = self.sess.run(self.ops,feed_dict=myDict)
+        iteratesModel0.append((ps[0],bestThetas[0]))
 
         #print('start Thetas',bestThetas)
         for i in range(self.epochs):
             _,bestCost,magChoice,bestThetas, ps, fts,rs,carts = self.sess.run(self.ops,feed_dict=myDict)
-#            if(np.min(bestCost)>0.01):            
+#            if(np.min(bestCost)>0.01):  
+            iteratesModel0.append((ps[0],bestThetas[0]))
 #                print(magChoice,[bestCost[j][0,0] for j in range(len(bestCost))])
         #print('wrench solve ',time.time()-s)
         mag = magChoice[0,0]
@@ -178,7 +181,7 @@ class cylinderSolver():
         #model.forwardPass(state,control)
         #print(control)
         self.time +=  (time.time() - s)
-        return control
+        return control,iteratesModel0
 
         
     

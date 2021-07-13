@@ -8,6 +8,71 @@ Created on Wed Jul  7 17:23:35 2021
 import numpy as np
 import torch
 
+from problems.problem import Problem 
+import matplotlib.pyplot as plt 
+torch.set_default_tensor_type(torch.DoubleTensor)
+
+class demo(Problem): 
+    def __init__(self): 
+        super().__init__()
+        self.initial_solution = np.array([20.0,0.0]).reshape((2,1))
+        
+        
+        self.desiredWrench = torch.zeros((6,1))
+        self.unitStrengthWrench = torch.zeros((6,1))
+        self.frame = torch.eye(3)
+        self.rhoMode = False
+        self.weights = torch.tensor(np.diag((1.0,1,1,200,200,200)))
+        
+    def pointingModelLoss(self,x,frame):
+        selectedWrench = x[0]**2 * torch.cat((frame@self.unitStrengthWrench[:3],frame@self.unitStrengthWrench[3:]))
+        error = 1e5*(self.desiredWrench - selectedWrench)
+        cost = error.t()@self.weights@error
+        return cost
+    
+    def forward(self,x,library=torch):
+         sigmoid = 1/(1 + library.exp(-x))
+         scaledSig = sigmoid*720-360
+         return scaledSig
+
+    
+    def rhoLoss(self,x):
+        frame = torch.mm(self.frame,rotZ(x[1],torch))
+        return self.pointingModelLoss(x,frame)
+    def tensor_cost(self, x): 
+        if self.rhoMode:
+            return self.rhoLoss(x)
+        else:
+            return self.pointingModelLoss(x,self.frame)
+    def visualize_optimization(self,iterates): 
+        plt.plot(iterates[:,0,0],iterates[:,1,0]) 
+         
+class problemBuilder():
+    def __init__(self,model):
+        self.model = model
+        self.problems = []
+        for i in range(3*len(model.magnets)):
+            prob = demo()
+            prob.rhoMode = (i%3) ==2
+            self.problems.append(prob)
+    def modifyProblems(self,desiredWrench,position):
+        relativePoses = (np.array(self.model.magnets) - np.transpose(position)).tolist()
+        for i in range(len(self.model.magnets)):
+            chosenMagnetPose = relativePoses[i]
+            omniFrame = getOmniFrame(chosenMagnetPose)
+            dist = np.linalg.norm(chosenMagnetPose)
+            wrenches = self.model.model.modelCall(dist,1) #1 dipole strength
+            for j in range(3):
+                self.problems[i*3+j].frame = torch.Tensor(omniFrame)
+                self.problems[i*3+j].desiredWrench = torch.Tensor(desiredWrench)
+                self.problems[i*3+j].unitStrengthWrench = torch.tensor(wrenches[j])
+
+        
+        
+
+
+
+
 def getOmniFrame(pos):
     Z = np.array([0, 0, 1])
 
@@ -29,8 +94,8 @@ def averageDict(a,b):
     return newDict
 
 def rotZ(yaw,library = np):
-    
-    one,zero = (1.0,0.0) if library is np else (torch.tensor(1.0),torch.tensor(0.0))
+    yaw = yaw*np.pi/180.0
+    one,zero = (1.0,0.0) if library is np else (torch.tensor([1.0]),torch.tensor([0.0]))
     
     RZ = library.stack([
                 library.stack([library.cos(yaw), -library.sin(yaw), zero]),
@@ -51,6 +116,7 @@ class multiMagModel():
         omniFrame = getOmniFrame(chosenMagnetPose)
         
         if(control[1] is 2):
+            print('is 2')
             rotation = np.dot(omniFrame,rotZ(control[3]))
         else:
             rotation = omniFrame
@@ -59,8 +125,10 @@ class multiMagModel():
         doubleRotMatrix[:3,:3] = rotation
         doubleRotMatrix[3:,3:] = rotation
         
-        wrench = self.model.modelCall(np.linalg.norm(chosenMagnetPose),1)[1]
-        return wrench
+        wrench = self.model.modelCall(np.linalg.norm(chosenMagnetPose),control[2])[control[1]]
+        
+        rotatedWrench = doubleRotMatrix@wrench
+        return rotatedWrench
 
 class cylinderModel():
     def __init__(self,diameter):
