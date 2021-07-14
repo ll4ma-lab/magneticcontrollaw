@@ -50,11 +50,11 @@ desiredState = velocityProfile.getDesiredState(1,simulator.state)
 desired_wrench,p,d = controller.getDesiredWrench(simulator.state,desiredState)
 
 alpha = 1.0 
-rho = 0.5 
+rho = 0.9
 max_iterations = 100
 
 
-newModel = multiMagModel(env.magnets,0.04)
+newModel = multiMagModel(env.magnets*2,0.04)
 builder = problemBuilder(newModel)
 #desired_wrench = np.array([1,0,0,0,0,0]).reshape((6,1))
 control = [0,2,np.random.random()*40,np.random.random()*360-180]
@@ -73,12 +73,14 @@ for i in range(len(builder.problems[:1])):
     print(solution,cost,converged,iterates.shape)
 
 
-strength = np.linspace(0,40,80)
+strength = np.linspace(0,40,160)
 angles = np.linspace(-360,360,400)
 xx, yy = np.meshgrid(strength, angles)
 x=xx.reshape([-1])
 y=yy.reshape([-1])
 costs = []
+
+decisionVariablesList = []
 
 
 func = np.abs
@@ -87,10 +89,26 @@ func = np.abs
 for i in range(x.shape[0]):
     decisionVariables = np.array([x[i],y[i]]).reshape((2,1))
     costs.append(func(prob.cost(decisionVariables)))
+    decisionVariablesList.append(decisionVariables)
+
+
+def optimize(decisionVariable): 
+    solver = NewtonMethod(alpha, rho, prob) 
+    solution, cost, converged, iterates = solver.optimize(decisionVariable, max_iterations=max_iterations)
+    if(cost<1e-5):
+        return 'b'
+    else:
+        return 'y'
+with Pool(processes=8) as pool: 
+    colors=pool.map(optimize, decisionVariablesList)   
+    
+    
+
+    
 bestarg = np.argmin(costs)
 
 print('bruteForce best ',x[bestarg],y[bestarg],' with cost ',costs[bestarg])
-print('newton method best ',solution.reshape([-1]),'with cost ', cost)
+print('newton method best ',solution[0],solution[1],'with cost ', cost)
 print('old best ',oldPredictedControl[2:], ' with cost ',prob.cost(formatedOldControl))
 
 foundCosts = []
@@ -105,7 +123,7 @@ for j in range(oldIterates.shape[0]):
     
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
-ax.scatter(x,y,costs,s=1)
+ax.scatter(x,y,costs,s=1,c=colors)
 ax.plot(np.abs(iterates[:,0,0]),iterates[:,1,0],foundCosts,c='r',markersize=200,linewidth=6)
 ax.plot(np.abs(oldIterates[:,0]),oldIterates[:,1],foundOldCosts,c='g',markersize=200,linewidth=6)
 plt.show()
