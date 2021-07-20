@@ -11,12 +11,14 @@ import torch
 from problems.problem import Problem 
 import matplotlib.pyplot as plt 
 torch.set_default_tensor_type(torch.DoubleTensor)
+import torch.multiprocessing  as multiprocessing
 
-class demo(Problem): 
+from solvers.line_search import NewtonMethod 
+class cylinderOptimization(Problem): 
     def __init__(self): 
         super().__init__()
-        self.initial_solution = np.array([20.0,0.0]).reshape((2,1))
-        
+        self.initial_solution = np.array([20,0]).reshape((2,1))
+        self.boundConstraints[0] = (5,40)
         
         self.desiredWrench = torch.zeros((6,1))
         self.unitStrengthWrench = torch.zeros((6,1))
@@ -46,15 +48,30 @@ class demo(Problem):
             return self.pointingModelLoss(x,self.frame)
     def visualize_optimization(self,iterates): 
         plt.plot(iterates[:,0,0],iterates[:,1,0]) 
-         
-class problemBuilder():
-    def __init__(self,model):
+     
+        
+     
+optimizerParams = {'alpha':1.0,'ro':0.5,'c1':1e-9,'FP_PRECISION': 1e-4}
+def optimizeSingle(prob): 
+    solver = NewtonMethod(problem=prob,**optimizerParams) 
+    solution, cost, converged, iterates = solver.optimize(prob.initial_solution)  
+    return solution, cost, converged, iterates
+
+class multiMagSolver():
+    def __init__(self,model,numProcesses=8):
         self.model = model
         self.problems = []
         for i in range(3*len(model.magnets)):
-            prob = demo()
+            prob = cylinderOptimization()
             prob.rhoMode = (i%3) ==2
             self.problems.append(prob)
+        ctx = multiprocessing.get_context('spawn')
+        self.pool =  ctx.Pool(processes=numProcesses)
+        
+
+        self.optimizeSingle = lambda prob: NewtonMethod(self.multiprocessing).optimize(prob.initial_solution)   
+
+
     def modifyProblems(self,desiredWrench,position):
         relativePoses = (np.array(self.model.magnets) - np.transpose(position)).tolist()
         for i in range(len(self.model.magnets)):
@@ -66,6 +83,11 @@ class problemBuilder():
                 self.problems[i*3+j].frame = torch.Tensor(omniFrame)
                 self.problems[i*3+j].desiredWrench = torch.Tensor(desiredWrench)
                 self.problems[i*3+j].unitStrengthWrench = torch.tensor(wrenches[j])
+    def solve(self,desiredWrench,position):
+        self.modifyProblems(desiredWrench, position)
+        results = self.pool.map(optimizeSingle,self.problems)
+        return results
+    
 
         
         
@@ -115,8 +137,7 @@ class multiMagModel():
         chosenMagnetPose = (np.array(self.magnets) - np.transpose(position)).tolist()[control[0]]
         omniFrame = getOmniFrame(chosenMagnetPose)
         
-        if(control[1] is 2):
-            print('is 2')
+        if(control[1] == 2):
             rotation = np.dot(omniFrame,rotZ(control[3]))
         else:
             rotation = omniFrame
