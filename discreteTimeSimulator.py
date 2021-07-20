@@ -20,7 +20,7 @@ class discreteTimeSimulator:
         from scipy.spatial.transform import Rotation as R
         
         worldToBodyRotation = R.from_euler('xyz',state[3:6,0])
-        worldToBodyR = worldToBodyRotation.as_dcm()
+        worldToBodyR = worldToBodyRotation.as_matrix()
         
         
         bodyToWorldR = np.transpose(worldToBodyR)
