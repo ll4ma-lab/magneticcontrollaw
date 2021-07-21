@@ -24,8 +24,7 @@ import SplineProfile
 from discreteTimeSimulator import discreteTimeSimulator,sphereProperties
 
 
-from models import cylinderModel as cylinderModel2
-from models import multiMagModel,cylinderOptimization,problemBuilder
+from models import multiMagModel,multiMagSolver
 
 def optimize(decisionVariable): 
     solver = NewtonMethod(alpha, rho, prob,c1=c1,FP_PRECISION=FP_PRECISION) 
@@ -44,32 +43,37 @@ objectProperties = sphereProperties(8940,diameter)
 
 
 
-alpha = 1.0 
-rho = 0.5
-max_iterations = 100
-c1 = 1e-9
-FP_PRECISION = 1e-8
+optimizerParams = {'alpha':1.0,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-4}
+
 
 
 newModel = multiMagModel(env.magnets*2,0.04)
-builder = problemBuilder(newModel)
 control = [0,2,np.random.random()*40,np.random.random()*360-180]
-control = [0, 2, 48.36714973571669, 172.5982599543529]
+control = [0, 2, 38.36714973571669, 172.5982599543529]
+desired_wrench = newModel.forwardPass(np.zeros((3,1)), control)
+#np.random.seed(473)
 
-desired_wrench = newModel.forwardPass(np.zeros((3,1)),control)
-#desired_wrench = (np.random.random((6,1))-0.5)*1e-4
+#desired_wrench = (np.random.random((6,1))-0.5)*1e-4    
+#desired_wrench = (np.random.random((6,1))-0.5)*1e-7
+#desired_wrench = (np.random.random((6,1))-0.5)*1e-7
+#desired_wrench = (np.random.random((6,1))-0.5)*1e-7
+#desired_wrench = (np.random.random((6,1))-0.5)*1e-7
 results = []
 
-builder.modifyProblems(desired_wrench,np.zeros((3,1)))
-for i in range(len(builder.problems[:1])):
-    prob = builder.problems[2]
 
 BRUTEFORCECOLOR = False
 if __name__ == '__main__':
+    builder = multiMagSolver(newModel,'all')
+    
+    builder.modifyProblems(desired_wrench,np.zeros((3,1)))
 
+    for i in range(len(builder.problems[:1])):
+        prob = builder.problems[2]
+        
+    
     s = time.time()
-    optimizer = NewtonMethod(alpha, rho, prob,c1=c1,FP_PRECISION=FP_PRECISION) 
-    solution, cost, converged, iterates = optimizer.optimize(prob.initial_solution, max_iterations=max_iterations) 
+    optimizer = NewtonMethod(problem=prob,**optimizerParams) 
+    solution, cost, converged, iterates = optimizer.optimize(prob.initial_solution) 
     #print(solution,cost,converged,iterates.shape)
 
     strength = np.linspace(0,40,80)

@@ -155,7 +155,7 @@ def animate2DPath(environment,positions,transforms,controls,savePlotSteps = [],n
     ax.set_xlim(*environment.visualizationBoundaryY)
     ax.set_ylim(*environment.visualizationBoundaryY)
     ax.set_zlim(*environment.visualizationBoundaryY)
-    ax.set_aspect('equal')
+    #ax.set_aspect('equal')
 
     cubes = drawCubes(environment.magnets,[],ax,environment.radius)
     addRect((0,0,environment.lims[2][0]/2),w=environment.lims[0][1],l=environment.lims[1][1],
