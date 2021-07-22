@@ -45,7 +45,7 @@ class cylinderOptimization(Problem):
      
         
      
-optimizerParams = {'alpha':1.0,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-4}
+optimizerParams = {'alpha':1.0,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-4,'min_alpha': 1e-10}
 def optimizeSingle(prob): 
     solver = NewtonMethod(problem=prob,**optimizerParams) 
     solution, cost, converged, iterates = solver.optimize(prob.initial_solution)  

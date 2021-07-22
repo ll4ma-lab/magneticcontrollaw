@@ -18,7 +18,7 @@ import SplineProfile
 import TrapProfile
 
 
-ll4maOpt = False
+ll4maOpt = True
 
 if ll4maOpt:
     from models import multiMagModel,multiMagSolver
