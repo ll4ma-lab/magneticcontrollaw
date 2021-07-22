@@ -16,7 +16,6 @@ class SplineProfile:
         self.time = 0.0
         self.times = times
         self.switchingTimes = [int(np.sum([times[i] for i in range(j)])) for j in range(len(times)+1)]
-        print('init')
     def getDesiredState(self,step,state):
         start = time.time()
         stateIndex = 0

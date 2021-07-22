@@ -47,7 +47,7 @@ def skewToVector(skew):
 
 def buildTF(position,angles):
     worldToBodyRotation = R.from_euler('xyz',angles)
-    worldToBodyR = worldToBodyRotation.as_dcm()
+    worldToBodyR = worldToBodyRotation.as_matrix()
     
     bodyToWorldR = np.transpose(worldToBodyR)
     bodyToWorld = np.eye(4)

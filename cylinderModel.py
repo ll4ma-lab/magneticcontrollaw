@@ -150,7 +150,7 @@ class cylinderSolver():
         print(4,time.time()-s)
         self.ops = [train_ops,costs,magNum,thetas,powers,ft,Rs,carts]
         self.tf_vars = tf_vars
-    def solveWrench(self,model,position,wrench,other=False):
+    def solveWrench(self,position,wrench,other=False):
         s = time.time()
         
         myDict = {}
@@ -165,7 +165,7 @@ class cylinderSolver():
         #print('start Thetas',bestThetas)
         for i in range(self.epochs):
             _,bestCost,magChoice,bestThetas, ps, fts,rs,carts = self.sess.run(self.ops,feed_dict=myDict)
-#            if(np.min(bestCost)>0.01):            
+#            if(np.min(bestCost)>0.01):  
 #                print(magChoice,[bestCost[j][0,0] for j in range(len(bestCost))])
         #print('wrench solve ',time.time()-s)
         mag = magChoice[0,0]
@@ -259,7 +259,6 @@ class cylinderModel(object):
         model_C = (experimental_C + simulated_C)/2
         P1 = sig*mu*freq*radii*radii
         
-        
         numeratorBase = P1* model_C[:,0:1] # p1*c0
         numeratorPower = model_C[:,1:2] * np.power(P1,model_C[:,2:3]) #c1 * p1^c2
 
@@ -298,7 +297,8 @@ class cylinderModel(object):
         else:
             P0 = np.stack([P0_temp[:6] , P0_temp[6:12] , P0_temp[12:18] ],1)[:,:,0]
             FT_Cycle = np.copy(P0)
-            
+
+
         c=  mu*np.power(dipole_strength,2)*np.power(radii,-4)
         
         forces = FT_Cycle[:3,:] * c
