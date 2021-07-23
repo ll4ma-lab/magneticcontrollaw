@@ -49,7 +49,7 @@ optimizerParams = {'alpha':1.0,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-4}
 
 newModel = multiMagModel(env.magnets*2,0.04)
 control = [0,2,np.random.random()*40,np.random.random()*360-180]
-control = [0, 2, 38.36714973571669, 172.5982599543529]
+control = [0, 2, 38, 173]
 desired_wrench = newModel.forwardPass(np.zeros((3,1)), control)
 #np.random.seed(473)
 
@@ -63,12 +63,12 @@ results = []
 
 BRUTEFORCECOLOR = False
 if __name__ == '__main__':
-    builder = multiMagSolver(newModel,'all')
+    builder = multiMagSolver(newModel,'all',True)
     
-    builder.modifyProblems(desired_wrench,np.zeros((3,1)))
+    builder.modifyProblems(desired_wrench,np.zeros((3,1)),True)
 
     for i in range(len(builder.problems[:1])):
-        prob = builder.problems[2]
+        prob = builder.problems[0]
         
     
     s = time.time()
@@ -76,11 +76,13 @@ if __name__ == '__main__':
     solution, cost, converged, iterates = optimizer.optimize(prob.initial_solution) 
     #print(solution,cost,converged,iterates.shape)
 
-    strength = np.linspace(0,40,80)
-    angles = np.linspace(-360,360,180)
-    xx, yy = np.meshgrid(strength, angles)
+    strength = np.linspace(0,40,2)
+    psis = np.linspace(-180,180,91)
+    xis = np.linspace(-180,180,91)
+    xx, yy, zz = np.meshgrid(strength, psis,xis)
     x=xx.reshape([-1])
     y=yy.reshape([-1])
+    z=zz.reshape([-1])
     costs = []
     
     decisionVariablesList = []
@@ -90,7 +92,7 @@ if __name__ == '__main__':
     
     
     for i in range(x.shape[0]):
-        decisionVariables = np.array([x[i],y[i]]).reshape((2,1))
+        decisionVariables = np.array([x[i],y[i],z[i]]).reshape((3,1))
         costs.append(func(prob.cost(decisionVariables)))
         decisionVariablesList.append(decisionVariables)
     
@@ -116,20 +118,36 @@ if __name__ == '__main__':
     
     bestarg = np.argmin(costs)
     
-    print('bruteForce best ',x[bestarg],y[bestarg],' with cost ',costs[bestarg])
-    print('newton method best ',solution[0],solution[1],'with cost ', cost,' ratio ', cost/costs[bestarg])
+    print('bruteForce best ',x[bestarg],y[bestarg],z[bestarg],' with cost ',costs[bestarg])
+    print('newton method best ',solution[0],solution[1],solution[2],'with cost ', cost,' ratio ', cost/costs[bestarg])
     
     foundCosts = []
     for j in range(iterates.shape[0]):
         foundCosts.append(func(prob.cost(iterates[j,:,:])))
     
     foundOldCosts = []
-        
-        
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-    ax.scatter(x,y,costs,s=1,c=colors)
-    ax.plot(np.abs(iterates[:,0,0]),iterates[:,1,0],foundCosts,c='r',markersize=200,linewidth=6)
-    plt.show()
+    npCosts = np.array(costs)
+    npc = np.array(colors)
+    for streng in strength:
+        indices = np.argwhere(x==streng)[:,0].tolist()
+
+        fig = plt.figure()
+        fig.suptitle(str(streng) +' dipole', fontsize=16)
+
+        ax = fig.add_subplot(projection='3d')
+        ax.scatter(y[indices],z[indices],npCosts[indices],s=1,c=npc[indices])
+        ax.plot(iterates[:,1,0],iterates[:,2,0],foundCosts,c='r',markersize=200,linewidth=6)
+        plt.show()
 
     print('elapsed time ',time.time()-s)
+    
+    producedControl = [0,solution[0,0],solution[1,0],solution[2,0]]
+    bestWrench = newModel.forwardPass(np.zeros((3,1)), producedControl,True)
+    print(bestWrench)
+    print(desired_wrench)
+    
+    GriffinControl = [0,38.4,0,173]
+    griffinWrench = newModel.forwardPass(np.zeros((3,1)), GriffinControl,True)
+    print(griffinWrench)
+    griffinCost = prob.cost(np.array(GriffinControl[1:]).reshape(3,1))
+    print(griffinCost,cost/griffinCost)
