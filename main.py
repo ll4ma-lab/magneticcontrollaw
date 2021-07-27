@@ -21,7 +21,8 @@ ll4maOpt = True
 useSphere = True
 
 if ll4maOpt:
-    from models import multiMagModel,multiMagSolver
+    from models import multiMagModel
+    from modelOptimization import multiMagSolver
 else:
     from cylinderModel import cylinderSolver,cylinderModel
 
