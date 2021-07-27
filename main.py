@@ -5,7 +5,6 @@ Created on Mon Nov 18 15:27:35 2019
 @author: tabor
 """
 import numpy as np
-from cylinderModel import cylinderSolver,cylinderModel
 from PDController import PDController
 from discreteTimeSimulator import discreteTimeSimulator,sphereProperties
 from environments import PlanarProblem,SpaceProblem
@@ -19,9 +18,13 @@ import TrapProfile
 
 
 ll4maOpt = True
+useSphere = True
 
 if ll4maOpt:
     from models import multiMagModel,multiMagSolver
+else:
+    from cylinderModel import cylinderSolver,cylinderModel
+
 if __name__ == '__main__':
 
     cheat = False
@@ -30,6 +33,7 @@ if __name__ == '__main__':
     
     
     env = SpaceProblem(1)
+    env.magnets = env.magnets[:-4]
     #env.trajectoryDimensions = 'xyz'
     
     simTime = np.sum(env.times)
@@ -39,8 +43,8 @@ if __name__ == '__main__':
     objectProperties = sphereProperties(8940,diameter)
     
     if(ll4maOpt):
-        model = multiMagModel(env.magnets,0.04)
-        solver = multiMagSolver(model,env.trajectoryDimensions)
+        model = multiMagModel(env.magnets,0.04,useSphere)
+        solver = multiMagSolver(model,env.trajectoryDimensions,useSphere)
     else:
         model = cylinderModel(env.magnets,diameter)
         solver = cylinderSolver(env.magnets)

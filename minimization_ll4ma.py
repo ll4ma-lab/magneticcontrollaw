@@ -36,19 +36,14 @@ objectProperties = sphereProperties(8940,diameter)
 if __name__ == '__main__':
     position = np.zeros((3,1))
     newModel = multiMagModel(env.magnets,0.04)
-    solver = multiMagSolver(newModel,'all')
+    solver = multiMagSolver(newModel,'all',True)
+    #np.random.seed(473)
+    for i in range(1000):
 
-
-    desired_wrench = (np.random.random((6,1))-0.5)*1e-4    
-
-    
-    
-    s = time.time()
-    
-    control = solver.solveWrench(position,desired_wrench)
-    
-    control = [5,2,40,150]
-    sphereControl = [5,40,90,150]
-    sphereWrench = newModel.forwardPass(np.zeros((3,1)),sphereControl,True)
-    cylinderWrench = newModel.forwardPass(np.zeros((3,1)),control)
-    print(sphereWrench,cylinderWrench,sphereWrench-cylinderWrench)
+        desired_wrench = (np.random.random((6,1))-0.5)*1e-4    
+        s = time.time()
+        
+        control = solver.solveWrench(position,desired_wrench)
+        print(time.time()-s)
+        if(time.time()-s>1 and i>0):
+            break

@@ -29,7 +29,7 @@ class cylinderOptimization(Problem):
         
     def pointingModelLoss(self,x,frame):
         selectedWrench = x[0]**2 * torch.cat((frame@self.unitStrengthWrench[:3],frame@self.unitStrengthWrench[3:]))
-        error = 1e13*(self.desiredWrench - selectedWrench)
+        error = 1e6*(self.desiredWrench - selectedWrench)
         cost = error.t()@self.weights@error
         return cost    
     def rhoLoss(self,x):
@@ -46,7 +46,7 @@ class sphericalOptimization(Problem):
     def __init__(self,weights): 
         super().__init__()
         self.initial_solution = np.array([20,0,0]).reshape((3,1))
-        self.boundConstraints[0] = (2,40)
+        self.boundConstraints[0] = (0.1,40)
         
         self.desiredWrench = torch.zeros((6,1))
 
@@ -79,13 +79,11 @@ class sphericalOptimization(Problem):
         cost = error.t()@self.weights@error
         return cost
     
-    
-    
     def visualize_optimization(self,iterates): 
         plt.plot(iterates[:,0,0],iterates[:,1,0]) 
-     
-optimizerParams = {'alpha':1.0,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-10,'min_alpha': 1e-10}
-def optimizeSingle(prob): 
+
+optimizerParams = {'alpha':1.0,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-10}
+def optimizeSingle(prob):
     solver = NewtonMethod(problem=prob,**optimizerParams) 
     solution, cost, converged, iterates = solver.optimize(prob.initial_solution)  
     return solution, cost, converged, iterates
@@ -112,10 +110,16 @@ class multiMagSolver():
         self.model = model
         self.problems = []
         self.time = 0
+        self.useSphereModel = sphereModel
+        self.costs = []
         Qweights = buildQ(stateCostString)
         if(sphereModel):
-            for _ in range(len(model.magnets)):
+            for i in range(2*len(model.magnets)):
                 prob = sphericalOptimization(Qweights)
+                if i%2 == 0:
+                    prob.initial_solution = np.array([20,0,0]).reshape((3,1))
+                if i%2 == 1:
+                    prob.initial_solution = np.array([20,180,180]).reshape((3,1))
                 self.problems.append(prob)
         else:     
             for i in range(3*len(model.magnets)):
@@ -127,8 +131,8 @@ class multiMagSolver():
         
         self.iterations = []
         self.times = []
-    def modifyProblems(self,desiredWrench,position,useSphere=False):
-        if useSphere:
+    def modifyProblems(self,desiredWrench,position):
+        if self.useSphereModel:
             self.modifySphereProblems(desiredWrench,position)
         else: 
             self.modifyCylinderProblems(desiredWrench, position)
@@ -137,18 +141,18 @@ class multiMagSolver():
         for i in range(len(self.model.magnets)):
             chosenMagnetPose = relativePoses[i]
             rho = (-1*chosenMagnetPose).reshape((3,1))
-            self.problems[i].rho = torch.tensor(rho)
             dist = np.linalg.norm(chosenMagnetPose)
             frho0,trho0,frho90,fphi90,ttheta90 = self.model.sphereModel.modelCall(dist,1)
-            
-            self.problems[i].frho0 = torch.tensor(frho0)
-            self.problems[i].trho0 = torch.tensor(trho0)
-            self.problems[i].frho90 = torch.tensor(frho90)
-            self.problems[i].fphi90 = torch.tensor(fphi90)
-            self.problems[i].ttheta90 = torch.tensor(ttheta90)
-            
-            self.problems[i].desiredWrench = torch.Tensor(desiredWrench)
-                   
+            for j in range(2):
+                self.problems[i*2+j].frho0 = torch.tensor(frho0)
+                self.problems[i*2+j].trho0 = torch.tensor(trho0)
+                self.problems[i*2+j].frho90 = torch.tensor(frho90)
+                self.problems[i*2+j].fphi90 = torch.tensor(fphi90)
+                self.problems[i*2+j].ttheta90 = torch.tensor(ttheta90)
+                
+                self.problems[i*2+j].desiredWrench = torch.Tensor(desiredWrench)
+                self.problems[i*2+j].rho = torch.tensor(rho)
+
     def modifyCylinderProblems(self,desiredWrench,position):
         relativePoses = (np.array(self.model.magnets) - np.transpose(position)).tolist()
 
@@ -161,7 +165,7 @@ class multiMagSolver():
                 self.problems[i*3+j].frame = torch.Tensor(omniFrame)
                 self.problems[i*3+j].desiredWrench = torch.Tensor(desiredWrench)
                 self.problems[i*3+j].unitStrengthWrench = torch.tensor(wrenches[j])
-    def solveWrench(self,position,desiredWrench):
+    def solveWrenchCylinder(self,position,desiredWrench):
         s = time.time()
         self.modifyProblems(desiredWrench, position)
         results = self.pool.map(optimizeSingle,self.problems)
@@ -169,10 +173,10 @@ class multiMagSolver():
         self.iterations.append((iterations))
         noActionCost  = self.problems[0].cost(np.zeros((2,1)))
         costs = [result[1] for result in results]
-        costs.append(noActionCost)
-        
+        self.costs.append(costs)
         bestAction = np.argmin(costs)
-        if(bestAction == len(costs)-1):
+
+        if(costs[bestAction]>noActionCost):
             control = [0,0,0,0]
             #print('shit')
         else:
@@ -181,6 +185,38 @@ class multiMagSolver():
             strength = results[bestAction][0][0,0]
             theta = results[bestAction][0][1,0]
             control = [magNum,modelNum,strength,theta]
+            
+        timestep = time.time()-s
+        self.times.append(timestep)
+        self.time += timestep
+        return control
+    def solveWrench(self,position,desiredWrench):
+        if(self.useSphereModel):
+            return self.solveWrenchSphere(position,desiredWrench)
+        else:
+            return self.solveWrenchCylinder(position,desiredWrench)
+    def solveWrenchSphere(self,position,desiredWrench):
+        s = time.time()
+        self.modifyProblems(desiredWrench, position)
+        #results = [optimizeSingle(prob) for prob in self.problems]
+        results = self.pool.map(optimizeSingle,self.problems)
+        iterations = [result[3].shape[0] for result in results]
+        self.iterations.append((iterations))
+        noActionCost  = self.problems[0].cost(np.zeros((3,1)))
+        costs = [result[1] for result in results]
+        self.costs.append(costs)
+
+        bestAction = np.argmin(costs)
+
+        if(costs[bestAction]>noActionCost):
+            control = [0,0,0,0]
+            #print('shit')
+        else:
+            magNum = bestAction//2
+            strength = results[bestAction][0][0,0]
+            psi = results[bestAction][0][1,0]
+            xi = results[bestAction][0][2,0]
+            control = [magNum,strength,psi,xi]
             
         timestep = time.time()-s
         self.times.append(timestep)
@@ -255,15 +291,15 @@ def computeThetaAndFrame(omega,rho,library = np):
     return theta,omniFrame
     
 class multiMagModel():
-    def __init__(self,magnets,diameter):
+    def __init__(self,magnets,diameter,useSphere= False):
         self.time = 0
         self.magnets = magnets
         self.diameter = diameter
         self.cylinderModel = cylinderModel(diameter)
         self.sphereModel = sphereModel(diameter)
-
-    def forwardPass(self,position,control,useSphere= False):
-        if(useSphere):
+        self.useSphere = useSphere
+    def forwardPass(self,position,control):
+        if(self.useSphere):
             return self.forwardSphere(position, control)
         else: 
             return self.forwardCylinder(position, control)
