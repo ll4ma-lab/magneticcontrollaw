@@ -29,28 +29,21 @@ velocityProfile = SplineProfile.SplineProfile(env,np.sum(env.times),env.times)
 diameter = 0.04
 objectProperties = sphereProperties(8940,diameter)
 
+
+
+
+
 if __name__ == '__main__':
     position = np.zeros((3,1))
     newModel = multiMagModel(env.magnets,0.04)
-    solver = multiMagSolver(newModel,'all')
-    #control = [0,2,np.random.random()*40,np.random.random()*360-180]
-    control = [0, 2, 48.36714973571669, 172.5982599543529]
-    desired_wrench = newModel.forwardPass(position,control)
-    np.random.seed(473)
+    solver = multiMagSolver(newModel,'all',True)
+    #np.random.seed(473)
+    for i in range(1000):
 
-    desired_wrench = (np.random.random((6,1))-0.5)*1e-4    
-    desired_wrench = (np.random.random((6,1))-0.5)*1e-7
-    desired_wrench = (np.random.random((6,1))-0.5)*1e-7
-    desired_wrench = (np.random.random((6,1))-0.5)*1e-7
-    desired_wrench = (np.random.random((6,1))-0.5)*1e-7
-
-    
-    
-    s = time.time()
-    
-    control,results = solver.solveWrench(position,desired_wrench)
-    
-    costs = [result[1] for result in results]
-
-
-    
+        desired_wrench = (np.random.random((6,1))-0.5)*1e-4    
+        s = time.time()
+        
+        control = solver.solveWrench(position,desired_wrench)
+        print(time.time()-s)
+        if(time.time()-s>1 and i>0):
+            break
