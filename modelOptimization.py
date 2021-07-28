@@ -17,7 +17,29 @@ import torch.multiprocessing  as multiprocessing
 
 from solvers.line_search import NewtonMethod 
 
-from models import rotZ,constructOmega,computeThetaAndFrame,getOmniFrame
+from models import rotZ,modelCallRotatedWrench,getOmniFrame
+
+optimizerParams = {'alpha':1.0,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-10}
+def optimizeSingle(prob):
+    solver = NewtonMethod(problem=prob,**optimizerParams) 
+    solution, cost, converged, iterates = solver.optimize(prob.initial_solution,max_iterations=25)  
+    return solution, cost, converged, iterates
+
+
+def buildQ(stateCostString):
+    letterOptions = ["x","y","z","r","p","t"]
+    activated = [0]*6
+    if("all" in stateCostString):
+        stateCostString = letterOptions
+    for index in range(len(letterOptions)):
+        if(letterOptions[index] in stateCostString):
+            if index < 3:   
+                activated[index] = 1.0 #/ (objectProperties[0] * tolerances[0])
+            else: 
+                activated[index] = 200.0 #/ (objectProperties[1][0,0] * tolerances[1])
+
+    Q = np.diag(activated)
+    return Q
 
 class cylinderOptimization(Problem): 
     def __init__(self,weights): 
@@ -66,47 +88,13 @@ class sphericalOptimization(Problem):
         
         self.zero = torch.tensor(0.0)
     def tensor_cost(self, x): 
-        omega = constructOmega(x[1:],torch)
-        #print('torch omega ',omega)
-        theta,rotation = computeThetaAndFrame(omega, self.rho,torch)
-        #print('torch theta ',theta,rotation)
-        unitStrengthWrench = torch.stack([self.zero,
-                       self.fphi90*torch.sin(theta),
-                       (-(self.frho90-self.frho0)/2)*torch.cos(2*theta) + (self.frho90+self.frho0)/2,
-                       self.ttheta90*torch.sin(theta),
-                       self.zero,
-                       self.trho0*torch.cos(theta)]).reshape((6,1))
-
-        
-        selectedWrench = x[0]**2 * torch.cat((rotation @ unitStrengthWrench[:3],rotation @ unitStrengthWrench[3:]))
+        selectedWrench = modelCallRotatedWrench(x[0],x[1:],(self.frho0,self.trho0,self.frho90,self.fphi90,self.ttheta90),self.rho,library=torch,zero = self.zero)
         error = 1e10*(self.desiredWrench - selectedWrench)
         cost = error.t()@self.weights@error
         return cost
     
     def visualize_optimization(self,iterates): 
         plt.plot(iterates[:,0,0],iterates[:,1,0]) 
-
-optimizerParams = {'alpha':1.0,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-10}
-def optimizeSingle(prob):
-    solver = NewtonMethod(problem=prob,**optimizerParams) 
-    solution, cost, converged, iterates = solver.optimize(prob.initial_solution)  
-    return solution, cost, converged, iterates
-
-
-def buildQ(stateCostString):
-    letterOptions = ["x","y","z","r","p","t"]
-    activated = [0]*6
-    if("all" in stateCostString):
-        stateCostString = letterOptions
-    for index in range(len(letterOptions)):
-        if(letterOptions[index] in stateCostString):
-            if index < 3:   
-                activated[index] = 1.0 #/ (objectProperties[0] * tolerances[0])
-            else: 
-                activated[index] = 200.0 #/ (objectProperties[1][0,0] * tolerances[1])
-
-    Q = np.diag(activated)
-    return Q
 
 class multiMagSolver():
     def __init__(self,model,stateCostString,sphereModel = False,numProcesses=8):

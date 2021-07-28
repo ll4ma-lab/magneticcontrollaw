@@ -9,27 +9,26 @@ import numpy as np
 import torch
 import time
 
-
+#cylinder model helper
 def getOmniFrame(pos):
     Z = np.array([0, 0, 1])
-
     dist = np.linalg.norm(pos)
-
-    omni_Z = -1*(pos/dist)
     
+    omni_Z = -1*(pos/dist)
     omni_Y = np.cross(omni_Z,Z)
     omni_Y = omni_Y/np.sqrt(np.dot(omni_Y,omni_Y)) #unit vectorise
-    
     omni_X = np.cross(omni_Y,omni_Z)
     # Combine to build rotation matrix
     omniFrame = np.transpose(np.array([omni_X, omni_Y, omni_Z]))
     return omniFrame
+
 def averageDict(a,b):
     newDict = {}
     for key in a.keys():
         newDict[key] = ((np.array(a[key])+np.array(b[key]))/2).tolist()
     return newDict
 
+#cylinder model helper
 def rotZ(yaw,library = np):
     yaw = yaw*np.pi/180.0
     one,zero = (1.0,0.0) if library is np else (torch.tensor([1.0]),torch.tensor([0.0]))
@@ -40,6 +39,7 @@ def rotZ(yaw,library = np):
                 library.stack([zero, zero, one])]).reshape(3,3)
     return RZ
 
+#sphere model helper
 def constructOmega(angles, library = np):
     #print(angles)
     angles = angles*np.pi/180.0
@@ -49,6 +49,7 @@ def constructOmega(angles, library = np):
         library.cos(angles[0])]).reshape(3,1)
     return omega
 
+#sphere model helper
 def computeThetaAndFrame(omega,rho,library = np):
     
     omega = omega[:,0]
@@ -75,6 +76,22 @@ def computeThetaAndFrame(omega,rho,library = np):
         omniFrame = library.transpose(stacked,0,1)
 
     return theta,omniFrame
+
+#sphere model helper
+def modelCallRotatedWrench(dipoleStrength,angles,modelVals,rho,library=np,zero = 0):
+    frho0,trho0,frho90,fphi90,ttheta90 = modelVals
+    omega = constructOmega(angles,library)
+    theta,rotation = computeThetaAndFrame(omega, rho,library)
+    unitStrengthWrench = library.stack([zero,
+                   fphi90*library.sin(theta),
+                   (-(frho90-frho0)/2)*library.cos(2*theta) + (frho90+frho0)/2,
+                   ttheta90*library.sin(theta),
+                   zero,
+                   trho0*library.cos(theta)]).reshape((6,1))
+
+    catFunc = np.concatenate if library is np else torch.cat
+    selectedWrench = dipoleStrength**2 * catFunc((rotation @ unitStrengthWrench[:3],rotation @ unitStrengthWrench[3:]))
+    return selectedWrench  
     
 class multiMagModel():
     def __init__(self,magnets,diameter,useSphere= False):
@@ -120,51 +137,29 @@ class multiMagModel():
         #control[3] = xi
         s = time.time()
         chosenMagnetPose = (np.array(self.magnets)[control[0]] - np.transpose(position)).transpose()
-        
+        dist = np.linalg.norm(chosenMagnetPose)
         rho = (-1*chosenMagnetPose).reshape((3,1))
-        omega = constructOmega(np.array(control[2:]))
-        #print('np omega ',omega)
 
-        theta,rotation = computeThetaAndFrame(omega, rho)
-        #print('np theta ',theta,rotation)
+        modelVals = self.sphereModel.modelCall(dist,1)
+        wrench = modelCallRotatedWrench(control[1],np.array(control[2:]),modelVals,rho)
 
-        doubleRotMatrix = np.zeros((6,6))
-        doubleRotMatrix[:3,:3] = rotation
-        doubleRotMatrix[3:,3:] = rotation
-        
-        wrench = self.sphereModel.modelCallFullWrench(np.linalg.norm(chosenMagnetPose),control[1],theta)
-
-        rotatedWrench = doubleRotMatrix@wrench
         self.time += time.time()-s
-        return rotatedWrench
-    
-    
-    
-
+        return wrench
+ 
 class sphereModel():
     def __init__(self,diameter):
         self.cylinderModel = cylinderModel(diameter)
         
-    def modelCall(self,dist,dipoleStrength):
-        frho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['fzz'],dist,dipoleStrength,4)
-        trho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['tzz'],dist,dipoleStrength,3)
+    def modelCall(self,dist,dipoleStrength,radii=None):
+        frho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['fzz'],dist,dipoleStrength,4,radii)
+        trho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['tzz'],dist,dipoleStrength,3,radii)
         
-        frho90 = self.cylinderModel.modelEquation(self.cylinderModel.constants['frhorho'],dist,dipoleStrength,4)
-        fphi90 = self.cylinderModel.modelEquation(self.cylinderModel.constants['frhophi'],dist,dipoleStrength,4)
-        ttheta90= self.cylinderModel.modelEquation(self.cylinderModel.constants['trhoz'],dist,dipoleStrength,3)
+        frho90 = self.cylinderModel.modelEquation(self.cylinderModel.constants['frhorho'],dist,dipoleStrength,4,radii)
+        fphi90 = self.cylinderModel.modelEquation(self.cylinderModel.constants['frhophi'],dist,dipoleStrength,4,radii)
+        ttheta90= self.cylinderModel.modelEquation(self.cylinderModel.constants['trhoz'],dist,dipoleStrength,3,radii)
         return frho0,trho0,frho90,fphi90,ttheta90
     
-    def modelCallFullWrench(self,dist,dipoleStrength,theta):
-        frho0,trho0,frho90,fphi90,ttheta90 = self.modelCall(dist, dipoleStrength)
-        #xyz is theta,phi,rho
-        wrench = np.array([0,
-                           fphi90*np.sin(theta),
-                           (-(frho90-frho0)/2)*np.cos(2*theta) + (frho90+frho0)/2,
-                           ttheta90*np.sin(theta),
-                           0,
-                           trho0*np.cos(theta)]).reshape((6,1))
-        return wrench
-        
+    
                 
 
 class cylinderModel():
@@ -195,10 +190,12 @@ class cylinderModel():
         
         self.constants = averageDict(self.feaConstants,self.expConstants)
 
-    def modelEquation(self,constants,distance,dipoleStrength,p0RPower):
+    def modelEquation(self,constants,distance,dipoleStrength,p0RPower,radii=None):
+        if(radii is None):
+            radii = self.radii
         #P0 has r^4 for forces and r^3 for torques
-        P1 = self.sigma*self.mu*self.freq*self.radii*self.radii
-        P2 = distance/self.radii
+        P1 = self.sigma*self.mu*self.freq*radii*radii
+        P2 = distance/radii
 
         numeratorBase = constants[0]*P1
         numeratorPower = constants[1]*(P1**constants[2])
@@ -207,7 +204,7 @@ class cylinderModel():
         denominator = P2**constants[4]
         P0 = numerator/denominator
 
-        c=  self.mu*(dipoleStrength**2)*(self.radii**-p0RPower)
+        c=  self.mu*(dipoleStrength**2)*(radii**-p0RPower)
 
         wrench = P0*c
         
