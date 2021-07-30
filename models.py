@@ -41,44 +41,52 @@ def rotZ(yaw,library = np):
 
 #sphere model helper
 def constructOmega(angles, library = np):
-    #print(angles)
     angles = angles*np.pi/180.0
     omega = library.stack([
         library.sin(angles[0])*library.cos(angles[1]),
         library.sin(angles[0])*library.sin(angles[1]),
-        library.cos(angles[0])]).reshape(3,1)
+        library.cos(angles[0])]).reshape(3,-1)
     return omega
 
+
+
+def vectorNorm(vector,library):
+    if library is np:
+        norm = library.linalg.norm(vector,axis=1)#library agnostic L2 norm
+    else:
+        norm = library.linalg.norm(vector,dim=1)#library agnostic L2 norm
+    return norm
 #sphere model helper
 def computeThetaAndFrame(omega,rho,library = np):
     
-    omega = omega[:,0]
-    rho = rho[:,0]#libraries dont like 3,1 and prefer 3,
+    omega = library.swapaxes(omega,0,1)
+    rho = library.swapaxes(rho,0,1) #libraries dont like 3,n and prefer n,3
     
     cross = library.cross(omega,rho)
-    l2Cross = library.sqrt(library.dot(cross,cross))#library agnostic L2 norm
-    dot = library.dot(omega,rho)
     
+    l2Cross = vectorNorm(cross,library)
+
+    dot = library.sum(omega*rho,1)
     if library is np:
         theta = library.arctan2(l2Cross,dot)
     else:
         theta = library.atan2(l2Cross,dot)
-    
-    omni_Z =  rho/library.sqrt(library.dot(rho,rho))
-    omni_Y = cross/l2Cross
+    omni_Z =  (rho.T/vectorNorm(rho,library)).T
+    omni_Y = (cross.T/l2Cross).T
     
     omni_X = library.cross(omni_Y,omni_Z);
-    # Combine to build rotation matrix
+    # Combine to build rotation matri
     stacked = library.stack([omni_X,omni_Y,omni_Z])
-    if(library is np):
-        omniFrame = library.transpose(stacked)
-    else:
-        omniFrame = library.transpose(stacked,0,1)
+    #first move the batch dimension to the end, then tranpose the rotation matrix
+    omniFrame=library.swapaxes(stacked,0,1)
+    omniFrame=library.swapaxes(omniFrame,1,2)
+
 
     return theta,omniFrame
 
+
 #sphere model helper
-def modelCallRotatedWrench(dipoleStrength,angles,modelVals,rho,library=np,zero = 0):
+def modelCallRotatedWrench(dipoleStrength,angles,modelVals,rho,library=np,zero = [0]):
     frho0,trho0,frho90,fphi90,ttheta90 = modelVals
     omega = constructOmega(angles,library)
     theta,rotation = computeThetaAndFrame(omega, rho,library)
@@ -87,10 +95,19 @@ def modelCallRotatedWrench(dipoleStrength,angles,modelVals,rho,library=np,zero =
                    (-(frho90-frho0)/2)*library.cos(2*theta) + (frho90+frho0)/2,
                    ttheta90*library.sin(theta),
                    zero,
-                   trho0*library.cos(theta)]).reshape((6,1))
-
-    catFunc = np.concatenate if library is np else torch.cat
-    selectedWrench = dipoleStrength**2 * catFunc((rotation @ unitStrengthWrench[:3],rotation @ unitStrengthWrench[3:]))
+                   trho0*library.cos(theta)])
+    #switch batch dim to 0
+    unitStrengthWrench = library.swapaxes(unitStrengthWrench,0,1)
+    if(library is np):
+        unitStrengthWrench = np.expand_dims(unitStrengthWrench, 2)
+        selectedWrench = [dipoleStrength[i]**2 * np.concatenate((rotation[i] @ unitStrengthWrench[i,:3],rotation[i] @ unitStrengthWrench[i,3:])) 
+                          for i in range(unitStrengthWrench.shape[0])] 
+        selectedWrench = np.array(selectedWrench)
+    else:
+        unitStrengthWrench = torch.unsqueeze(unitStrengthWrench, 2)
+        forces =torch.bmm(rotation,unitStrengthWrench[:,:3])
+        torques = torch.bmm(rotation, unitStrengthWrench[:,3:])
+        selectedWrench = torch.bmm(torch.cat((forces,torques),1),dipoleStrength.reshape((-1,1,1))**2)
     return selectedWrench  
     
 class multiMagModel():
@@ -141,7 +158,7 @@ class multiMagModel():
         rho = (-1*chosenMagnetPose).reshape((3,1))
 
         modelVals = self.sphereModel.modelCall(dist,1)
-        wrench = modelCallRotatedWrench(control[1],np.array(control[2:]),modelVals,rho)
+        wrench = modelCallRotatedWrench(np.array(control[1]).reshape(1),np.array(control[2:]),modelVals,rho).reshape((6,1))
 
         self.time += time.time()-s
         return wrench

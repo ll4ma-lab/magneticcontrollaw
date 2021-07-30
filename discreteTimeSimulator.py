@@ -7,16 +7,28 @@ Created on Mon Feb 22 12:40:03 2021
 import numpy as np
 import time
 from se3Utils import buildSkew,repairRotMatrix
+
+
+def buildMassMatrix(object_properties,library=np,torqueTop=True):
+    (mass,MOI) = object_properties
+
+    massComponent = library.eye(3) *mass
+    offDiagonal = library.zeros((3,3))
+    
+    if torqueTop:
+        top = library.vstack((MOI,offDiagonal))    
+        bottom = library.vstack((offDiagonal,massComponent))
+    else:
+        top = library.vstack((massComponent,offDiagonal))    
+        bottom = library.vstack((offDiagonal,MOI))
+    full = library.vstack((top.T,bottom.T)).T
+    return full
 class discreteTimeSimulator:
     def __init__(self,state,timestep,object_properties):
         (mass,MOI) = object_properties
         self.t = timestep
         self.dt = 0.002
-        self.mass = mass
-        self.MOI = MOI
-    
-        massMatrix = np.eye(3) * mass
-        
+            
         from scipy.spatial.transform import Rotation as R
         
         worldToBodyRotation = R.from_euler('xyz',state[3:6,0])
@@ -32,10 +44,8 @@ class discreteTimeSimulator:
         Ωsc = np.dot(worldToBodyR,state[9:12,:])
         Vsc = np.dot(worldToBodyR,state[6:9,:])
         self.state = (bodyToWorld,Ωsc,Vsc)
-        self.Isc = np.zeros((6,6))
-        self.Isc[:3,:3] = MOI
-        self.Isc[3:,3:] = massMatrix
-        
+
+        self.Isc = buildMassMatrix(object_properties)
         self.steps = int(self.t/self.dt)
         
         self.time = 0
@@ -88,9 +98,9 @@ class discreteTimeSimulator:
         return (bodyToWorld,Ωsc,Vsc)
    # def setState(self,state):
    #     self.state = np.copy(state)
-def sphereProperties(density,diameter):
+def sphereProperties(density,diameter,library=np):
     radius = diameter / 2.0
-    volume = 4.0/3 * np.pi*np.power(radius,3)
+    volume = 4.0/3 * np.pi*(radius**3)
     mass = volume * density
-    I = np.eye(3)*(2.0/5) *mass * np.power(radius,2)
+    I = library.eye(3)*(2.0/5) *mass * (radius**2)
     return mass, I

@@ -34,7 +34,7 @@ if __name__ == '__main__':
     
     
     env = SpaceProblem(1)
-    env.magnets = env.magnets[:-4]
+    env.magnets = env.magnets
     #env.trajectoryDimensions = 'xyz'
     
     simTime = np.sum(env.times)
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     start = time.time()
     minimizationCosts = []
     
-    for i in range(numSteps):
+    for i in range(100):
     
         desiredState = velocityProfile.getDesiredState(i*dt,state)
         desired_wrench,p,d = controller.getDesiredWrench(state,desiredState)
@@ -103,6 +103,9 @@ if __name__ == '__main__':
     transforms = np.array([state[0] for state in states])
     desiredFinalTF = buildTF(desiredState[:3,0],desiredState[3:6,0])
     remainingError = np.array([controller.computeError(desiredFinalTF,state[0]) for state in states])
+    
+    noisyVel = linearVelocity + np.random.normal(0,np.max(linearVelocity)*1e-3,linearVelocity.shape)
+    
     
     #visualization stuff
     env.radius*=0.5

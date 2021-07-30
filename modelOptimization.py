@@ -86,10 +86,10 @@ class sphericalOptimization(Problem):
         
         self.rho = torch.tensor(np.zeros((3,1)))
         
-        self.zero = torch.tensor(0.0)
+        self.zero = torch.zeros(1)
     def tensor_cost(self, x): 
         selectedWrench = modelCallRotatedWrench(x[0],x[1:],(self.frho0,self.trho0,self.frho90,self.fphi90,self.ttheta90),self.rho,library=torch,zero = self.zero)
-        error = 1e10*(self.desiredWrench - selectedWrench)
+        error = 1e10*(self.desiredWrench - selectedWrench)[0]
         cost = error.t()@self.weights@error
         return cost
     
