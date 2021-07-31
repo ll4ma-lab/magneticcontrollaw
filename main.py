@@ -40,11 +40,11 @@ if __name__ == '__main__':
     simTime = np.sum(env.times)
     dt = 1
     numSteps = int(simTime/dt)
-    diameter = 0.04
+    diameter = 0.06
     objectProperties = sphereProperties(8940,diameter)
     
     if(ll4maOpt):
-        model = multiMagModel(env.magnets,0.04,useSphere)
+        model = multiMagModel(env.magnets,diameter,useSphere)
         solver = multiMagSolver(model,env.trajectoryDimensions,useSphere)
     else:
         model = cylinderModel(env.magnets,diameter)

@@ -15,13 +15,25 @@ from modelOptimization import buildQ
 from problems.problem import Problem 
 import matplotlib.pyplot as plt 
 
+from solvers.line_search import NewtonMethod
+def sysIDDemo(controls,magnets,positions,linearVelocity,rotationalVelocity):
+
+    optimizerParams = {'alpha':1,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-20}
+    prob = radiusSysid(np.diag((2e5,2e5,2e5,1,1,1))) # built with M(0.04) Q M(0.04)
+    optimizer = NewtonMethod(problem=prob,**optimizerParams)
+    prob.updateVals(controls,magnets,positions,linearVelocity,rotationalVelocity)
+    solution, cost, converged, iterates = optimizer.optimize(prob.initial_solution,max_iterations=25)
+    prob.visualize_optimization(iterates)
+    print(solution)
+
+
 
 class radiusSysid(Problem): 
     def __init__(self,weights): 
         super().__init__()
-        self.boundConstraints[0] = (1e-5,0.1)
+        self.boundConstraints[0] = (1e-3,0.1)
         self.singleModel = sphereModel(1)
-        self.initial_solution = np.ones((1,1)) * 1e-3
+        self.initial_solution = np.ones((1,1)) * 0.05
         
         self.weights = torch.tensor(weights)
     def updateVals(self,controls,magnets,positions,linearVelocity,rotationalVelocity):
@@ -61,24 +73,20 @@ class radiusSysid(Problem):
         wrenches = modelCallRotatedWrench(self.dipoleStrength,self.angles,modelVals,self.rhos,library=torch,zero = self.zero).squeeze()
         properties = sphereProperties(self.materialDensity,x*2,torch)
         M = buildMassMatrix(properties,torch,False)
-
-        Minv = torch.linalg.inv(M)
-
-        expectedAccel = Minv @ torch.swapaxes(wrenches,0,1)
-
-        error = (self.accelerations - expectedAccel)*1e6
+        
+        error = (self.accelerations - torch.linalg.inv(M)@ wrenches.T)*1e6
         cost = torch.sum(error.T @ self.weights @ error)
 
         return cost
     def visualize_optimization(self,iterates): 
         
-        func = np.log
-        possible = np.linspace(1e-10,0.1,500).reshape((-1,1,1))
+        func = np.abs
+        possible = np.linspace(1e-3,0.1,5000).reshape((-1,1,1))
         possibleCosts = [self.cost(decision) for decision in possible]
         plt.figure()
         plt.plot(possible[:,0,0],func(possibleCosts),'r')
         foundCosts = [self.cost(iterate) for iterate in iterates]
         plt.plot(iterates[:,0,0],func(foundCosts),'b')
-
+        print('best brute force ',possible[np.argmin(possibleCosts)])
         
 
