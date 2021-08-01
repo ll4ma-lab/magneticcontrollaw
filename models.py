@@ -86,7 +86,7 @@ def computeThetaAndFrame(omega,rho,library = np):
 
 
 #sphere model helper
-def modelCallRotatedWrench(dipoleStrength,angles,modelVals,rho,library=np,zero = [0]):
+def modelCallRotatedWrench(dipoleStrength,angles,modelVals,rho,library=np,zero = np.array([0])):
     frho0,trho0,frho90,fphi90,ttheta90 = modelVals
     omega = constructOmega(angles,library)
     theta,rotation = computeThetaAndFrame(omega, rho,library)

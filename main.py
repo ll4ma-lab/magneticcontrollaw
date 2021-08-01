@@ -66,7 +66,7 @@ if __name__ == '__main__':
     start = time.time()
     minimizationCosts = []
     
-    for i in range(100):
+    for i in range(5):
     
         desiredState = velocityProfile.getDesiredState(i*dt,state)
         desired_wrench,p,d = controller.getDesiredWrench(state,desiredState)
