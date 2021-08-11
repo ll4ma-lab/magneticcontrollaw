@@ -189,8 +189,8 @@ class multiMagSolver():
     def solveWrenchSphere(self,position,desiredWrench):
         s = time.time()
         self.modifyProblems(desiredWrench, position)
-        results = [optimizeSingle(prob) for prob in self.problems]
-        #results = self.pool.map(optimizeSingle,self.problems)
+        #results = [optimizeSingle(prob) for prob in self.problems]
+        results = self.pool.map(optimizeSingle,self.problems)
         iterations = [result[3].shape[0] for result in results]
         self.iterations.append((iterations))
         noActionCost  = self.problems[0].cost(np.zeros((3,1)))

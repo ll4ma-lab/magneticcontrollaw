@@ -105,9 +105,15 @@ def modelCallRotatedWrench(dipoleStrength,angles,modelVals,rho,library=np,zero =
         selectedWrench = np.array(selectedWrench)
     else:
         unitStrengthWrench = torch.unsqueeze(unitStrengthWrench, 2)
-        forces =torch.bmm(rotation,unitStrengthWrench[:,:3])
-        torques = torch.bmm(rotation, unitStrengthWrench[:,3:])
-        selectedWrench = torch.bmm(torch.cat((forces,torques),1),dipoleStrength.reshape((-1,1,1))**2)
+        
+        if dipoleStrength.shape[0] == 1:
+            selectedWrench = torch.cat((rotation[0]@unitStrengthWrench[0,:3],rotation[0]@ unitStrengthWrench[0,3:]),0).T
+            selectedWrench = torch.unsqueeze(selectedWrench * dipoleStrength**2,2)
+        else:            
+            forces =torch.bmm(rotation,unitStrengthWrench[:,:3])
+            torques = torch.bmm(rotation, unitStrengthWrench[:,3:])
+            selectedWrench = torch.bmm(torch.cat((forces,torques),1),dipoleStrength.reshape((-1,1,1))**2)
+            
     return selectedWrench  
     
 class multiMagModel():
