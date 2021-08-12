@@ -19,7 +19,7 @@ from solvers.line_search import NewtonMethod
 
 from models import rotZ,modelCallRotatedWrench,getOmniFrame
 
-optimizerParams = {'alpha':1.0,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-10}
+optimizerParams = {'alpha':1.0,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-15}
 def optimizeSingle(prob):
     solver = NewtonMethod(problem=prob,**optimizerParams) 
     solution, cost, converged, iterates = solver.optimize(prob.initial_solution,max_iterations=25)  

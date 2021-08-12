@@ -40,7 +40,7 @@ if __name__ == '__main__':
     simTime = np.sum(env.times)
     dt = 1
     numSteps = int(simTime/dt)
-    diameter = 0.06
+    diameter = 0.04
     objectProperties = sphereProperties(8940,diameter)
     
     if(ll4maOpt):
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     start = time.time()
     minimizationCosts = []
     
-    for i in range(5):
+    for i in range(numSteps):
     
         desiredState = velocityProfile.getDesiredState(i*dt,state)
         desired_wrench,p,d = controller.getDesiredWrench(state,desiredState)
@@ -104,8 +104,9 @@ if __name__ == '__main__':
     desiredFinalTF = buildTF(desiredState[:3,0],desiredState[3:6,0])
     remainingError = np.array([controller.computeError(desiredFinalTF,state[0]) for state in states])
     
-    noisyVel = linearVelocity + np.random.normal(0,np.max(linearVelocity)*1e-3,linearVelocity.shape)
-    
+    noisylinearVelocity = linearVelocity + np.random.normal(0,np.max(linearVelocity)*1e-3,linearVelocity.shape)
+    noisyrotationalVelocity = rotationalVelocity + np.random.normal(0,np.max(rotationalVelocity)*1e-3,rotationalVelocity.shape)
+
     
     #visualization stuff
     env.radius*=0.5
