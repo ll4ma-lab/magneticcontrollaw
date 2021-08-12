@@ -21,7 +21,8 @@ ll4maOpt = True
 useSphere = True
 
 if ll4maOpt:
-    from models import multiMagModel,multiMagSolver
+    from models import multiMagModel
+    from modelOptimization import multiMagSolver
 else:
     from cylinderModel import cylinderSolver,cylinderModel
 
@@ -33,7 +34,7 @@ if __name__ == '__main__':
     
     
     env = SpaceProblem(1)
-    env.magnets = env.magnets[:-4]
+    env.magnets = env.magnets
     #env.trajectoryDimensions = 'xyz'
     
     simTime = np.sum(env.times)
@@ -43,7 +44,7 @@ if __name__ == '__main__':
     objectProperties = sphereProperties(8940,diameter)
     
     if(ll4maOpt):
-        model = multiMagModel(env.magnets,0.04,useSphere)
+        model = multiMagModel(env.magnets,diameter,useSphere)
         solver = multiMagSolver(model,env.trajectoryDimensions,useSphere)
     else:
         model = cylinderModel(env.magnets,diameter)
@@ -102,6 +103,10 @@ if __name__ == '__main__':
     transforms = np.array([state[0] for state in states])
     desiredFinalTF = buildTF(desiredState[:3,0],desiredState[3:6,0])
     remainingError = np.array([controller.computeError(desiredFinalTF,state[0]) for state in states])
+    
+    noisylinearVelocity = linearVelocity + np.random.normal(0,np.max(linearVelocity)*1e-3,linearVelocity.shape)
+    noisyrotationalVelocity = rotationalVelocity + np.random.normal(0,np.max(rotationalVelocity)*1e-3,rotationalVelocity.shape)
+
     
     #visualization stuff
     env.radius*=0.5

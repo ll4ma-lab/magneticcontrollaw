@@ -7,243 +7,28 @@ Created on Wed Jul  7 17:23:35 2021
 """
 import numpy as np
 import torch
-
-from problems.problem import Problem 
-import matplotlib.pyplot as plt 
-torch.set_default_tensor_type(torch.DoubleTensor)
-import torch.multiprocessing  as multiprocessing
-
-from solvers.line_search import NewtonMethod 
 import time
-class cylinderOptimization(Problem): 
-    def __init__(self,weights): 
-        super().__init__()
-        self.initial_solution = np.array([20,0]).reshape((2,1))
-        self.boundConstraints[0] = (0.1,40)
-        
-        self.desiredWrench = torch.zeros((6,1))
-        self.unitStrengthWrench = torch.zeros((6,1))
-        self.frame = torch.eye(3)
-        self.rhoMode = False
-        self.weights = torch.tensor(weights)
-        
-    def pointingModelLoss(self,x,frame):
-        selectedWrench = x[0]**2 * torch.cat((frame@self.unitStrengthWrench[:3],frame@self.unitStrengthWrench[3:]))
-        error = 1e6*(self.desiredWrench - selectedWrench)
-        cost = error.t()@self.weights@error
-        return cost    
-    def rhoLoss(self,x):
-        frame = torch.mm(self.frame,rotZ(x[1],torch))
-        return self.pointingModelLoss(x,frame)
-    def tensor_cost(self, x): 
-        if self.rhoMode:
-            return self.rhoLoss(x)
-        else:
-            return self.pointingModelLoss(x,self.frame)
-    def visualize_optimization(self,iterates): 
-        plt.plot(iterates[:,0,0],iterates[:,1,0]) 
-class sphericalOptimization(Problem):
-    def __init__(self,weights): 
-        super().__init__()
-        self.initial_solution = np.array([20,0,0]).reshape((3,1))
-        self.boundConstraints[0] = (0.1,40)
-        
-        self.desiredWrench = torch.zeros((6,1))
 
-        self.weights = torch.tensor(weights)
-        
-        self.frho0 = torch.tensor(0.0)
-        self.trho0 = torch.tensor(0.0)
-        self.frho90 = torch.tensor(0.0)
-        self.fphi90 = torch.tensor(0.0)
-        self.ttheta90  = torch.tensor(0.0)
-        
-        self.rho = torch.tensor(np.zeros((3,1)))
-        
-        self.zero = torch.tensor(0.0)
-    def tensor_cost(self, x): 
-        omega = constructOmega(x[1:],torch)
-        #print('torch omega ',omega)
-        theta,rotation = computeThetaAndFrame(omega, self.rho,torch)
-        #print('torch theta ',theta,rotation)
-        unitStrengthWrench = torch.stack([self.zero,
-                       self.fphi90*torch.sin(theta),
-                       (-(self.frho90-self.frho0)/2)*torch.cos(2*theta) + (self.frho90+self.frho0)/2,
-                       self.ttheta90*torch.sin(theta),
-                       self.zero,
-                       self.trho0*torch.cos(theta)]).reshape((6,1))
-
-        
-        selectedWrench = x[0]**2 * torch.cat((rotation @ unitStrengthWrench[:3],rotation @ unitStrengthWrench[3:]))
-        error = 1e10*(self.desiredWrench - selectedWrench)
-        cost = error.t()@self.weights@error
-        return cost
-    
-    def visualize_optimization(self,iterates): 
-        plt.plot(iterates[:,0,0],iterates[:,1,0]) 
-
-optimizerParams = {'alpha':1.0,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-10}
-def optimizeSingle(prob):
-    solver = NewtonMethod(problem=prob,**optimizerParams) 
-    solution, cost, converged, iterates = solver.optimize(prob.initial_solution)  
-    return solution, cost, converged, iterates
-
-
-def buildQ(stateCostString):
-    letterOptions = ["x","y","z","r","p","t"]
-    activated = [0]*6
-    if("all" in stateCostString):
-        stateCostString = letterOptions
-    for index in range(len(letterOptions)):
-        if(letterOptions[index] in stateCostString):
-            if index < 3:   
-                activated[index] = 1.0 #/ (objectProperties[0] * tolerances[0])
-            else: 
-                activated[index] = 200.0 #/ (objectProperties[1][0,0] * tolerances[1])
-
-    Q = np.diag(activated)
-    #print(Q)
-    return Q
-
-class multiMagSolver():
-    def __init__(self,model,stateCostString,sphereModel = False,numProcesses=8):
-        self.model = model
-        self.problems = []
-        self.time = 0
-        self.useSphereModel = sphereModel
-        self.costs = []
-        Qweights = buildQ(stateCostString)
-        if(sphereModel):
-            for i in range(2*len(model.magnets)):
-                prob = sphericalOptimization(Qweights)
-                if i%2 == 0:
-                    prob.initial_solution = np.array([20,0,0]).reshape((3,1))
-                if i%2 == 1:
-                    prob.initial_solution = np.array([20,180,180]).reshape((3,1))
-                self.problems.append(prob)
-        else:     
-            for i in range(3*len(model.magnets)):
-                prob = cylinderOptimization(Qweights)
-                prob.rhoMode = (i%3) ==2
-                self.problems.append(prob)
-        ctx = multiprocessing.get_context('spawn')
-        self.pool =  ctx.Pool(processes=numProcesses)
-        
-        self.iterations = []
-        self.times = []
-    def modifyProblems(self,desiredWrench,position):
-        if self.useSphereModel:
-            self.modifySphereProblems(desiredWrench,position)
-        else: 
-            self.modifyCylinderProblems(desiredWrench, position)
-    def modifySphereProblems(self,desiredWrench,position):
-        relativePoses = np.array(self.model.magnets) - np.transpose(position)
-        for i in range(len(self.model.magnets)):
-            chosenMagnetPose = relativePoses[i]
-            rho = (-1*chosenMagnetPose).reshape((3,1))
-            dist = np.linalg.norm(chosenMagnetPose)
-            frho0,trho0,frho90,fphi90,ttheta90 = self.model.sphereModel.modelCall(dist,1)
-            for j in range(2):
-                self.problems[i*2+j].frho0 = torch.tensor(frho0)
-                self.problems[i*2+j].trho0 = torch.tensor(trho0)
-                self.problems[i*2+j].frho90 = torch.tensor(frho90)
-                self.problems[i*2+j].fphi90 = torch.tensor(fphi90)
-                self.problems[i*2+j].ttheta90 = torch.tensor(ttheta90)
-                
-                self.problems[i*2+j].desiredWrench = torch.Tensor(desiredWrench)
-                self.problems[i*2+j].rho = torch.tensor(rho)
-
-    def modifyCylinderProblems(self,desiredWrench,position):
-        relativePoses = (np.array(self.model.magnets) - np.transpose(position)).tolist()
-
-        for i in range(len(self.model.magnets)):
-            chosenMagnetPose = relativePoses[i]
-            omniFrame = getOmniFrame(chosenMagnetPose)
-            dist = np.linalg.norm(chosenMagnetPose)
-            wrenches = self.model.cylinderModel.modelCall(dist,1) #1 dipole strength
-            for j in range(3):
-                self.problems[i*3+j].frame = torch.Tensor(omniFrame)
-                self.problems[i*3+j].desiredWrench = torch.Tensor(desiredWrench)
-                self.problems[i*3+j].unitStrengthWrench = torch.tensor(wrenches[j])
-    def solveWrenchCylinder(self,position,desiredWrench):
-        s = time.time()
-        self.modifyProblems(desiredWrench, position)
-        results = self.pool.map(optimizeSingle,self.problems)
-        iterations = [result[3].shape[0] for result in results]
-        self.iterations.append((iterations))
-        noActionCost  = self.problems[0].cost(np.zeros((2,1)))
-        costs = [result[1] for result in results]
-        self.costs.append(costs)
-        bestAction = np.argmin(costs)
-
-        if(costs[bestAction]>noActionCost):
-            control = [0,0,0,0]
-            #print('shit')
-        else:
-            magNum = bestAction//3
-            modelNum = bestAction%3
-            strength = results[bestAction][0][0,0]
-            theta = results[bestAction][0][1,0]
-            control = [magNum,modelNum,strength,theta]
-            
-        timestep = time.time()-s
-        self.times.append(timestep)
-        self.time += timestep
-        return control
-    def solveWrench(self,position,desiredWrench):
-        if(self.useSphereModel):
-            return self.solveWrenchSphere(position,desiredWrench)
-        else:
-            return self.solveWrenchCylinder(position,desiredWrench)
-    def solveWrenchSphere(self,position,desiredWrench):
-        s = time.time()
-        self.modifyProblems(desiredWrench, position)
-        #results = [optimizeSingle(prob) for prob in self.problems]
-        results = self.pool.map(optimizeSingle,self.problems)
-        iterations = [result[3].shape[0] for result in results]
-        self.iterations.append((iterations))
-        noActionCost  = self.problems[0].cost(np.zeros((3,1)))
-        costs = [result[1] for result in results]
-        self.costs.append(costs)
-
-        bestAction = np.argmin(costs)
-
-        if(costs[bestAction]>noActionCost):
-            control = [0,0,0,0]
-            #print('shit')
-        else:
-            magNum = bestAction//2
-            strength = results[bestAction][0][0,0]
-            psi = results[bestAction][0][1,0]
-            xi = results[bestAction][0][2,0]
-            control = [magNum,strength,psi,xi]
-            
-        timestep = time.time()-s
-        self.times.append(timestep)
-        self.time += timestep
-        return control
-
-
+#cylinder model helper
 def getOmniFrame(pos):
     Z = np.array([0, 0, 1])
-
     dist = np.linalg.norm(pos)
-
-    omni_Z = -1*(pos/dist)
     
+    omni_Z = -1*(pos/dist)
     omni_Y = np.cross(omni_Z,Z)
     omni_Y = omni_Y/np.sqrt(np.dot(omni_Y,omni_Y)) #unit vectorise
-    
     omni_X = np.cross(omni_Y,omni_Z)
     # Combine to build rotation matrix
     omniFrame = np.transpose(np.array([omni_X, omni_Y, omni_Z]))
     return omniFrame
+
 def averageDict(a,b):
     newDict = {}
     for key in a.keys():
         newDict[key] = ((np.array(a[key])+np.array(b[key]))/2).tolist()
     return newDict
 
+#cylinder model helper
 def rotZ(yaw,library = np):
     yaw = yaw*np.pi/180.0
     one,zero = (1.0,0.0) if library is np else (torch.tensor([1.0]),torch.tensor([0.0]))
@@ -254,41 +39,82 @@ def rotZ(yaw,library = np):
                 library.stack([zero, zero, one])]).reshape(3,3)
     return RZ
 
+#sphere model helper
 def constructOmega(angles, library = np):
-    #print(angles)
     angles = angles*np.pi/180.0
     omega = library.stack([
         library.sin(angles[0])*library.cos(angles[1]),
         library.sin(angles[0])*library.sin(angles[1]),
-        library.cos(angles[0])]).reshape(3,1)
+        library.cos(angles[0])]).reshape(3,-1)
     return omega
 
+
+
+def vectorNorm(vector,library):
+    if library is np:
+        norm = library.linalg.norm(vector,axis=1)#library agnostic L2 norm
+    else:
+        norm = library.linalg.norm(vector,dim=1)#library agnostic L2 norm
+    return norm
+#sphere model helper
 def computeThetaAndFrame(omega,rho,library = np):
     
-    omega = omega[:,0]
-    rho = rho[:,0]#libraries dont like 3,1 and prefer 3,
+    omega = library.swapaxes(omega,0,1)
+    rho = library.swapaxes(rho,0,1) #libraries dont like 3,n and prefer n,3
     
     cross = library.cross(omega,rho)
-    l2Cross = library.sqrt(library.dot(cross,cross))#library agnostic L2 norm
-    dot = library.dot(omega,rho)
     
+    l2Cross = vectorNorm(cross,library)
+
+    dot = library.sum(omega*rho,1)
     if library is np:
         theta = library.arctan2(l2Cross,dot)
     else:
         theta = library.atan2(l2Cross,dot)
-    
-    omni_Z =  rho/library.sqrt(library.dot(rho,rho))
-    omni_Y = cross/l2Cross
+    omni_Z =  (rho.T/vectorNorm(rho,library)).T
+    omni_Y = (cross.T/l2Cross).T
     
     omni_X = library.cross(omni_Y,omni_Z);
-    # Combine to build rotation matrix
+    # Combine to build rotation matri
     stacked = library.stack([omni_X,omni_Y,omni_Z])
-    if(library is np):
-        omniFrame = library.transpose(stacked)
-    else:
-        omniFrame = library.transpose(stacked,0,1)
+    #first move the batch dimension to the end, then tranpose the rotation matrix
+    omniFrame=library.swapaxes(stacked,0,1)
+    omniFrame=library.swapaxes(omniFrame,1,2)
+
 
     return theta,omniFrame
+
+
+#sphere model helper
+def modelCallRotatedWrench(dipoleStrength,angles,modelVals,rho,library=np,zero = np.array([0])):
+    frho0,trho0,frho90,fphi90,ttheta90 = modelVals
+    omega = constructOmega(angles,library)
+    theta,rotation = computeThetaAndFrame(omega, rho,library)
+    unitStrengthWrench = library.stack([zero,
+                   fphi90*library.sin(theta),
+                   (-(frho90-frho0)/2)*library.cos(2*theta) + (frho90+frho0)/2,
+                   ttheta90*library.sin(theta),
+                   zero,
+                   trho0*library.cos(theta)])
+    #switch batch dim to 0
+    unitStrengthWrench = library.swapaxes(unitStrengthWrench,0,1)
+    if(library is np):
+        unitStrengthWrench = np.expand_dims(unitStrengthWrench, 2)
+        selectedWrench = [dipoleStrength[i]**2 * np.concatenate((rotation[i] @ unitStrengthWrench[i,:3],rotation[i] @ unitStrengthWrench[i,3:])) 
+                          for i in range(unitStrengthWrench.shape[0])] 
+        selectedWrench = np.array(selectedWrench)
+    else:
+        unitStrengthWrench = torch.unsqueeze(unitStrengthWrench, 2)
+        
+        if dipoleStrength.shape[0] == 1:
+            selectedWrench = torch.cat((rotation[0]@unitStrengthWrench[0,:3],rotation[0]@ unitStrengthWrench[0,3:]),0).T
+            selectedWrench = torch.unsqueeze(selectedWrench * dipoleStrength**2,2)
+        else:            
+            forces =torch.bmm(rotation,unitStrengthWrench[:,:3])
+            torques = torch.bmm(rotation, unitStrengthWrench[:,3:])
+            selectedWrench = torch.bmm(torch.cat((forces,torques),1),dipoleStrength.reshape((-1,1,1))**2)
+            
+    return selectedWrench  
     
 class multiMagModel():
     def __init__(self,magnets,diameter,useSphere= False):
@@ -334,51 +160,29 @@ class multiMagModel():
         #control[3] = xi
         s = time.time()
         chosenMagnetPose = (np.array(self.magnets)[control[0]] - np.transpose(position)).transpose()
-        
+        dist = np.linalg.norm(chosenMagnetPose)
         rho = (-1*chosenMagnetPose).reshape((3,1))
-        omega = constructOmega(np.array(control[2:]))
-        #print('np omega ',omega)
 
-        theta,rotation = computeThetaAndFrame(omega, rho)
-        #print('np theta ',theta,rotation)
+        modelVals = self.sphereModel.modelCall(dist,1)
+        wrench = modelCallRotatedWrench(np.array(control[1]).reshape(1),np.array(control[2:]),modelVals,rho).reshape((6,1))
 
-        doubleRotMatrix = np.zeros((6,6))
-        doubleRotMatrix[:3,:3] = rotation
-        doubleRotMatrix[3:,3:] = rotation
-        
-        wrench = self.sphereModel.modelCallFullWrench(np.linalg.norm(chosenMagnetPose),control[1],theta)
-
-        rotatedWrench = doubleRotMatrix@wrench
         self.time += time.time()-s
-        return rotatedWrench
-    
-    
-    
-
+        return wrench
+ 
 class sphereModel():
     def __init__(self,diameter):
         self.cylinderModel = cylinderModel(diameter)
         
-    def modelCall(self,dist,dipoleStrength):
-        frho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['fzz'],dist,dipoleStrength,4)
-        trho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['tzz'],dist,dipoleStrength,3)
+    def modelCall(self,dist,dipoleStrength,radii=None):
+        frho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['fzz'],dist,dipoleStrength,4,radii)
+        trho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['tzz'],dist,dipoleStrength,3,radii)
         
-        frho90 = self.cylinderModel.modelEquation(self.cylinderModel.constants['frhorho'],dist,dipoleStrength,4)
-        fphi90 = self.cylinderModel.modelEquation(self.cylinderModel.constants['frhophi'],dist,dipoleStrength,4)
-        ttheta90= self.cylinderModel.modelEquation(self.cylinderModel.constants['trhoz'],dist,dipoleStrength,3)
+        frho90 = self.cylinderModel.modelEquation(self.cylinderModel.constants['frhorho'],dist,dipoleStrength,4,radii)
+        fphi90 = self.cylinderModel.modelEquation(self.cylinderModel.constants['frhophi'],dist,dipoleStrength,4,radii)
+        ttheta90= self.cylinderModel.modelEquation(self.cylinderModel.constants['trhoz'],dist,dipoleStrength,3,radii)
         return frho0,trho0,frho90,fphi90,ttheta90
     
-    def modelCallFullWrench(self,dist,dipoleStrength,theta):
-        frho0,trho0,frho90,fphi90,ttheta90 = self.modelCall(dist, dipoleStrength)
-        #xyz is theta,phi,rho
-        wrench = np.array([0,
-                           fphi90*np.sin(theta),
-                           (-(frho90-frho0)/2)*np.cos(2*theta) + (frho90+frho0)/2,
-                           ttheta90*np.sin(theta),
-                           0,
-                           trho0*np.cos(theta)]).reshape((6,1))
-        return wrench
-        
+    
                 
 
 class cylinderModel():
@@ -409,10 +213,12 @@ class cylinderModel():
         
         self.constants = averageDict(self.feaConstants,self.expConstants)
 
-    def modelEquation(self,constants,distance,dipoleStrength,p0RPower):
+    def modelEquation(self,constants,distance,dipoleStrength,p0RPower,radii=None):
+        if(radii is None):
+            radii = self.radii
         #P0 has r^4 for forces and r^3 for torques
-        P1 = self.sigma*self.mu*self.freq*self.radii*self.radii
-        P2 = distance/self.radii
+        P1 = self.sigma*self.mu*self.freq*radii*radii
+        P2 = distance/radii
 
         numeratorBase = constants[0]*P1
         numeratorPower = constants[1]*(P1**constants[2])
@@ -421,7 +227,7 @@ class cylinderModel():
         denominator = P2**constants[4]
         P0 = numerator/denominator
 
-        c=  self.mu*(dipoleStrength**2)*(self.radii**-p0RPower)
+        c=  self.mu*(dipoleStrength**2)*(radii**-p0RPower)
 
         wrench = P0*c
         
