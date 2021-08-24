@@ -63,24 +63,30 @@ class radiusSysid(Problem):
         self.accelerations = torch.tensor(npA.T)
         
         self.materialDensity = torch.tensor(8940.0)
-        
-    def tensor_cost(self, x):
-        radii = x
+    def forwardAcceleration(self, x,dists,dipoleStrengths,angles,rhos,zero):
+        radii = x[0:1]
 
-        modelVals = self.singleModel.modelCall(self.dists,1,radii=radii)
+        modelVals = self.singleModel.modelCall(dists,1,radii=radii)
         modelVals = [modelVal.squeeze() for modelVal in modelVals]
 
-        wrenches = modelCallRotatedWrench(self.dipoleStrength,self.angles,modelVals,self.rhos,library=torch,zero = self.zero).squeeze()
-        properties = sphereProperties(self.materialDensity,x*2,torch)
+        wrenches = modelCallRotatedWrench(dipoleStrengths,angles,modelVals,rhos,library=torch,zero = zero).squeeze()
+    
+        properties = sphereProperties(self.materialDensity,radii*2,torch)
         M = buildMassMatrix(properties,torch,False)
         
-        error = (self.accelerations - torch.linalg.inv(M)@ wrenches.T)*1e6
-        cost = torch.sum(error.T @ self.weights @ error)
+        return torch.linalg.inv(M)@ wrenches.T
+    def tensor_cost(self, x):
+
+        modeledAccelerations = self.forwardAcceleration(x,self.dists,self.dipoleStrength,self.angles,self.rhos,self.zero)
+        error = (self.accelerations - modeledAccelerations)*1e6
+        
+        
+        left = (error.T @ self.weights).unsqueeze(1)
+        right = error.T.unsqueeze(2)
+        cost = torch.sum(torch.bmm(left,right))
 
         return cost
-    def visualize_optimization(self,iterates): 
-        
-        func = np.abs
+    def visualize_optimization(self,iterates,func = np.abs): 
         possible = np.linspace(1e-3,0.1,5000).reshape((-1,1,1))
         possibleCosts = [self.cost(decision) for decision in possible]
         plt.figure()

@@ -9,6 +9,13 @@ Created on Sat Jul 24 17:12:21 2021
 import matplotlib.pyplot as plt
 import numpy as np
 
+noiseLevel = 5e-1
+print('noise level ',noiseLevel)
+noisylinearVelocity = linearVelocity + np.random.normal(0,np.max(linearVelocity)*noiseLevel,linearVelocity.shape)
+noisyrotationalVelocity = rotationalVelocity + np.random.normal(0,np.max(rotationalVelocity)*noiseLevel,rotationalVelocity.shape)
+
+
+
 accel = np.transpose(noisylinearVelocity[1:,:]-noisylinearVelocity[:-1,:])
 force = np.transpose(np.array(wrenches)[:,:3,0])
 torque = np.transpose(np.array(wrenches)[:,3:,0])
@@ -37,8 +44,33 @@ optimizer = NewtonMethod(problem=prob,**optimizerParams)
 s = time.time()
 prob.updateVals(controls,env.magnets,positions,noisylinearVelocity,noisyrotationalVelocity)
 solution, cost, converged, iterates = optimizer.optimize(prob.initial_solution,max_iterations=25)
-print('opt ', time.time()-s)
+print('opt time ', time.time()-s)
 s = time.time()
 prob.visualize_optimization(iterates)
-print('brute ', time.time()-s)
-print(solution)
+print('brute time ', time.time()-s)
+print('solution ',solution)
+
+import torch
+x = torch.tensor(solution)
+modelAccelFunc=lambda x: prob.forwardAcceleration(x, prob.dists, prob.dipoleStrength, prob.angles, prob.rhos, prob.zero)
+
+modelAccel = modelAccelFunc(x)
+modelAccelAverage = torch.mean(modelAccel,1)
+deltaModeled = modelAccel - modelAccelAverage.unsqueeze(1)
+measuredAcelAverage = torch.mean(prob.accelerations,1)
+deltaModeled = prob.accelerations - measuredAcelAverage.unsqueeze(1)
+
+N = int(modelAccel.shape[1])
+M = 6
+P = 1
+left = (deltaModeled.T @ prob.weights).unsqueeze(1)
+right = deltaModeled.T.unsqueeze(2)
+summedSquaredDelta = torch.sum(torch.bmm(left,right))
+sigmaSquared = summedSquaredDelta.numpy()/(N*M-P)
+
+bigJ = torch.swapaxes(torch.autograd.functional.jacobian(modelAccelFunc, x)[:,:,:,0],0,1)
+batchedJtJ = torch.bmm(torch.swapaxes(bigJ, 1, 2),bigJ)
+remap = torch.linalg.inv(torch.mean(batchedJtJ,0)).numpy()
+
+covarianceParams = sigmaSquared*remap
+print('covariance ', covarianceParams)
