@@ -9,7 +9,7 @@ Created on Sat Jul 24 17:12:21 2021
 import matplotlib.pyplot as plt
 import numpy as np
 
-noiseLevel = 5e-1
+noiseLevel = 5e-2
 print('noise level ',noiseLevel)
 noisylinearVelocity = linearVelocity + np.random.normal(0,np.max(linearVelocity)*noiseLevel,linearVelocity.shape)
 noisyrotationalVelocity = rotationalVelocity + np.random.normal(0,np.max(rotationalVelocity)*noiseLevel,rotationalVelocity.shape)
@@ -55,16 +55,19 @@ x = torch.tensor(solution)
 modelAccelFunc=lambda x: prob.forwardAcceleration(x, prob.dists, prob.dipoleStrength, prob.angles, prob.rhos, prob.zero)
 
 modelAccel = modelAccelFunc(x)
-modelAccelAverage = torch.mean(modelAccel,1)
-deltaModeled = modelAccel - modelAccelAverage.unsqueeze(1)
-measuredAcelAverage = torch.mean(prob.accelerations,1)
-deltaModeled = prob.accelerations - measuredAcelAverage.unsqueeze(1)
 
+modelAccelAverage = torch.mean(modelAccel,1)
+deltaModeled =  modelAccelAverage.unsqueeze(1) - modelAccel
+
+measuredAcelAverage = torch.mean(prob.accelerations,1)
+deltaAccel=  measuredAcelAverage.unsqueeze(1) - prob.accelerations
+
+deltaDifference = deltaAccel - deltaModeled
 N = int(modelAccel.shape[1])
 M = 6
 P = 1
-left = (deltaModeled.T @ prob.weights).unsqueeze(1)
-right = deltaModeled.T.unsqueeze(2)
+left = (deltaDifference.T @ prob.weights).unsqueeze(1)
+right = deltaDifference.T.unsqueeze(2)
 summedSquaredDelta = torch.sum(torch.bmm(left,right))
 sigmaSquared = summedSquaredDelta.numpy()/(N*M-P)
 
