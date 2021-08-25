@@ -94,5 +94,5 @@ class radiusSysid(Problem):
         foundCosts = [self.cost(iterate) for iterate in iterates]
         plt.plot(iterates[:,0,0],func(foundCosts),'b')
         print('best brute force ',possible[np.argmin(possibleCosts)])
-        
+        return possible,possibleCosts
 

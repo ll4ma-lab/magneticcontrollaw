@@ -45,10 +45,11 @@ if __name__ == '__main__':
     
     if(ll4maOpt):
         model = multiMagModel(env.magnets,diameter,useSphere)
-        solver = multiMagSolver(model,env.trajectoryDimensions,useSphere)
+        solverModel = multiMagModel(env.magnets,diameter/2,useSphere)
+        solver = multiMagSolver(solverModel,env.trajectoryDimensions,useSphere)
     else:
         model = cylinderModel(env.magnets,diameter)
-        solver = cylinderSolver(env.magnets)
+        solver = cylinderSolver(env.magnets,12)
         solver.setup(model,env.trajectoryDimensions,objectProperties,env.tolerances)
     
     controller = PDController(env.startState,0.005,0.00001,0.005,0.00001,0.0,0.000)

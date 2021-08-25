@@ -9,11 +9,10 @@ Created on Sat Jul 24 17:12:21 2021
 import matplotlib.pyplot as plt
 import numpy as np
 
-noiseLevel = 5e-2
+noiseLevel = 5e-20
 print('noise level ',noiseLevel)
 noisylinearVelocity = linearVelocity + np.random.normal(0,np.max(linearVelocity)*noiseLevel,linearVelocity.shape)
 noisyrotationalVelocity = rotationalVelocity + np.random.normal(0,np.max(rotationalVelocity)*noiseLevel,rotationalVelocity.shape)
-
 
 
 accel = np.transpose(noisylinearVelocity[1:,:]-noisylinearVelocity[:-1,:])
@@ -38,7 +37,7 @@ visualization.plotStuff(accelPlots,'Controller')
 
 from sysIDoptimization import radiusSysid
 from solvers.line_search import NewtonMethod
-optimizerParams = {'alpha':1,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-20}
+optimizerParams = {'alpha':1,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-20}
 prob = radiusSysid(np.diag((2e5,2e5,2e5,1,1,1))) # built with M(0.04) Q M(0.04)
 optimizer = NewtonMethod(problem=prob,**optimizerParams)
 s = time.time()
@@ -46,7 +45,7 @@ prob.updateVals(controls,env.magnets,positions,noisylinearVelocity,noisyrotation
 solution, cost, converged, iterates = optimizer.optimize(prob.initial_solution,max_iterations=25)
 print('opt time ', time.time()-s)
 s = time.time()
-prob.visualize_optimization(iterates)
+xaxis, yaxis = prob.visualize_optimization(iterates,np.abs)
 print('brute time ', time.time()-s)
 print('solution ',solution)
 
