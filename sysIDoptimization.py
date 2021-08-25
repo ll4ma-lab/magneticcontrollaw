@@ -38,10 +38,10 @@ class radiusSysid(Problem):
         self.weights = torch.tensor(weights)
     def updateVals(self,controls,magnets,positions,linearVelocity,rotationalVelocity):
         
-        #remove final control and position as we dont know its acceleration
-        npControl = np.array(controls[:-1])
+        #remove first control and position as we dont know its acceleration
+        npControl = np.array(controls[1:])
         magNums = npControl[:,0].astype(int).tolist()
-        chosenMagnetPose = np.array(magnets)[magNums]-positions[:-1]
+        chosenMagnetPose = np.array(magnets)[magNums]-positions[1:]
     
     
         dipoleStrength = npControl[:,1]
