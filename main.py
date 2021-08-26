@@ -52,7 +52,7 @@ if __name__ == '__main__':
         solver = cylinderSolver(env.magnets,12)
         solver.setup(model,env.trajectoryDimensions,objectProperties,env.tolerances)
     
-    controller = PDController(env.startState,0.005,0.00001,0.005,0.00001,0.0,0.000)
+    controller = PDController(env.startState,0.005,0.000002,0.005,0.000002,0.0,0.000)
     
     simulator = discreteTimeSimulator(env.startState,dt,objectProperties) #density, diamter
     
