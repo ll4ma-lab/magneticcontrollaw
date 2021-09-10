@@ -18,7 +18,7 @@ import TrapProfile
 
 
 ll4maOpt = True
-useSphere = True
+useSphere = False
 
 if ll4maOpt:
     from models import multiMagModel
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     controlNoise = False
     
     
-    env = SpaceProblem(1)
+    env = PlanarProblem(6)
     env.magnets = env.magnets
     #env.trajectoryDimensions = 'xyz'
     
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     
     if(ll4maOpt):
         model = multiMagModel(env.magnets,diameter,useSphere)
-        solverModel = multiMagModel(env.magnets,diameter/2,useSphere)
+        solverModel = multiMagModel(env.magnets,diameter,useSphere)
         solver = multiMagSolver(solverModel,env.trajectoryDimensions,useSphere)
     else:
         model = cylinderModel(env.magnets,diameter)

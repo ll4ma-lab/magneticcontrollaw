@@ -19,7 +19,7 @@ from solvers.line_search import NewtonMethod
 
 from models import rotZ,modelCallRotatedWrench,getOmniFrame
 
-optimizerParams = {'alpha':1.0,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-15}
+optimizerParams = {'alpha':1.0,'ro':0.5,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-15}
 def optimizeSingle(prob):
     solver = NewtonMethod(problem=prob,**optimizerParams) 
     solution, cost, converged, iterates = solver.optimize(prob.initial_solution,max_iterations=25)  
@@ -55,7 +55,7 @@ class cylinderOptimization(Problem):
         
     def pointingModelLoss(self,x,frame):
         selectedWrench = x[0]**2 * torch.cat((frame@self.unitStrengthWrench[:3],frame@self.unitStrengthWrench[3:]))
-        error = 1e6*(self.desiredWrench - selectedWrench)
+        error = 1e13*(self.desiredWrench - selectedWrench)
         cost = error.t()@self.weights@error
         return cost    
     def rhoLoss(self,x):
