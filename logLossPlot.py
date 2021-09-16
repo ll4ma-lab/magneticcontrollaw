@@ -24,4 +24,36 @@ ax2.set_title('accel space')
 ax1.set_xlabel('radius (m)')
 ax2.set_xlabel('radius (m)')
 
+ax1.xaxis.set_ticks((0,0.02,0.1))
+
+fig.tight_layout()
+
+
+fig, ax1 = plt.subplots(1, 1,figsize =(3, 3))
+ax2 = ax1.twinx() 
+ax1.plot(force[0],np.log(force[1]))
+ax2.plot(accel[0],np.log(accel[1]))
+ax1.yaxis.set_visible(False)
+ax2.yaxis.set_visible(False)
+
+ax1.set_title('force space')
+ax2.set_title('accel space')
+
+ax1.set_xlabel('radius (m)')
+ax2.set_xlabel('radius (m)')
+
+ax1.xaxis.set_ticks((0,0.02,0.1))
+
+fig.tight_layout()
+
+
+fig, ax1 = plt.subplots(1, 1,figsize =(3, 3))
+ax1.plot(force[0],np.log(force[1]))
+ax1.plot(accel[0],np.log(accel[1])+np.log(force[1,959]/accel[1,959]))
+
+
+ax1.set_xlabel('radius (m)')
+
+ax1.xaxis.set_ticks((0,0.02,0.1))
+
 fig.tight_layout()
