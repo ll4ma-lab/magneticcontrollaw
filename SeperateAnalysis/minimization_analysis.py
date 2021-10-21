@@ -12,19 +12,26 @@ import numpy as np
  
 import torch 
 import torch.multiprocessing  as multiprocessing
+from torch.autograd import Variable
+
 
 from solvers.line_search import GradientDescent, NewtonMethod, NewtonMethodWolfeLine 
 import matplotlib.pyplot as plt 
-import time 
+from matplotlib import animation
+import time
+
+import sys
+sys.path.append("..") # Adds higher directory to python modules path.
+ 
 from PDController import PDController
-from torch.autograd import Variable
 
 from environments import PlanarProblem,SpaceProblem
 import SplineProfile
 from discreteTimeSimulator import discreteTimeSimulator,sphereProperties
 
 
-from models import multiMagModel,multiMagSolver
+from models import multiMagModel
+from modelOptimization import multiMagSolver
 
 def optimize(decisionVariable): 
     solver = NewtonMethod(alpha, rho, prob,c1=c1,FP_PRECISION=FP_PRECISION) 
@@ -47,10 +54,11 @@ objectProperties = sphereProperties(8940,diameter)
 
 
 optimizerParams = {'alpha':1.0,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-2,'min_alpha': 1e-15}
+optimizerParams = {'alpha':1.0,'ro':0.5,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-15}
 
 
 
-newModel = multiMagModel(env.magnets,0.04)
+newModel = multiMagModel(env.magnets,0.04,True)
 #control = [1,2,np.random.random()*40,np.random.random()*360-180]
 control = [5, 2, 38, 173]
 print(newModel.forwardPass(np.zeros((3,1)), control))
@@ -74,13 +82,19 @@ if __name__ == '__main__':
     builder = multiMagSolver(newModel,'all',True)
 
     for _ in range(100):
-        desired_wrench = (np.random.random((6,1))-0.5)*1e-4
+        np.random.seed(_)
+        desired_wrench = 2*(np.random.random((6,1))-0.5)*1e-4
         desired_wrench[3:,0]*=1e-1
+        desired_wrench[1,0]*=2
+        print(desired_wrench)
 
         builder.modifyProblems(desired_wrench,np.zeros((3,1)))
     
         for i in range(len(builder.problems[:1])):
             prob = builder.problems[control[0]]
+            val = 30
+            prob.boundConstraints[0] = (val-1e-30,val +1e-30)
+
             
         
         s = time.time()
@@ -91,7 +105,7 @@ if __name__ == '__main__':
     
         #print(solution,cost,converged,iterates.shape)
     
-        strength = np.linspace(0,40,21)
+        strength = [30]# np.linspace(0,40,21)
         psis = np.linspace(-180,180,91)
         xis = np.linspace(-180,180,91)
         xx, yy, zz = np.meshgrid(strength, psis,xis)
@@ -135,14 +149,16 @@ if __name__ == '__main__':
         print('bruteForce best ',x[bestarg],y[bestarg],z[bestarg],' with cost ',costs[bestarg])
         print('newton method best ',solution[0],solution[1],solution[2],'with cost ', cost,' ratio ', cost/costs[bestarg])
         print('newton method best ',solution2[0],solution2[1],solution2[2],'with cost ', cost2,' ratio ', cost2/costs[bestarg])
-        if(cost2/costs[bestarg] >1 and cost/costs[bestarg] >1):
-            for params in [(90,90),(45,45),(45,0),(0,45),(90,0),(0,90),(180,0),(0,180)]:
-                solution3, cost3, converged3, iterates3 = optimizer.optimize(np.array([20,params[0],params[1]]).reshape((3,1))) 
-                print(params,cost3/costs[bestarg])
+        # if(cost2/costs[bestarg] >1 and cost/costs[bestarg] >1):
+        #     for params in [(90,90),(45,45),(45,0),(0,45),(90,0),(0,90),(180,0),(0,180)]:
+        #         solution3, cost3, converged3, iterates3 = optimizer.optimize(np.array([20,params[0],params[1]]).reshape((3,1))) 
+        #         print(params,cost3/costs[bestarg])
 
-            break
+        #     #break
     
-        plot = False    
+        plot = True    
+        saveAnimation = True
+        
         
         if plot:
             foundCosts = []
@@ -154,29 +170,40 @@ if __name__ == '__main__':
             
             npCosts = np.array(costs)
             npc = np.array(colors)
-            fig = plt.figure()
-            ax = fig.add_subplot(projection='3d')
             
             for streng in strength:
                 indices = np.argwhere(x==streng)[:,0].tolist()
-                fig = plt.figure()
+                fig = plt.figure(figsize =(10, 10))
                 ax = fig.add_subplot(projection='3d')
         
-                fig.suptitle(str(streng) +' dipole', fontsize=16)
+                #fig.suptitle(str(streng) +' dipole', fontsize=16)
         
                 ax.scatter(y[indices],z[indices],npCosts[indices],s=1,c=npc[indices])
-                ax.plot(iterates[:,1,0],iterates[:,2,0],foundCosts,c='r',markersize=200,linewidth=6)
-                ax.plot(fixmaxDegree(iterates2[:,1,0]),fixmaxDegree(iterates2[:,2,0]),foundCosts2,c='g',markersize=200,linewidth=6)
-    
                 plt.show()
+
+                if saveAnimation:
+                    def animate(i):
+                        ax.view_init(elev=10., azim=i)
+                        return fig,
+                    
+                    # Animate
+                    anim = animation.FuncAnimation(fig, animate,
+                                                   frames=360, interval=20, blit=True)
+                    # Save
+                    anim.save('basic_animation.mp4', fps=30)
+                else:
+                    ax.plot(fixmaxDegree(iterates[:,1,0]),fixmaxDegree(iterates[:,2,0]),foundCosts,c='r',markersize=200,linewidth=6)
+                    ax.plot(fixmaxDegree(iterates2[:,1,0]),fixmaxDegree(iterates2[:,2,0]),foundCosts2,c='g',markersize=200,linewidth=6)
+    
     
         #print('elapsed time ',time.time()-s)
         
         producedControl = [0,solution[0,0],solution[1,0],solution[2,0]]
-        bestWrench = newModel.forwardPass(np.zeros((3,1)), producedControl,True)
+        bestWrench = newModel.forwardPass(np.zeros((3,1)), producedControl)
         #print(bestWrench)
         #print(desired_wrench)
     
         producedControl2 = [0,solution2[0,0],solution2[1,0],solution2[2,0]]
-        bestWrench2 = newModel.forwardPass(np.zeros((3,1)), producedControl2,True)
+        bestWrench2 = newModel.forwardPass(np.zeros((3,1)), producedControl2)
         #print(bestWrench2)
+        break
