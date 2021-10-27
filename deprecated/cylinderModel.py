@@ -115,10 +115,10 @@ class cylinderSolver():
                     tf_vars.append(anglePercent)
                     radians = clippedTheta*np.pi/180.0        
     
-                    Rx=np.array([[one,zero,zero],
+                    Rx=[[one,zero,zero],
                               [zero,tf.cos(radians) , -tf.sin(radians)],
-                              [zero,tf.sin(radians) , tf.cos(radians)]])
-                    Rx_t = tf.stack([tf.stack(Rx[0].tolist()),tf.stack(Rx[1].tolist()),tf.stack(Rx[2].tolist())])
+                              [zero,tf.sin(radians) , tf.cos(radians)]]
+                    Rx_t = tf.stack([tf.stack(Rx[0]),tf.stack(Rx[1]),tf.stack(Rx[2])])
                     R = tf.matmul(omniFrame_t,Rx_t)
                 else:
                     R = omniFrame_t
