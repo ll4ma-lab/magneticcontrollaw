@@ -96,6 +96,11 @@ class sphericalOptimization(Problem):
     def visualize_optimization(self,iterates): 
         plt.plot(iterates[:,0,0],iterates[:,1,0]) 
 
+
+def getCost(control):
+    return control[0].cost(control[1])
+
+
 class multiMagSolver():
     def __init__(self,model,stateCostString,sphereModel = False,numProcesses=8):
         self.model = model
@@ -213,3 +218,25 @@ class multiMagSolver():
         self.times.append(timestep)
         self.time += timestep
         return control
+    def bruteSphereSolver(self,position,desiredWrench):
+        self.modifyProblems(desiredWrench, position)
+
+        s = time.time()
+        controls = []
+        for mag in range(len(self.model.magnets)):
+            for i in range(-180,180,3):
+                for j in range(-180,180,3):
+                    for k in range(0,40):
+                        control = (self.problems[mag*2],np.array((k,i,j)).reshape((3,1)),mag)
+                        controls.append(control)
+                        
+        results = self.pool.map(getCost,controls)
+        index = np.argmin(results)
+        print('brute time ' , time.time()-s)
+        selected = controls[index]
+        control = [selected[2],selected[1][0,0],selected[1][1,0],selected[1][2,0]]
+        
+        
+        return control
+    
+    

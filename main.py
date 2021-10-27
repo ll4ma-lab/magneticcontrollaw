@@ -18,13 +18,13 @@ import TrapProfile
 
 
 ll4maOpt = True
-useSphere = False
+useSphere = True
 
 if ll4maOpt:
     from models import multiMagModel
     from modelOptimization import multiMagSolver
 else:
-    from cylinderModel import cylinderSolver,cylinderModel
+    from deprecated.cylinderModel import cylinderSolver,cylinderModel
 
 if __name__ == '__main__':
 
@@ -33,8 +33,8 @@ if __name__ == '__main__':
     controlNoise = False
     
     
-    env = PlanarProblem(6)
-    env.magnets = env.magnets
+    env = SpaceProblem(3)
+    env.magnets = env.magnets[:-3]
     #env.trajectoryDimensions = 'xyz'
     
     simTime = np.sum(env.times)
@@ -46,10 +46,11 @@ if __name__ == '__main__':
     if(ll4maOpt):
         model = multiMagModel(env.magnets,diameter,useSphere)
         solverModel = multiMagModel(env.magnets,diameter,useSphere)
-        solver = multiMagSolver(solverModel,env.trajectoryDimensions,useSphere)
+        solver = multiMagSolver(solverModel,env.trajectoryDimensions,useSphere,10)
+        
     else:
         model = cylinderModel(env.magnets,diameter)
-        solver = cylinderSolver(env.magnets,12)
+        solver = cylinderSolver(env.magnets)
         solver.setup(model,env.trajectoryDimensions,objectProperties,env.tolerances)
     
     controller = PDController(env.startState,0.005,0.000002,0.005,0.000002,0.0,0.000)
@@ -62,18 +63,19 @@ if __name__ == '__main__':
     state = simulator.state
     states = []
     wrenches = []
+    desiredWrenchs = []
     desiredStates = []
     controls = []
     start = time.time()
     minimizationCosts = []
-    
+
     for i in range(numSteps):
     
         desiredState = velocityProfile.getDesiredState(i*dt,state)
         desired_wrench,p,d = controller.getDesiredWrench(state,desiredState)
        
         desiredStates.append(desiredState)
-
+        desiredWrenchs.append(desired_wrench)
         if(cheat):
             trueWrench = desired_wrench
             control = [0,0,0,0]
@@ -105,9 +107,6 @@ if __name__ == '__main__':
     desiredFinalTF = buildTF(desiredState[:3,0],desiredState[3:6,0])
     remainingError = np.array([controller.computeError(desiredFinalTF,state[0]) for state in states])
     
-    noisylinearVelocity = linearVelocity + np.random.normal(0,np.max(linearVelocity)*1e-3,linearVelocity.shape)
-    noisyrotationalVelocity = rotationalVelocity + np.random.normal(0,np.max(rotationalVelocity)*1e-3,rotationalVelocity.shape)
-
     
     #visualization stuff
     env.radius*=0.5
