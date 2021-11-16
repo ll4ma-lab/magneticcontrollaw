@@ -395,7 +395,12 @@ class SpaceProblem:
 
             self.desiredState= self.TrueDesiredState
             self.times = [300]* self.desiredState.shape[1]
+        if(challengeID==6):
 
+            self.TrueDesiredState = np.zeros((12,1))
+            self.TrueDesiredState[0]=1e-6
+            self.desiredState= self.TrueDesiredState
+            self.times = [20]  
     def spiralHelper(self, t):
         xyz = np.zeros((12))
         scale = 0.02

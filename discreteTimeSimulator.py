@@ -7,6 +7,8 @@ Created on Mon Feb 22 12:40:03 2021
 import numpy as np
 import time
 from se3Utils import buildSkew,repairRotMatrix
+from tqdm import tqdm
+
 
 
 def buildMassMatrix(object_properties,library=np,torqueTop=True):
@@ -23,6 +25,53 @@ def buildMassMatrix(object_properties,library=np,torqueTop=True):
         bottom = library.vstack((offDiagonal,MOI))
     full = library.vstack((top.T,bottom.T)).T
     return full
+
+
+def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,numSteps=10,dt=1,cheat=False,debugPrints = True):
+    state = simulator.state
+    states = []
+    wrenches = []
+    desiredWrenchs = []
+    desiredStates = []
+    controls = []
+    start = time.time()
+    minimizationCosts = []
+
+
+    iterates = range(1,numSteps+1)
+    if(debugPrints):
+        iterates = tqdm(iterates)
+    
+    for i in iterates:
+
+        desiredState = velocityProfile.getDesiredState(i*dt,state)
+        desired_wrench,p,d = controller.getDesiredWrench(state,desiredState)
+       
+        desiredStates.append(desiredState)
+        desiredWrenchs.append(desired_wrench)
+        if(cheat):
+            trueWrench = desired_wrench
+            control = [0,0,0,0]
+        else:
+            control =  solver.solveWrench(state[0][:3,3],desired_wrench)
+            trueWrench = model.forwardPass(state[0][:3,3],control)
+            wrenchError = trueWrench-desired_wrench
+            cost = np.sum((wrenchError[:3,:]**2)) + 200*np.sum((wrenchError[3:,:]**2))
+            minimizationCosts.append(cost)
+        wrenches.append(trueWrench)
+        controls.append(control)
+       
+        env.problem_specific_modification(state,trueWrench)
+        state = simulator.simulate(trueWrench)
+        states.append(state)
+    
+    if debugPrints:
+        runTime = time.time() - start
+        print(runTime)
+
+    return states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts
+
+
 class discreteTimeSimulator:
     def __init__(self,state,timestep,object_properties):
         (mass,MOI) = object_properties

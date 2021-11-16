@@ -9,6 +9,7 @@ from models import multiMagModel
 from modelOptimization import multiMagSolver
 from environments import PlanarProblem,SpaceProblem
 
+doBrute = False
 
 if __name__ == '__main__':
     model = 5
@@ -36,12 +37,19 @@ if __name__ == '__main__':
         cost2 = np.sum((wrenchError2[:3,:]**2)) + 200*np.sum((wrenchError2[3:,:]**2))
         cylinderCosts.append(cost2)
         
-        control3 =  sphereSolver.bruteSphereSolver(state[0][:3,3],desired_wrench)
-        trueWrench3 = sphereModel.forwardPass(state[0][:3,3],control3)
-        wrenchError3 = trueWrench3-desired_wrench
-        cost3 = np.sum((wrenchError3[:3,:]**2)) + 200*np.sum((wrenchError3[3:,:]**2))
-        bruteSphereCosts.append(cost3)
+        if doBrute:
+            control3 =  sphereSolver.bruteSphereSolver(state[0][:3,3],desired_wrench)
+            trueWrench3 = sphereModel.forwardPass(state[0][:3,3],control3)
+            wrenchError3 = trueWrench3-desired_wrench
+            cost3 = np.sum((wrenchError3[:3,:]**2)) + 200*np.sum((wrenchError3[3:,:]**2))
+            bruteSphereCosts.append(cost3)
+        else:
+            bruteSphereCosts.append(0.0)
+
         
     plt.figure()    
     plt.plot(np.array(sphereCosts)-np.array(bruteSphereCosts),'r')
     plt.plot(np.array(cylinderCosts)-np.array(bruteSphereCosts),'b')
+    
+    plt.figure()    
+    plt.plot(np.array(sphereCosts)/np.array(cylinderCosts))

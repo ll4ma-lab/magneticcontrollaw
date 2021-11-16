@@ -22,7 +22,7 @@ class SplineProfile:
         #print(step)
         while self.switchingTimes[stateIndex+1] < step:
             stateIndex +=1
-        if self.switchingTimes[stateIndex+1] == step:
+        if self.switchingTimes[stateIndex+1]+1 == step:
             #self.points[:,stateIndex+1] = np.copy(state[:,0])
             print('updated')
         #print(self.switchingTimes[stateIndex])
