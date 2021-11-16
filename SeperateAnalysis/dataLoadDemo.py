@@ -5,78 +5,40 @@ Created on Sun Jul  5 16:02:00 2020
 @author: tabor
 """
 
-import dataloader
 import sys
 sys.path.append("..") # Adds higher directory to python modules path.
-orientation = False
-
-if orientation:
-    dataloader.load("C:/Users/Griffin Tabor/Documents/magneticLaw/data/sim_5400s_2021-06-09 13.24.47.972888",globals())
-else: 
-    dataloader.load("C:/Users/Griffin Tabor/Documents/magneticLaw/data/sim_2700s_2021-05-25 14.50.51.553896",globals())
-
-import visualization
+import dataloader
 import matplotlib.pyplot as plt
-import SplineProfile
-
-
-
+import mpl_toolkits.mplot3d.axes3d as p3
 import numpy as np
+import time 
+import visualization
+sphere=False
+if sphere:
+    dataloader.load("/home/tabor/Documents/magneticcontrollaw/data/sphere_samples_4096",globals())
+else:
+    dataloader.load("/home/tabor/Documents/magneticcontrollaw/data/cylinder_samples_4096",globals())
 
 
 
-Plots = {'Position (m)':np.transpose(positions),
-         'Velocity (m/s)':np.transpose(linearVelocity),
-         'Rot velocity (_/s)':np.transpose(rotationalVelocity),
-         "Force ":np.transpose(np.array(wrenches)[:,:3,0]),
-         "Torque ":np.transpose(np.array(wrenches)[:,3:,0]),
-         'Desired position (m)':np.transpose(npdesiredStates[:,:3,0]),
-         'Desired velocity (m/s) ':np.transpose(npdesiredStates[:,6:9,0])}
+threshold = 0.1
+colors = [(1,0,0,1-error/threshold if error<threshold else 0) for error in posErrorsPercent]
+print(time.time()-s)
+fig = plt.figure(figsize=(8,8))
+ax = p3.Axes3D(fig)
+ax.scatter(samplePoints[:,0],samplePoints[:,1],samplePoints[:,2],c=colors)
+ax.set_xlim(*env.visualizationBoundaryY)
+ax.set_ylim(*env.visualizationBoundaryY)
+ax.set_zlim(*env.visualizationBoundaryY)
+visualization.drawCubes(env.magnets,[],ax,env.radius)
+    
 
-visualization.plotStuff(Plots,'Controller')
+ax.view_init(elev=90, azim=-90)
+ax.set_zlim(-0.1,0.1)
+ax.set_xlim(-0.1,0.1)
+ax.set_ylim(-0.1,0.1)
+plt.savefig(name + "top" + '.png')
 
-Plots = {'Position Error(m)':np.abs(np.transpose(remainingError[:,:3,0])),
-         'Orientation Error(radians)':-np.transpose(remainingError[:,3:6,0])}
+ax.view_init(elev=49, azim=115)
+plt.savefig(name + "angle" + '.png')
 
-times = list(range(numSteps))
-
-startTF = buildTF(env.startState[:3,0],env.startState[3:6,0])
-
-remainingError = np.array([controller.computeError(startTF,state[0]) for state in states])
-positions = np.transpose(remainingError[:,:3,0]) 
-angles = np.transpose(remainingError[:,3:6,0])
-visualization.plotStuff(Plots,'Error')
-
-fig, ax1 = plt.subplots()
-
-
-ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
-
-ax2.set_ylabel('Orientation (rad)')  # we already handled the x-label with ax1
-ax2.scatter(times,angles[0,:], color=visualization.Lanc1,linestyle='dashed')
-ax2.scatter(times,angles[1,:], color=visualization.Lanc2,linestyle='dashed')
-ax2.scatter(times,angles[2,:], color=visualization.Lanc3,linestyle='dashed')
-ax2.tick_params(axis='y')
-ax2.set_ylim([-np.pi,np.pi])
-
-ax1.set_xlabel('time (s)')
-ax1.set_ylabel('Position (m)')
-ax1.plot(positions[0,:], color=visualization.Lanc1)
-ax1.plot(positions[1,:], color=visualization.Lanc2)
-ax1.plot(positions[2,:], color=visualization.Lanc3)
-ax1.set_ylim([-0.08,0.08])
-ax1.tick_params(axis='y')
-
-
-ax1.set_zorder(ax2.get_zorder()-1)
-ax1.patch.set_visible(False)
-
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.show()
-
-np.savetxt("Orientation" + str(orientation)+'.csv',remainingError[:,:,0],delimiter=',')
-velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
-
-anim = visualization.animate2DPath(env,np.transpose(positions),transforms,controls,name="",savePlotSteps=velocityProfile.switchingTimes,save=False)
-plt.figure()
-plt.plot(np.linalg.norm(angles,axis=0))
