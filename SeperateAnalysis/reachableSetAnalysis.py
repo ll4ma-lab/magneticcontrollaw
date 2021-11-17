@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     
     env = SpaceProblem(6)
-    env.magnets = env.magnets[:-5]
+    env.magnets = env.magnets[:-3]
     env.trajectoryDimensions = 'xyz'
     
     simTime = np.sum(env.times)
@@ -50,7 +50,7 @@ if __name__ == '__main__':
     controller = PDController(env.startState,0.005*modifier,0.000002*modifier,0.005*modifier,0.000002*modifier,0.0,0.000)
     
     
-    sampledVals = np.linspace(-3e-2,3e2,16)
+    sampledVals = np.linspace(-3e-2,3e-2,16)
     x,y,z = np.meshgrid(sampledVals, sampledVals, sampledVals, indexing='ij')
     x = x.flatten()
     y = y.flatten()
