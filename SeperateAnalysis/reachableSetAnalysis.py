@@ -24,7 +24,7 @@ import SplineProfile
 import TrapProfile
 from tqdm import tqdm
 
-useSphere = True
+useSphere = False
 
 from models import multiMagModel
 from modelOptimization import multiMagSolver
@@ -50,7 +50,7 @@ if __name__ == '__main__':
     controller = PDController(env.startState,0.005*modifier,0.000002*modifier,0.005*modifier,0.000002*modifier,0.0,0.000)
     
     
-    sampledVals = np.linspace(-3e-3,3e-3,8)
+    sampledVals = np.linspace(-3e-2,3e2,16)
     x,y,z = np.meshgrid(sampledVals, sampledVals, sampledVals, indexing='ij')
     x = x.flatten()
     y = y.flatten()
@@ -64,8 +64,8 @@ if __name__ == '__main__':
     for i in tqdm(range(samplePoints.shape[0])):
         env.desiredState[:3,0] = samplePoints[i,:]
         simulator = discreteTimeSimulator(env.startState,dt,objectProperties) #density, diamter
-        velocityProfile = DummyProfile.DummyProfile(env,simTime,env.times)
-        states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,numSteps=numSteps,cheat = True,dt=dt,debugPrints=False)
+        velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
+        states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,numSteps=numSteps,cheat = False,dt=dt,debugPrints=False)
         
         velError = np.linalg.norm(np.dot(states[-1][0][:3,:3],states[-1][2][:,0]))
         velErrors.append(velError)
@@ -93,4 +93,6 @@ if __name__ == '__main__':
     
     name = 'sphere_' if useSphere else 'cylinder_'
     import dataloader
-    dataloader.save("../data/" + name +"_mags_" + str(len(env.magnets)) + '_samples_'+str(samplePoints.shape[0]),globals(),dir())
+    import dataloader
+    from datetime import datetime
+    dataloader.save("../data/" + name +"_mags_" + str(len(env.magnets)) + '_samples_'+str(samplePoints.shape[0]) +  str(datetime.now()).replace(":","."),globals(),dir())
