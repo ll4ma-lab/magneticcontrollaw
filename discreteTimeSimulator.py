@@ -12,7 +12,8 @@ from tqdm import tqdm
 
 
 def buildMassMatrix(object_properties,library=np,torqueTop=True):
-    (mass,MOI) = object_properties
+    mass = object_properties['mass']
+    MOI = object_properties['MOI']
 
     massComponent = library.eye(3) *mass
     offDiagonal = library.zeros((3,3))
@@ -74,7 +75,6 @@ def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,num
 
 class discreteTimeSimulator:
     def __init__(self,state,timestep,object_properties):
-        (mass,MOI) = object_properties
         self.t = timestep
         self.dt = 0.002
             
@@ -147,8 +147,7 @@ class discreteTimeSimulator:
         return (bodyToWorld,Ωsc,Vsc)
    # def setState(self,state):
    #     self.state = np.copy(state)
-def sphereProperties(density,diameter,library=np):
-    radius = diameter / 2.0
+def sphereProperties(density,radius,library=np):
     volume = 4.0/3 * np.pi*(radius**3)
     mass = volume * density
     I = library.eye(3)*(2.0/5) *mass * (radius**2)

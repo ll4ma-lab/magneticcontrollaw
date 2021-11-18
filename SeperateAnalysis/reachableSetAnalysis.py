@@ -39,11 +39,13 @@ if __name__ == '__main__':
     simTime = np.sum(env.times)
     dt = 1
     numSteps = int(simTime/dt)
-    diameter = 0.04
-    objectProperties = sphereProperties(8940,diameter)
+    radius = 0.02
+    mass = sphereProperties(8940,radius)
+    objectProperties = {'mass':mass[0],'MOI':mass[1],'radius':radius}
+
     
-    model = multiMagModel(env.magnets,diameter,useSphere)
-    solverModel = multiMagModel(env.magnets,diameter,useSphere)
+    model = multiMagModel(env.magnets,objectProperties,useSphere)
+    solverModel = multiMagModel(env.magnets,objectProperties,useSphere)
     solver = multiMagSolver(solverModel,env.trajectoryDimensions,useSphere,10)
 
     modifier = 10

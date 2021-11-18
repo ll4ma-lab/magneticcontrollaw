@@ -57,6 +57,9 @@ drawArrow((0,vlen,0),'g',ax)
 drawArrow((0,-vlen,0),'b',ax)
 
 lines = 60
+mags = [[0,-0.15,0]]
+radius = 0.02
+objectProperties = {'radius':radius}
 
 for i in range(lines):
    angle = i* 2*np.pi/lines
@@ -64,8 +67,8 @@ for i in range(lines):
    drawArrow(vec,'r',ax)
    
 
-model = multiMagModel([[0,-0.5,0]],0.04,False)
-scaleFactor = 5e7
+model = multiMagModel(mags,objectProperties,False)
+scaleFactor = 1#5e7
 position = np.zeros((3,1))
 pointingForces = np.stack([model.forwardPass(position,[0,0,i,0]) for i in range(40+1)]).squeeze() * scaleFactor
 ax.scatter(pointingForces[:,0],pointingForces[:,1]+0.5,pointingForces[:,2],c='g')
@@ -90,11 +93,11 @@ ax.set_zlim(-0.5,0.5)
 addCube((0,0,0),0.1,1,ax)
 drawSphere((0,0.5,0),0.1,ax)
 
-sphereModel = multiMagModel([[0,-0.5,0]],0.04,True)
+sphereModel = multiMagModel(mags,objectProperties,True)
 
 phiSet = [-90]#range(-180,180,2)
 xiSet = range(-180,180,1)
-powerSet = range(0,40+1)
+powerSet = [0,40]
 thetaSet = [-90,90]
 
 sphereForces = np.concatenate([np.concatenate([np.stack([sphereModel.forwardPass(position,[0,i,j,k]) for i in [40]]) for j in phiSet],0) for k in xiSet],0).squeeze() * scaleFactor
@@ -102,6 +105,8 @@ sphereForces = np.concatenate([np.concatenate([np.stack([sphereModel.forwardPass
 
 rhoForces = np.concatenate([np.stack([model.forwardPass(position,[0,2,i,j]) for i in powerSet]) for j in thetaSet],0).squeeze() * scaleFactor
 pointingForces = np.stack([model.forwardPass(position,[0,0,i,0]) for i in range(40+1)]).squeeze() * scaleFactor
+
+print(np.arctan2(rhoForces[:, 2],rhoForces[:, 3])[-1]*2)
 
 p1 = Scatter3D(parent=view.scene)
 p1.set_gl_state('translucent', blend=True, depth_test=True)
@@ -125,6 +130,14 @@ fig,ax = plt.subplots(figsize=(8,8))
 #ax.plot(rhoForces[:,2],rhoForces[:,1])
 from matplotlib.patches import Polygon
 from visualization import Lanc1,Lanc2,Lanc3
+from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
+
+legend_elements = [Line2D([0], [0], linewidth=5,c=Lanc1,linestyle='dotted', label='Old Model'),
+                   Patch(facecolor = Lanc3,
+                         label='New model')]
+
+ax.legend(handles=legend_elements, loc='best')
 
 
 sortedSphere = sphereForces[sphereForces[:, 2].argsort(),1:3]
@@ -135,9 +148,15 @@ allPoints = np.concatenate((sortedSphere, sortedrho))
 
 flippedAxis = np.stack([allPoints[:,1],allPoints[:,0]]).T
 poly = Polygon(flippedAxis, facecolor = Lanc3)
+bounds = (np.min(allPoints)*1.25,np.max(allPoints)*1.25)
+plt.title('Single Magnet Possible Force Space')
+
+
 ax.add_patch(poly)
-ax.set_xlim([-3,3])
-ax.set_ylim([-3,3])
-ax.plot(rhoForces[:,2],rhoForces[:,1], linewidth=5,c=Lanc1,linestyle='dotted')
+ax.set_xlim(bounds)
+ax.set_ylim(bounds)
+ax.plot(rhoForces[:2,2],rhoForces[:2,1], linewidth=5,c=Lanc1,linestyle='dotted')
+ax.plot(rhoForces[2:,2],rhoForces[2:,1], linewidth=5,c=Lanc1,linestyle='dotted')
+
 ax.plot(pointingForces[:,2],pointingForces[:,1], linewidth=5,c=Lanc1,linestyle='dotted')
 plt.show()

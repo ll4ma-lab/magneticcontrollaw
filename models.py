@@ -117,12 +117,12 @@ def modelCallRotatedWrench(dipoleStrength,angles,modelVals,rho,library=np,zero =
     return selectedWrench  
     
 class multiMagModel():
-    def __init__(self,magnets,diameter,useSphere= False):
+    def __init__(self,magnets,object_properties,useSphere= False):
         self.time = 0
         self.magnets = magnets
-        self.diameter = diameter
-        self.cylinderModel = cylinderModel(diameter)
-        self.sphereModel = sphereModel(diameter)
+        self.object_properties = object_properties
+        self.cylinderModel = cylinderModel(object_properties)
+        self.sphereModel = sphereModel(object_properties)
         self.useSphere = useSphere
     def forwardPass(self,position,control):
         if(self.useSphere):
@@ -170,8 +170,8 @@ class multiMagModel():
         return wrench
  
 class sphereModel():
-    def __init__(self,diameter):
-        self.cylinderModel = cylinderModel(diameter)
+    def __init__(self,object_properties):
+        self.cylinderModel = cylinderModel(object_properties)
         
     def modelCall(self,dist,dipoleStrength,radii=None):
         frho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['fzz'],dist,dipoleStrength,4,radii)
@@ -186,13 +186,12 @@ class sphereModel():
                 
 
 class cylinderModel():
-    def __init__(self,diameter):
+    def __init__(self,object_properties):
         self.time = 0.0
         sigma_copper = 5.8E+07
         sigma_al = 3.77E+07
         self.sigma = sigma_copper
-        self.do = diameter
-        self.radii = diameter/2
+        self.object_properties = object_properties
         self.freq = 15
         self.mu = 4*np.pi*1e-7
         
@@ -215,7 +214,7 @@ class cylinderModel():
 
     def modelEquation(self,constants,distance,dipoleStrength,p0RPower,radii=None):
         if(radii is None):
-            radii = self.radii
+            radii = self.object_properties['radius']
         #P0 has r^4 for forces and r^3 for torques
         P1 = self.sigma*self.mu*self.freq*radii*radii
         P2 = distance/radii
