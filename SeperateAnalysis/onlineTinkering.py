@@ -8,9 +8,9 @@ Created on Tue Sep 28 14:02:43 2021
 
 #online optimization
 
-from solvers.line_search import NewtonMethod, GradientDescent 
+from ll4ma_opt.solvers.line_search import NewtonMethod, GradientDescent 
  
-from problems.problem import Problem  
+from ll4ma_opt.problems import Problem  
 import torch 
 import numpy as np 
 import matplotlib.pyplot as plt 

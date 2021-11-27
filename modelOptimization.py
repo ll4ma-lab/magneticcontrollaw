@@ -10,12 +10,13 @@ import torch
 
 
 import time
-from problems.problem import Problem 
+from ll4ma_opt.problems import Problem
+
 import matplotlib.pyplot as plt 
 torch.set_default_tensor_type(torch.DoubleTensor)
 import torch.multiprocessing  as multiprocessing
 
-from solvers.line_search import NewtonMethod 
+from ll4ma_opt.solvers.line_search import NewtonMethod
 
 from models import rotZ,modelCallRotatedWrench,getOmniFrame
 

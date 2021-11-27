@@ -12,10 +12,10 @@ import torch
 from models import modelCallRotatedWrench,sphereModel
 from discreteTimeSimulator import buildMassMatrix,sphereProperties
 from modelOptimization import buildQ
-from problems.problem import Problem 
+from ll4ma_opt.problems import Problem 
 import matplotlib.pyplot as plt 
 
-from solvers.line_search import NewtonMethod
+from ll4ma_opt.solvers.line_search import NewtonMethod
 def sysIDDemo(controls,magnets,positions,linearVelocity,rotationalVelocity):
 
     optimizerParams = {'alpha':1,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-20}
@@ -71,8 +71,10 @@ class radiusSysid(Problem):
 
         wrenches = modelCallRotatedWrench(dipoleStrengths,angles,modelVals,rhos,library=torch,zero = zero).squeeze()
     
-        properties = sphereProperties(self.materialDensity,radii*2,torch)
-        M = buildMassMatrix(properties,torch,False)
+        mass = sphereProperties(self.materialDensity,radii,torch)
+        objectProperties = {'mass':mass[0],'MOI':mass[1],'radius':radii}
+        
+        M = buildMassMatrix(objectProperties,torch,False)
         
         return torch.linalg.inv(M)@ wrenches.T
     def tensor_cost(self, x):

@@ -8,7 +8,8 @@ import os
 os.environ['MKL_THREADING_LAYER'] = 'GNU'
 import numpy as np 
 
-
+import sys
+sys.path.append("..") # Adds higher directory to python modules path.
 import matplotlib.pyplot as plt 
 import time 
 from PDController import PDController

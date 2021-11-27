@@ -6,7 +6,7 @@ Created on Tue May 11 14:06:39 2021
 """ 
 import os
 os.environ['MKL_THREADING_LAYER'] = 'GNU'
-from problems.problem import Problem 
+from ll4ma_opt.problems import Problem 
 import numpy as np 
 
  
@@ -15,7 +15,7 @@ import torch.multiprocessing  as multiprocessing
 from torch.autograd import Variable
 
 
-from solvers.line_search import GradientDescent, NewtonMethod, NewtonMethodWolfeLine 
+from ll4ma_opt.solvers.line_search import GradientDescent, NewtonMethod, NewtonMethodWolfeLine 
 import matplotlib.pyplot as plt 
 from matplotlib import animation
 import time
@@ -48,9 +48,9 @@ controller = PDController(env.startState,0.005,0.00001,0.005,0.00001,0.0,0.000)
 velocityProfile = SplineProfile.SplineProfile(env,np.sum(env.times),env.times)
 
 
-diameter = 0.04
-objectProperties = sphereProperties(8940,diameter)
-
+radius = 0.02
+mass = sphereProperties(8940,radius)
+objectProperties = {'mass':mass[0],'MOI':mass[1],'radius':radius}
 
 
 optimizerParams = {'alpha':1.0,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-2,'min_alpha': 1e-15}

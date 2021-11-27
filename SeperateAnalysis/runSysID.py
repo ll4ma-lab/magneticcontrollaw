@@ -36,7 +36,7 @@ visualization.plotStuff(accelPlots,'Controller')
 
 
 from sysIDoptimization import radiusSysid
-from solvers.line_search import NewtonMethod
+from ll4ma_opt.solvers.line_search import NewtonMethod
 optimizerParams = {'alpha':1,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-20}
 prob = radiusSysid(np.diag((2e5,2e5,2e5,1,1,1))) # built with M(0.04) Q M(0.04)
 optimizer = NewtonMethod(problem=prob,**optimizerParams)
