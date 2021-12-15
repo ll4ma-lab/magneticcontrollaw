@@ -12,38 +12,11 @@ from models import multiMagModel
 from visualization import *
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import mpl_toolkits.mplot3d.axes3d as p3
-import vispy
-vispy.use("pyqt5")
-from vispy import app, visuals, scene
-
-# build your visuals, that's all
-Scatter3D = scene.visuals.create_visual_node(visuals.MarkersVisual)
-
-# The real-things : plot using scene
-# build canvas
-canvas = scene.SceneCanvas(keys='interactive', show=True)
-
-# Add a ViewBox to let the user zoom/rotate
-view = canvas.central_widget.add_view()
-view.camera = 'turntable'
-view.camera.fov = 45
-view.camera.distance = 8
-view.camera.elevation = 90.0
-view.camera.roll = 0.0
-view.camera.azimuth = 0.0
-
-
-# plot ! note the parent parameter
-
-
-
-
-
 
 fig = plt.figure()
 ax = p3.Axes3D(fig)
 ax.set_xlim(-0.5,0.5)
-ax.set_ylim(-0.5,1)
+ax.set_ylim(-0.25,0.75)
 ax.set_zlim(-0.5,0.5)
 #ax.set_aspect('equal')
 
@@ -66,9 +39,11 @@ for i in range(lines):
    vec = (vlen*np.cos(angle),0,vlen*np.sin(angle))
    drawArrow(vec,'r',ax)
    
-
+ 
+ 
+ 
 model = multiMagModel(mags,objectProperties,False)
-scaleFactor = 1#5e7
+scaleFactor = 1e3
 position = np.zeros((3,1))
 pointingForces = np.stack([model.forwardPass(position,[0,0,i,0]) for i in range(40+1)]).squeeze() * scaleFactor
 ax.scatter(pointingForces[:,0],pointingForces[:,1]+0.5,pointingForces[:,2],c='g')
@@ -78,20 +53,51 @@ ax.scatter(negPointingForces[:,0],negPointingForces[:,1]+0.5,negPointingForces[:
 
 
 
-rhoForces = np.concatenate([np.stack([model.forwardPass(position,[0,2,i,j]) for i in range(40+1)]) for j in range(-180,180,3)],0).squeeze() * scaleFactor
-ax.scatter(rhoForces[:,0],rhoForces[:,1]+0.5,rhoForces[:,2],c='r')
+rhoForces = np.concatenate([np.stack([model.forwardPass(position,[0,2,i,j]) for i in range(1,40+1,5)]) for j in range(-180,180,6)],0).squeeze() * scaleFactor
+ax.scatter(rhoForces[:,0],rhoForces[:,1]+0.5,rhoForces[:,2],c='purple')
 
 
+arrow_color = 'k'
+old_forces_color = Lanc1
+new_forces_color = Lanc3
 
 fig = plt.figure()
 ax = p3.Axes3D(fig)
 ax.set_xlim(-0.5,0.5)
-ax.set_ylim(-0.5,1)
+ax.set_ylim(-0.25,0.75)
 ax.set_zlim(-0.5,0.5)
 #ax.set_aspect('equal')
 
 addCube((0,0,0),0.1,1,ax)
+
+drawArrow((0,vlen,0),arrow_color,ax)
+drawArrow((0,-vlen,0),arrow_color,ax)
+
+lines = 60
+mags = [[0,-0.15,0]]
+radius = 0.02
+objectProperties = {'radius':radius}
+
+for i in range(lines):
+   angle = i* 2*np.pi/lines
+   vec = (vlen*np.cos(angle),0,vlen*np.sin(angle))
+   drawArrow(vec,arrow_color,ax)
+
+
 drawSphere((0,0.5,0),0.1,ax)
+ax.scatter(pointingForces[:,0],pointingForces[:,1]+0.5,pointingForces[:,2],c=old_forces_color)
+ax.scatter(negPointingForces[:,0],negPointingForces[:,1]+0.5,negPointingForces[:,2],c=old_forces_color)
+ax.scatter(rhoForces[:,0],rhoForces[:,1]+0.5,rhoForces[:,2],c=old_forces_color)
+ax.set_xlabel("X")
+ax.set_ylabel("Y")
+ax.set_zlabel("Z")
+ax.set_xticks([])
+ax.set_yticks([])
+ax.set_zticks([])
+
+
+
+
 
 sphereModel = multiMagModel(mags,objectProperties,True)
 
@@ -105,39 +111,26 @@ sphereForces = np.concatenate([np.concatenate([np.stack([sphereModel.forwardPass
 
 rhoForces = np.concatenate([np.stack([model.forwardPass(position,[0,2,i,j]) for i in powerSet]) for j in thetaSet],0).squeeze() * scaleFactor
 pointingForces = np.stack([model.forwardPass(position,[0,0,i,0]) for i in range(40+1)]).squeeze() * scaleFactor
-
 print(np.arctan2(rhoForces[:, 2],rhoForces[:, 3])[-1]*2)
 
-p1 = Scatter3D(parent=view.scene)
-p1.set_gl_state('translucent', blend=True, depth_test=True)
-p1.set_data(sphereForces[:,:3], symbol='o', size=10,
-            edge_width=0.5)
-
-p2 = Scatter3D(parent=view.scene)
-p2.set_gl_state('translucent', blend=True, depth_test=True)
-p2.set_data(rhoForces[rhoForces[:,0]>0,:3], symbol='o', size=20,     
-            edge_width=0.5, edge_color='red',face_color='red')
-
-            
-p3 = Scatter3D(parent=view.scene)
-p3.set_gl_state('translucent', blend=True, depth_test=True)
-p3.set_data(pointingForces[:,:3], symbol='o', size=20,
-            edge_width=0.5,face_color='green')
 
 
-fig,ax = plt.subplots(figsize=(8,8))
-#ax.plot(sphereForces[:,2],sphereForces[:,1])
-#ax.plot(rhoForces[:,2],rhoForces[:,1])
+fig,ax = plt.subplots(figsize=(8,2))
+ax.set_xlabel("X")
+ax.set_ylabel("Y")
+ax.set_xticks([])
+ax.set_yticks([])
+
 from matplotlib.patches import Polygon
 from visualization import Lanc1,Lanc2,Lanc3
 from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
 
-legend_elements = [Line2D([0], [0], linewidth=5,c=Lanc1,linestyle='dotted', label='Old Model'),
-                   Patch(facecolor = Lanc3,
+legend_elements = [Line2D([0], [0], linewidth=5,c=old_forces_color,linestyle='dotted', label='Old Model'),
+                   Patch(facecolor = new_forces_color,
                          label='New model')]
 
-ax.legend(handles=legend_elements, loc='best')
+#ax.legend(handles=legend_elements, loc='best')
 
 
 sortedSphere = sphereForces[sphereForces[:, 2].argsort(),1:3]
@@ -146,17 +139,26 @@ sortedrho = rhoForces[-rhoForces[:, 2].argsort(),1:3]
 
 allPoints = np.concatenate((sortedSphere, sortedrho))
 
-flippedAxis = np.stack([allPoints[:,1],allPoints[:,0]]).T
-poly = Polygon(flippedAxis, facecolor = Lanc3)
+
+plt.title('Slice')
+
 bounds = (np.min(allPoints)*1.25,np.max(allPoints)*1.25)
-plt.title('Single Magnet Possible Force Space')
 
+#ax.set_xlim(bounds)
+#ax.set_ylim(bounds)
+ax.set_aspect('equal')
+ax.plot(rhoForces[:2,2],rhoForces[:2,1], linewidth=5,c=old_forces_color,linestyle='dotted')
+ax.plot(rhoForces[2:,2],rhoForces[2:,1], linewidth=5,c=old_forces_color,linestyle='dotted')
+ax.plot(pointingForces[:,2],pointingForces[:,1], linewidth=5,c=old_forces_color,linestyle='dotted')
 
+plt.tight_layout()
+plt.savefig("old_modeled.png")
+
+flippedAxis = np.stack([allPoints[:,1],allPoints[:,0]]).T
+poly = Polygon(flippedAxis, facecolor = new_forces_color)
 ax.add_patch(poly)
-ax.set_xlim(bounds)
-ax.set_ylim(bounds)
-ax.plot(rhoForces[:2,2],rhoForces[:2,1], linewidth=5,c=Lanc1,linestyle='dotted')
-ax.plot(rhoForces[2:,2],rhoForces[2:,1], linewidth=5,c=Lanc1,linestyle='dotted')
 
-ax.plot(pointingForces[:,2],pointingForces[:,1], linewidth=5,c=Lanc1,linestyle='dotted')
+plt.savefig("new_and_old_modeled.png")
+
+
 plt.show()
