@@ -27,8 +27,33 @@ def buildMassMatrix(object_properties,library=np,torqueTop=True):
     full = library.vstack((top.T,bottom.T)).T
     return full
 
+def state_noise(state):
+    
+    transform = np.copy(state[0])
+ 
+    current_linear_velocity = transform[:3,:3] @ state[2]
+    current_rotational_velocity = transform[:3,:3] @ state[1]
+    
+    
+    position_noise = np.random.normal(0,0.0003,(3)) 
+    linear_velocity_noise = np.random.normal(0,0.00003,(3,1))
+    rotational_velocity_noise = np.random.normal(0,0.00001,(3,1))
+    
+    transform[:3,3] += position_noise
+    current_linear_velocity += linear_velocity_noise
+    current_rotational_velocity += rotational_velocity_noise
 
-def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,numSteps=10,dt=1,cheat=False,debugPrints = True):
+    tf_inverse = np.linalg.inv(transform)[:3,:3]
+    
+    state = [transform,tf_inverse @ current_rotational_velocity, tf_inverse @ current_rotational_velocity]
+    return state
+    
+    
+        
+    
+
+
+def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=10,dt=1,cheat=False,debugPrints = True):
     state = simulator.state
     states = []
     wrenches = []
@@ -64,6 +89,7 @@ def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,num
        
         env.problem_specific_modification(state,trueWrench)
         state = simulator.simulate(trueWrench)
+        adaptive.step(state_noise(state),control)
         states.append(state)
     
     if debugPrints:

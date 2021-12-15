@@ -15,7 +15,7 @@ import visualization
 import DummyProfile
 import SplineProfile
 import TrapProfile
-
+from Adaptive import Adaptive
 
 ll4maOpt = True
 useSphere = True
@@ -42,24 +42,28 @@ if __name__ == '__main__':
     numSteps = int(simTime/dt)
     radius = 0.02
     mass = sphereProperties(8940,radius)
-    objectProperties = {'mass':mass[0],'MOI':mass[1],'radius':radius}
+    object_properties = {'mass':mass[0],'MOI':mass[1],'radius':radius}
 
     if(ll4maOpt):
-        model = multiMagModel(env.magnets,objectProperties,useSphere)
-        solverModel = multiMagModel(env.magnets,objectProperties,useSphere)
+        model = multiMagModel(env.magnets,object_properties,useSphere)
+        solverModel = multiMagModel(env.magnets,object_properties,useSphere)
         solver = multiMagSolver(solverModel,env.trajectoryDimensions,useSphere,10)
         
     else:
-        model = cylinderModel(env.magnets,objectProperties[radius]*2)
+        model = cylinderModel(env.magnets,object_properties[radius]*2)
         solver = cylinderSolver(env.magnets)
-        solver.setup(model,env.trajectoryDimensions,objectProperties,env.tolerances)
+        solver.setup(model,env.trajectoryDimensions,object_properties,env.tolerances)
     
     controller = PDController(env.startState,0.005,0.000002,0.005,0.000002,0.0,0.000)
     
-    simulator = discreteTimeSimulator(env.startState,dt,objectProperties) #density, diamter
+    simulator = discreteTimeSimulator(env.startState,dt,object_properties) #density, diamter
     velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
     
-    states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,numSteps=numSteps,dt=dt,cheat=cheat)
+    object_properties_test = {'mass':mass[0],'MOI':mass[1],'radius':0.01}
+
+    adaptive = Adaptive(env.magnets, object_properties_test, simulator.state)
+    
+    states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=200,dt=dt,cheat=cheat)
     
     
     print('Time spent doing forwad model ' + str(model.time))
