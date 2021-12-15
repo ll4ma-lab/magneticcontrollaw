@@ -9,43 +9,54 @@ Created on Sat Jul 24 17:12:21 2021
 import matplotlib.pyplot as plt
 import numpy as np
 
-noiseLevel = 5e-20
-print('noise level ',noiseLevel)
-noisylinearVelocity = linearVelocity + np.random.normal(0,np.max(linearVelocity)*noiseLevel,linearVelocity.shape)
-noisyrotationalVelocity = rotationalVelocity + np.random.normal(0,np.max(rotationalVelocity)*noiseLevel,rotationalVelocity.shape)
+noises = np.linspace(0,0.50,2).tolist()
+solutions = []
+for noiseLevel in noises:
 
-
-accel = np.transpose(noisylinearVelocity[1:,:]-noisylinearVelocity[:-1,:])
-force = np.transpose(np.array(wrenches)[:,:3,0])
-torque = np.transpose(np.array(wrenches)[:,3:,0])
-rotAccel = np.transpose(noisyrotationalVelocity[1:,:]-noisyrotationalVelocity[:-1,:])
-
-division = force[:,1:]/accel
-
-division2 = torque[:,1:]/rotAccel
-accelPlots = {"accel" :accel,
-             "Force ":force,
-             "ratio":division,
-             "rot accel":rotAccel,
-             "Torque ": torque,
-             "ratio 2":division2,
-             'Desired accel ':np.transpose(npdesiredStates[:-1,6:9,0]-npdesiredStates[1:,6:9,0])}
+    noisylinearVelocity = linearVelocity + np.random.normal(0,np.max(linearVelocity)*noiseLevel,linearVelocity.shape)
+    noisyrotationalVelocity = rotationalVelocity + np.random.normal(0,np.max(rotationalVelocity)*noiseLevel,rotationalVelocity.shape)
     
-visualization.plotStuff(accelPlots,'Controller')
+    
+    # accel = np.transpose(noisylinearVelocity[1:,:]-noisylinearVelocity[:-1,:])
+    # force = np.transpose(np.array(wrenches)[:,:3,0])
+    # torque = np.transpose(np.array(wrenches)[:,3:,0])
+    # rotAccel = np.transpose(noisyrotationalVelocity[1:,:]-noisyrotationalVelocity[:-1,:])
+    
+    # division = force[:,1:]/accel
+    
+    # division2 = torque[:,1:]/rotAccel
+    # accelPlots = {"accel" :accel,
+    #              "Force ":force,
+    #              "ratio":division,
+    #              "rot accel":rotAccel,
+    #              "Torque ": torque,
+    #              "ratio 2":division2,
+    #              'Desired accel ':np.transpose(npdesiredStates[:-1,6:9,0]-npdesiredStates[1:,6:9,0])}
+        
+    # visualization.plotStuff(accelPlots,'Controller')
+    
+    
+    from sysIDoptimization import radiusSysid
+    from ll4ma_opt.solvers.line_search import NewtonMethod
+    optimizerParams = {'alpha':1,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-20}
+    prob = radiusSysid(np.diag((2e5,2e5,2e5,1,1,1))) # built with M(0.04) Q M(0.04)
+    optimizer = NewtonMethod(problem=prob,**optimizerParams)
+    s = time.time()
+    prob.updateVals(controls,env.magnets,positions,noisylinearVelocity,noisyrotationalVelocity)
+    solution, cost, converged, iterates = optimizer.optimize(prob.initial_solution,max_iterations=25)
+    solutions.append(solution[0,0])
+    print('opt time ', time.time()-s)
+
+
+plt.figure()
+plt.ylim(0,0.1)
+plt.plot(noises,solutions)
 
 
 
-from sysIDoptimization import radiusSysid
-from ll4ma_opt.solvers.line_search import NewtonMethod
-optimizerParams = {'alpha':1,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-20}
-prob = radiusSysid(np.diag((2e5,2e5,2e5,1,1,1))) # built with M(0.04) Q M(0.04)
-optimizer = NewtonMethod(problem=prob,**optimizerParams)
-s = time.time()
-prob.updateVals(controls,env.magnets,positions,noisylinearVelocity,noisyrotationalVelocity)
-solution, cost, converged, iterates = optimizer.optimize(prob.initial_solution,max_iterations=25)
 print('opt time ', time.time()-s)
 s = time.time()
-xaxis, yaxis = prob.visualize_optimization(iterates,np.abs)
+xaxis, yaxis = prob.visualize_optimization(iterates,np.log)
 print('brute time ', time.time()-s)
 print('solution ',solution)
 
