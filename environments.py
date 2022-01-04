@@ -309,7 +309,7 @@ class SpaceProblem:
             self.desiredState= self.TrueDesiredState
             self.times = [120]* self.desiredState.shape[1]
         if(challengeID==3):
-            self.startState[:3,0] = np.linspace(0.05,0.15,3) 
+            self.startState[:3,0] = np.linspace(0.05,0.05,3) 
             self.startState[3:6,0] = np.linspace(0.5,1.5,3)
  
             self.TrueDesiredState = np.zeros((12,1))

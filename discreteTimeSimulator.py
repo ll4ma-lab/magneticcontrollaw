@@ -35,9 +35,9 @@ def state_noise(state):
     current_rotational_velocity = transform[:3,:3] @ state[1]
     
     
-    position_noise = np.random.normal(0,0.0003,(3)) 
-    linear_velocity_noise = np.random.normal(0,0.00003,(3,1))
-    rotational_velocity_noise = np.random.normal(0,0.00001,(3,1))
+    position_noise = np.random.normal(0,3e-4,(3)) 
+    linear_velocity_noise = np.random.normal(0,3e-5,(3,1))
+    rotational_velocity_noise = np.random.normal(0,1e-5,(3,1))
     
     transform[:3,3] += position_noise
     current_linear_velocity += linear_velocity_noise
@@ -45,7 +45,7 @@ def state_noise(state):
 
     tf_inverse = np.linalg.inv(transform)[:3,:3]
     
-    state = [transform,tf_inverse @ current_rotational_velocity, tf_inverse @ current_rotational_velocity]
+    state = [transform,tf_inverse @ current_rotational_velocity, tf_inverse @ current_linear_velocity]
     return state
     
     

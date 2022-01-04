@@ -33,8 +33,8 @@ if __name__ == '__main__':
     controlNoise = False
     
     
-    env = SpaceProblem(1)
-    env.magnets = env.magnets[:-2]
+    env = SpaceProblem(3)
+    env.magnets = env.magnets[:]
     #env.trajectoryDimensions = 'xyz'
     
     simTime = np.sum(env.times)
@@ -43,10 +43,12 @@ if __name__ == '__main__':
     radius = 0.02
     mass = sphereProperties(8940,radius)
     object_properties = {'mass':mass[0],'MOI':mass[1],'radius':radius}
+    object_properties_approximate = {'mass':mass[0],'MOI':mass[1],'radius':0.01}
+
 
     if(ll4maOpt):
         model = multiMagModel(env.magnets,object_properties,useSphere)
-        solverModel = multiMagModel(env.magnets,object_properties,useSphere)
+        solverModel = multiMagModel(env.magnets,object_properties_approximate,useSphere)
         solver = multiMagSolver(solverModel,env.trajectoryDimensions,useSphere,10)
         
     else:
@@ -59,11 +61,10 @@ if __name__ == '__main__':
     simulator = discreteTimeSimulator(env.startState,dt,object_properties) #density, diamter
     velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
     
-    object_properties_test = {'mass':mass[0],'MOI':mass[1],'radius':0.01}
 
-    adaptive = Adaptive(env.magnets, object_properties_test, simulator.state)
+    adaptive = Adaptive(env.magnets, object_properties_approximate, simulator.state, 25)
     
-    states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=200,dt=dt,cheat=cheat)
+    states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=numSteps,dt=dt,cheat=cheat)
     
     
     print('Time spent doing forwad model ' + str(model.time))

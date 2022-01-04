@@ -37,9 +37,8 @@ class radiusSysid(Problem):
         
         self.weights = torch.tensor(weights)
     def updateVals(self,controls,magnets,positions,linearVelocity,rotationalVelocity):
-        
         #remove first control and position as we dont know its acceleration
-        npControl = np.array(controls[1:])
+        npControl = np.array(controls[1:]).reshape((-1,4))
         magNums = npControl[:,0].astype(int).tolist()
         chosenMagnetPose = np.array(magnets)[magNums]-positions[1:]
     
@@ -80,12 +79,12 @@ class radiusSysid(Problem):
     def tensor_cost(self, x):
 
         modeledAccelerations = self.forwardAcceleration(x,self.dists,self.dipoleStrength,self.angles,self.rhos,self.zero)
-        error = (self.accelerations - modeledAccelerations)*1e6
+        error = (self.accelerations - modeledAccelerations)*1e6 
         
         
         left = (error.T @ self.weights).unsqueeze(1)
         right = error.T.unsqueeze(2)
-        cost = torch.sum(torch.bmm(left,right))
+        cost = torch.sum(torch.bmm(left,right))/ self.rhos.shape[0]
 
         return cost
     def visualize_optimization(self,iterates,func = np.abs): 

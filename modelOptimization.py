@@ -174,7 +174,7 @@ class multiMagSolver():
         bestAction = np.argmin(costs)
 
         if(costs[bestAction]>noActionCost):
-            control = [0,0,0,0]
+            control = [0,0,0.0,0.0]
             #print('shit')
         else:
             magNum = bestAction//3
@@ -206,7 +206,7 @@ class multiMagSolver():
         bestAction = np.argmin(costs)
 
         if(costs[bestAction]>noActionCost):
-            control = [0,0,0,0]
+            control = [0,0.0,0.0,0.0]
             #print('shit')
         else:
             magNum = bestAction//2
