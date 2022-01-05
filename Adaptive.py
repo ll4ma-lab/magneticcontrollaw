@@ -16,7 +16,7 @@ class Adaptive:
         self.object_properties = object_properties
         self.problem = sysIDoptimization.radiusSysid(np.diag((2e5,2e5,2e5,1,1,1)))
         
-        step = 5e-13
+        step = 5e-14
         optimizerParams = {'alpha':step,'ro':0.9,'min_alpha': step/2} 
         
         optimizerParams = {'alpha':step,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-20, 'momentum':0.9}
@@ -29,7 +29,6 @@ class Adaptive:
         self.controls = []
         self.positions = []
         self.add_state(state)
-        self.first = True
         self.parameters = []
         
     def add_state(self,state):
