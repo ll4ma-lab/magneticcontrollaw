@@ -53,7 +53,7 @@ def state_noise(state):
     
 
 
-def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=10,dt=1,cheat=False,debugPrints = True):
+def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=10,dt=1,cheat=False,debugPrints = True,runAdaptive= False):
     state = simulator.state
     states = []
     wrenches = []
@@ -69,7 +69,9 @@ def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,ada
         iterates = tqdm(iterates)
     
     for i in iterates:
-
+        if i == 300 and runAdaptive:
+            model.cylinderModel.object_properties['radius']*=1.5
+            #arbitrarily change radius without updating mass
         desiredState = velocityProfile.getDesiredState(i*dt,state)
         desired_wrench,p,d = controller.getDesiredWrench(state,desiredState)
        
@@ -89,7 +91,8 @@ def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,ada
        
         env.problem_specific_modification(state,trueWrench)
         state = simulator.simulate(trueWrench)
-        adaptive.step(state_noise(state),control)
+        if runAdaptive:
+            adaptive.step(state_noise(state),control)
         states.append(state)
     
     if debugPrints:

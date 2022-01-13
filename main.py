@@ -31,7 +31,7 @@ if __name__ == '__main__':
     cheat = False
     velNoise = False
     controlNoise = False
-    
+    runAdaptive = False
     
     env = SpaceProblem(3)
     env.magnets = env.magnets[:]
@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
     adaptive = Adaptive(env.magnets, object_properties_approximate, simulator.state, 25)
     
-    states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=numSteps,dt=dt,cheat=cheat)
+    states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=numSteps,dt=dt,cheat=cheat,runAdaptive=runAdaptive)
     
     
     print('Time spent doing forwad model ' + str(model.time))
