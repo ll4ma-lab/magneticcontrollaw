@@ -16,15 +16,22 @@ import matplotlib.pyplot as plt
 torch.set_default_tensor_type(torch.DoubleTensor)
 import torch.multiprocessing  as multiprocessing
 
-from ll4ma_opt.solvers.line_search import NewtonMethod
+from ll4ma_opt.solvers.line_search import NewtonMethod,GaussNewtonMethod,GradientDescent
 
 from models import rotZ,modelCallRotatedWrench,getOmniFrame
 
-optimizerParams = {'alpha':1.0,'ro':0.5,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-15}
-def optimizeSingle(prob):
-    solver = NewtonMethod(problem=prob,**optimizerParams) 
+sphere_parameters = {'alpha':1.0,'ro':0.5,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-10}
+cylinder_parameters = {'alpha':1.0,'ro':0.5,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-15}
+
+def sphere_optimize(prob):
+    solver = NewtonMethod(problem=prob,**sphere_parameters) 
     solution, cost, converged, iterates = solver.optimize(prob.initial_solution,max_iterations=25)  
-    return solution, cost, converged, iterates
+    return solution, cost, converged, iterates, prob.costTime,prob.gradientTime,prob.hessianTime
+def cylinder_optimize(prob):
+    solver = NewtonMethod(problem=prob,**cylinder_parameters) 
+    solution, cost, converged, iterates = solver.optimize(prob.initial_solution,max_iterations=25)  
+    return solution, cost, converged, iterates, prob.costTime,prob.gradientTime,prob.hessianTime
+
 
 
 def buildQ(stateCostString):
@@ -93,6 +100,11 @@ class sphericalOptimization(Problem):
         error = 1e10*(self.desiredWrench - selectedWrench)[0]
         cost = error.t()@self.weights@error
         return cost
+    def tensor_error(self, x): 
+        selectedWrench = modelCallRotatedWrench(x[0],x[1:],(self.frho0,self.trho0,self.frho90,self.fphi90,self.ttheta90),self.rho,library=torch,zero = self.zero)
+        error = 1e10*(self.desiredWrench - selectedWrench)[0]
+        weighted_error = torch.sqrt(self.weights) @ error
+        return weighted_error
     
     def visualize_optimization(self,iterates): 
         plt.plot(iterates[:,0,0],iterates[:,1,0]) 
@@ -109,6 +121,10 @@ class multiMagSolver():
         self.time = 0
         self.useSphereModel = sphereModel
         self.costs = []
+        self.selected_optimizer = NewtonMethod
+        self.cost_time = 0
+        self.gradient_time = 0
+        self.hessian_time = 0
         Qweights = buildQ(stateCostString)
         if(sphereModel):
             for i in range(2*len(model.magnets)):
@@ -165,7 +181,7 @@ class multiMagSolver():
     def solveWrenchCylinder(self,position,desiredWrench):
         s = time.time()
         self.modifyProblems(desiredWrench, position)
-        results = self.pool.map(optimizeSingle,self.problems)
+        results = self.pool.map(cylinder_optimize,self.problems)
         iterations = [result[3].shape[0] for result in results]
         self.iterations.append((iterations))
         noActionCost  = self.problems[0].cost(np.zeros((2,1)))
@@ -193,16 +209,23 @@ class multiMagSolver():
         else:
             return self.solveWrenchCylinder(position,desiredWrench)
     def solveWrenchSphere(self,position,desiredWrench):
+    
         s = time.time()
         self.modifyProblems(desiredWrench, position)
-        #results = [optimizeSingle(prob) for prob in self.problems]
-        results = self.pool.map(optimizeSingle,self.problems)
+        #results = [sphere_optimize(prob) for prob in self.problems]
+        results = self.pool.map(sphere_optimize,self.problems)
+
         iterations = [result[3].shape[0] for result in results]
+        self.cost_time += np.sum([result[4] for result in results])
+        self.gradient_time += np.sum([result[5] for result in results])
+        self.hessian_time += np.sum([result[6] for result in results])
+
+        
         self.iterations.append((iterations))
         noActionCost  = self.problems[0].cost(np.zeros((3,1)))
         costs = [result[1] for result in results]
         self.costs.append(costs)
-
+        
         bestAction = np.argmin(costs)
 
         if(costs[bestAction]>noActionCost):

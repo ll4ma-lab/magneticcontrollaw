@@ -33,7 +33,7 @@ if __name__ == '__main__':
     controlNoise = False
     runAdaptive = False
     
-    env = SpaceProblem(3)
+    env = SpaceProblem(4)
     env.magnets = env.magnets[:]
     #env.trajectoryDimensions = 'xyz'
     

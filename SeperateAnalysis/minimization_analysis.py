@@ -58,7 +58,7 @@ optimizerParams = {'alpha':1.0,'ro':0.5,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alp
 
 
 
-newModel = multiMagModel(env.magnets,0.04,True)
+newModel = multiMagModel(env.magnets,objectProperties,True)
 #control = [1,2,np.random.random()*40,np.random.random()*360-180]
 control = [5, 2, 38, 173]
 print(newModel.forwardPass(np.zeros((3,1)), control))
@@ -99,8 +99,8 @@ if __name__ == '__main__':
         
         s = time.time()
         optimizer = NewtonMethod(problem=prob,**optimizerParams) 
-        solution, cost, converged, iterates = optimizer.optimize(np.array([20,0,0]).reshape((3,1))) 
-        solution2, cost2, converged2, iterates2 = optimizer.optimize(np.array([20,180,180]).reshape((3,1))) 
+        solution, cost, converged, iterates = optimizer.optimize(np.array([20,0,0]).reshape((3,1)),max_iterations=25) 
+        solution2, cost2, converged2, iterates2 = optimizer.optimize(np.array([20,180,180]).reshape((3,1)),max_iterations=25) 
         print('elapsed newton time ',time.time()-s)
     
         #print(solution,cost,converged,iterates.shape)
@@ -157,7 +157,7 @@ if __name__ == '__main__':
         #     #break
     
         plot = True    
-        saveAnimation = True
+        saveAnimation = False
         
         
         if plot:

@@ -8,30 +8,60 @@ Created on Tue Oct 26 12:31:38 2021
 from models import multiMagModel
 from modelOptimization import multiMagSolver
 from environments import PlanarProblem,SpaceProblem
+from tqdm import tqdm
+
+
+
+import sys
+sys.path.append("..") # Adds higher directory to python modules path.
+import dataloader
+import numpy as np
+import time 
+dataloader.load("/home/tabor/Documents/magneticcontrollaw/data/sim_2700s_2022-01-13 15.48.50.855692",globals())
+import matplotlib.pyplot as plt
+
+
 
 doBrute = False
-
+import time
 if __name__ == '__main__':
     model = 5
     sphereCosts = []
     cylinderCosts = []
     bruteSphereCosts = []
-    sphereModel = multiMagModel(env.magnets,diameter,True)
+    
+    
+    radius = 0.02
+    mass = sphereProperties(8940,radius)
+    object_properties = {'mass':mass[0],'MOI':mass[1],'radius':radius}
+    
+    sphereModel = multiMagModel(env.magnets,object_properties,True)
     sphereSolver = multiMagSolver(sphereModel,env.trajectoryDimensions,True,10)
     
-    cylinderModel = multiMagModel(env.magnets,diameter,False)
+    cylinderModel = multiMagModel(env.magnets,object_properties,False)
     cylinderSolver = multiMagSolver(cylinderModel,env.trajectoryDimensions,False,10)
-    for desired_wrench in desiredWrenchs:
-
+    
+    
+    sphereTime = []
+    cylinderTime = []    
+    
+    
+    for desired_wrench,state in tqdm(zip(desiredWrenchs[:500],states[:500]),total = len(states[:500])):
         
-        
+        s=time.time()
         control1 =  sphereSolver.solveWrench(state[0][:3,3],desired_wrench)
+        sphereTime.append(time.time()-s)
         trueWrench1 = sphereModel.forwardPass(state[0][:3,3],control1)
         wrenchError1 = trueWrench1-desired_wrench
-        cost2 = np.sum((wrenchError1[:3,:]**2)) + 200*np.sum((wrenchError1[3:,:]**2))
-        sphereCosts.append(cost2)
+        cost = np.sum((wrenchError1[:3,:]**2)) + 200*np.sum((wrenchError1[3:,:]**2))
+        sphereCosts.append(cost)
         
+        
+
+        
+        s=time.time()
         control2 =  cylinderSolver.solveWrench(state[0][:3,3],desired_wrench)
+        cylinderTime.append(time.time()-s)
         trueWrench2 = cylinderModel.forwardPass(state[0][:3,3],control2)
         wrenchError2 = trueWrench2-desired_wrench
         cost2 = np.sum((wrenchError2[:3,:]**2)) + 200*np.sum((wrenchError2[3:,:]**2))
@@ -50,6 +80,15 @@ if __name__ == '__main__':
     plt.figure()    
     plt.plot(np.array(sphereCosts)-np.array(bruteSphereCosts),'r')
     plt.plot(np.array(cylinderCosts)-np.array(bruteSphereCosts),'b')
+
+    
     
     plt.figure()    
     plt.plot(np.array(sphereCosts)/np.array(cylinderCosts))
+    print(np.max(sphereTime[1:]),np.max(cylinderTime[1:]))
+    
+    
+    fig, axes = plt.subplots(1,1,figsize =(2, 8))
+    
+    axes.boxplot([sphereTime[1:]],positions = [1])
+    axes.boxplot([cylinderTime[1:]],positions = [2])
