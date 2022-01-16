@@ -31,10 +31,11 @@ def sysIDDemo(controls,magnets,positions,linearVelocity,rotationalVelocity):
 class radiusSysid(Problem): 
     def __init__(self,weights): 
         super().__init__()
-        self.boundConstraints[0] = (1e-3,0.1)
+        self.boundConstraints[0] = (1e-2,0.1)
         self.singleModel = sphereModel(1)
-        self.initial_solution = np.ones((1,1)) * 0.05
-        
+        self.initial_solution = np.ones((2,1)) * 0.05
+        self.initial_solution[1] = 5.8E+07
+        self.boundConstraints[1] = (5e8,6e8)
         self.weights = torch.tensor(weights)
     def updateVals(self,controls,magnets,positions,linearVelocity,rotationalVelocity):
         #remove first control and position as we dont know its acceleration
@@ -64,12 +65,13 @@ class radiusSysid(Problem):
         self.materialDensity = torch.tensor(8940.0)
     def forwardAcceleration(self, x,dists,dipoleStrengths,angles,rhos,zero):
         radii = x[0:1]
-
-        modelVals = self.singleModel.modelCall(dists,1,radii=radii)
+        sigma = x[1:2,0]
+        modelVals = self.singleModel.modelCall(dists,1,radii=radii,sigma=sigma)
         modelVals = [modelVal.squeeze() for modelVal in modelVals]
 
         wrenches = modelCallRotatedWrench(dipoleStrengths,angles,modelVals,rhos,library=torch,zero = zero).squeeze()
     
+        #radii = torch.tensor((np.ones((1,1))*0.02))
         mass = sphereProperties(self.materialDensity,radii,torch)
         objectProperties = {'mass':mass[0],'MOI':mass[1],'radius':radii}
         
@@ -88,12 +90,18 @@ class radiusSysid(Problem):
 
         return cost
     def visualize_optimization(self,iterates,func = np.abs): 
-        possible = np.linspace(1e-3,0.1,5000).reshape((-1,1,1))
-        possibleCosts = [self.cost(decision) for decision in possible]
-        plt.figure()
-        plt.plot(possible[:,0,0],func(possibleCosts),'r')
+        possible_r = np.linspace(1e-2,0.1,100)
+        possible_sigma = np.linspace(2e8,1e9,25)
+        rs,sigmas = np.meshgrid(possible_r,possible_sigma)
+        rs = rs.flatten()
+        sigmas = sigmas.flatten()
+        
+        possibleCosts = [self.cost(np.stack((rs[i],sigmas[i])).reshape((2,1))) for i in range(len(rs))]
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        ax.scatter(rs,sigmas,func(possibleCosts),'r')
         foundCosts = [self.cost(iterate) for iterate in iterates]
-        plt.plot(iterates[:,0,0],func(foundCosts),'b')
-        print('best brute force ',possible[np.argmin(possibleCosts)])
-        return possible,possibleCosts
+        ax.plot(iterates[:,0,0],iterates[:,1,0],func(foundCosts),'b')
+        print('best brute force ',rs[np.argmin(possibleCosts)],sigmas[np.argmin(possibleCosts)],np.min(possibleCosts))
+        return rs,sigmas,possibleCosts
 
