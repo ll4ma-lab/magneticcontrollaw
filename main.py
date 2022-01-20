@@ -39,7 +39,7 @@ if __name__ == '__main__':
     
     simTime = np.sum(env.times)
     dt = 1
-    numSteps = int(simTime/dt)
+    numSteps = 1000# int(simTime/dt)
     radius = 0.02
     mass = sphereProperties(8940,radius)
     object_properties = {'mass':mass[0],'MOI':mass[1],'radius':radius}
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
     
 
-    adaptive = Adaptive(env.magnets, object_properties_approximate, simulator.state, 25)
+    adaptive = Adaptive(env.magnets, object_properties_approximate, 25)
     
     states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=numSteps,dt=dt,cheat=cheat,runAdaptive=runAdaptive)
     

@@ -34,7 +34,7 @@ def cylinder_optimize(prob):
 
 
 
-def buildQ(stateCostString):
+def buildQ(stateCostString,linear_cost = 1.0, orientation_cost = 200):
     letterOptions = ["x","y","z","r","p","t"]
     activated = [0]*6
     if("all" in stateCostString):
@@ -42,9 +42,9 @@ def buildQ(stateCostString):
     for index in range(len(letterOptions)):
         if(letterOptions[index] in stateCostString):
             if index < 3:   
-                activated[index] = 1.0 #/ (objectProperties[0] * tolerances[0])
+                activated[index] = linear_cost #/ (objectProperties[0] * tolerances[0])
             else: 
-                activated[index] = 200.0 #/ (objectProperties[1][0,0] * tolerances[1])
+                activated[index] = orientation_cost #/ (objectProperties[1][0,0] * tolerances[1])
 
     Q = np.diag(activated)
     return Q

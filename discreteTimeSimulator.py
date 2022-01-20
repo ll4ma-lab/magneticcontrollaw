@@ -35,9 +35,9 @@ def state_noise(state):
     current_rotational_velocity = transform[:3,:3] @ state[1]
     
     
-    position_noise = np.random.normal(0,3e-4,(3)) 
-    linear_velocity_noise = np.random.normal(0,3e-5,(3,1))
-    rotational_velocity_noise = np.random.normal(0,1e-5,(3,1))
+    position_noise = 0#np.random.normal(0,3e-4,(3)) 
+    linear_velocity_noise = 0#np.random.normal(0,3e-5,(3,1))
+    rotational_velocity_noise = 0#np.random.normal(0,1e-5,(3,1))
     
     transform[:3,3] += position_noise
     current_linear_velocity += linear_velocity_noise
@@ -90,10 +90,12 @@ def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,ada
         controls.append(control)
        
         env.problem_specific_modification(state,trueWrench)
-        state = simulator.simulate(trueWrench)
         if runAdaptive:
             adaptive.step(state_noise(state),control)
         states.append(state)
+        state = simulator.simulate(trueWrench)
+
+    
     
     if debugPrints:
         runTime = time.time() - start
