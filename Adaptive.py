@@ -11,13 +11,13 @@ from modelOptimization import buildQ
 import numpy as np
 
 class Adaptive:
-    def __init__(self, magnets, dimensions, object_properties, batch_size = 1):
+    def __init__(self, magnets, dimensions, object_properties, batch_size = 1,physical=False):
         
         self.magnets = magnets
         self.object_properties = object_properties
         
         
-        self.problem = sysIDoptimization.radiusSysid(buildQ(dimensions,2e5,1))
+        self.problem = sysIDoptimization.radiusSysid(buildQ(dimensions,2e5,1),physical=physical)
         
         step = 5e-16
         optimizerParams = {'alpha':step,'ro':0.9,'min_alpha': step/2} 
