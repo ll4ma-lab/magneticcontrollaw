@@ -188,9 +188,7 @@ class sphereModel():
 class cylinderModel():
     def __init__(self,object_properties):
         self.time = 0.0
-        sigma_copper = 5.8E+07
-        sigma_al = 3.77E+07
-        self.sigma = sigma_copper
+
         self.object_properties = object_properties
         self.freq = 15
         self.mu = 4*np.pi*1e-7
@@ -216,7 +214,7 @@ class cylinderModel():
         if(radii is None):
             radii = self.object_properties['radius']
         if(sigma is None):
-            sigma = self.sigma
+            sigma = self.object_properties['sigma']
         #P0 has r^4 for forces and r^3 for torques
         P1 = sigma*self.mu*self.freq*radii*radii
         P2 = distance/radii
