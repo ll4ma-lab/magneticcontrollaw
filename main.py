@@ -36,14 +36,18 @@ if __name__ == '__main__':
     env = SpaceProblem(4)
     env.magnets = env.magnets[:]
     #env.trajectoryDimensions = 'xyz'
-    
+    physical = False
+
     simTime = np.sum(env.times)
     dt = 1
-    numSteps = int(simTime/dt)
+    numSteps = 1000# int(simTime/dt)
     radius = 0.02
     mass = sphereProperties(8940,radius)
-    object_properties = {'mass':mass[0],'MOI':mass[1],'radius':radius}
-    object_properties_approximate = {'mass':mass[0],'MOI':mass[1],'radius':0.01}
+    
+    sigma_copper = 5.8E+07
+    sigma_al = 3.77E+07
+    object_properties = {'mass':mass[0],'MOI':mass[1],'radius':radius,'sigma':sigma_copper}
+    object_properties_approximate = {'mass':mass[0],'MOI':mass[1],'radius':0.02, 'sigma':sigma_copper}
 
 
     if(ll4maOpt):
@@ -52,7 +56,7 @@ if __name__ == '__main__':
         solver = multiMagSolver(solverModel,env.trajectoryDimensions,useSphere,10)
         
     else:
-        model = cylinderModel(env.magnets,object_properties[radius]*2)
+        model = cylinderModel(env.magnets,object_properties[radius])
         solver = cylinderSolver(env.magnets)
         solver.setup(model,env.trajectoryDimensions,object_properties,env.tolerances)
     
@@ -62,7 +66,7 @@ if __name__ == '__main__':
     velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
     
 
-    adaptive = Adaptive(env.magnets, object_properties_approximate, simulator.state, 25)
+    adaptive = Adaptive(env.magnets, object_properties_approximate, 25)
     
     states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=numSteps,dt=dt,cheat=cheat,runAdaptive=runAdaptive)
     

@@ -7,19 +7,22 @@ Created on Tue Dec 14 13:02:06 2021
 """
 import sysIDoptimization
 from ll4ma_opt.solvers import Momentum
+from modelOptimization import buildQ
 import numpy as np
-
+import matplotlib.pyplot as plt
 class Adaptive:
-    def __init__(self, magnets, object_properties, state, batch_size = 1):
+    def __init__(self, magnets, dimensions, object_properties, batch_size = 1,physical=False):
         
         self.magnets = magnets
         self.object_properties = object_properties
-        self.problem = sysIDoptimization.radiusSysid(np.diag((2e5,2e5,2e5,1,1,1)))
         
-        step = 5e-14
+        
+        self.problem = sysIDoptimization.radiusSysid(np.diag((2e3,2e3,0,0,0,1e0)),physical=physical)
+        
+        step = 1e-12/ batch_size
         optimizerParams = {'alpha':step,'ro':0.9,'min_alpha': step/2} 
         
-        optimizerParams = {'alpha':step,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-20, 'momentum':0.9}
+        optimizerParams = {'alpha':step,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-20, 'momentum':0.8}
         
         self.optimizer = Momentum(problem=self.problem,**optimizerParams)
         self.batch_size = batch_size
@@ -28,8 +31,8 @@ class Adaptive:
         self.rotational_velocities = []
         self.controls = []
         self.positions = []
-        self.add_state(state)
         self.parameters = []
+        
         
     def add_state(self,state):
         current_linear_velocity = state[0][:3,:3] @ state[2][:,0]
@@ -43,24 +46,41 @@ class Adaptive:
     def step(self, state, control):
         self.add_state(state)
         self.controls.append(control)
-
+        
+        current_solution = np.array((self.object_properties['radius'],self.object_properties['sigma'],1)).reshape(((3,1)))
+        if(len(self.parameters) == 0):
+            self.parameters.append(current_solution)
+        
+        
         batch_size = min(self.batch_size,len(self.controls)-1)
+        if batch_size < self.batch_size * 0.5:
+            return
         
+        selected_controls = self.controls[-batch_size-1:-1]
+        selected_positions = np.array(self.positions[-batch_size :])
+        selected_linear_velocities = np.array(self.linear_velocities[-batch_size:])
+        selected_rotation_velocities = np.array(self.rotational_velocities[-batch_size:])
         
-        selected_controls = self.controls[-1-batch_size:]
-        selected_positions = np.array(self.positions[-batch_size - 1:])
-        selected_linear_velocities = np.array(self.linear_velocities[-batch_size-1:])
-        selected_rotation_velocities = np.array(self.rotational_velocities[-batch_size-1:])
-                
+
         self.problem.updateVals(selected_controls,
                                 self.magnets,
                                 selected_positions, 
                                 selected_linear_velocities,
                                 selected_rotation_velocities)
         
-        current_solution = np.array(self.object_properties['radius']).reshape(((1,1)))
+
         
         solution, cost, converged, iterates = self.optimizer.optimize(current_solution,max_iterations=1) 
-        self.parameters.append(solution[0,0])
-        
+        self.parameters.append(solution)
+        print(solution)
         self.object_properties['radius'] = solution[0,0]
+        self.object_properties['sigma'] = solution[1,0]
+    def plot(self,true_vector):
+        parameters = np.stack(self.parameters)
+        fig,axs = plt.subplots(3,1)
+        
+        for i in range(3):
+            axs[i].plot(parameters[:,i],'r')
+            axs[i].plot([0,parameters.shape[0]],[true_vector[i],true_vector[i]])
+        
+        

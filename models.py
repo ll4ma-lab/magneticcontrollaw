@@ -173,13 +173,13 @@ class sphereModel():
     def __init__(self,object_properties):
         self.cylinderModel = cylinderModel(object_properties)
         
-    def modelCall(self,dist,dipoleStrength,radii=None):
-        frho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['fzz'],dist,dipoleStrength,4,radii)
-        trho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['tzz'],dist,dipoleStrength,3,radii)
+    def modelCall(self,dist,dipoleStrength,radii=None,sigma=None):
+        frho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['fzz'],dist,dipoleStrength,4,radii,sigma)
+        trho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['tzz'],dist,dipoleStrength,3,radii,sigma)
         
-        frho90 = self.cylinderModel.modelEquation(self.cylinderModel.constants['frhorho'],dist,dipoleStrength,4,radii)
-        fphi90 = self.cylinderModel.modelEquation(self.cylinderModel.constants['frhophi'],dist,dipoleStrength,4,radii)
-        ttheta90= self.cylinderModel.modelEquation(self.cylinderModel.constants['trhoz'],dist,dipoleStrength,3,radii)
+        frho90 = self.cylinderModel.modelEquation(self.cylinderModel.constants['frhorho'],dist,dipoleStrength,4,radii,sigma)
+        fphi90 = self.cylinderModel.modelEquation(self.cylinderModel.constants['frhophi'],dist,dipoleStrength,4,radii,sigma)
+        ttheta90= self.cylinderModel.modelEquation(self.cylinderModel.constants['trhoz'],dist,dipoleStrength,3,radii,sigma)
         return frho0,trho0,frho90,fphi90,ttheta90
     
     
@@ -188,9 +188,7 @@ class sphereModel():
 class cylinderModel():
     def __init__(self,object_properties):
         self.time = 0.0
-        sigma_copper = 5.8E+07
-        sigma_al = 3.77E+07
-        self.sigma = sigma_copper
+
         self.object_properties = object_properties
         self.freq = 15
         self.mu = 4*np.pi*1e-7
@@ -212,11 +210,13 @@ class cylinderModel():
         
         self.constants = averageDict(self.feaConstants,self.expConstants)
 
-    def modelEquation(self,constants,distance,dipoleStrength,p0RPower,radii=None):
+    def modelEquation(self,constants,distance,dipoleStrength,p0RPower,radii=None,sigma=None):
         if(radii is None):
             radii = self.object_properties['radius']
+        if(sigma is None):
+            sigma = self.object_properties['sigma']
         #P0 has r^4 for forces and r^3 for torques
-        P1 = self.sigma*self.mu*self.freq*radii*radii
+        P1 = sigma*self.mu*self.freq*radii*radii
         P2 = distance/radii
 
         numeratorBase = constants[0]*P1

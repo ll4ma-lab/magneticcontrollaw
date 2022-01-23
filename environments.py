@@ -35,7 +35,7 @@ class PlanarProblem:
         self.tolerances = (linearTolerance,rotationalTolerance)
         
         self.startState = np.zeros((12,1))
-        squareRadius = 0.075
+        squareRadius = -0.075
         if(challengeID==-1): #line 
             self.TrueDesiredState = np.zeros((12,2))
             self.TrueDesiredState[:3,0] = [squareRadius,-squareRadius,0]
@@ -56,6 +56,28 @@ class PlanarProblem:
             self.desiredState= self.TrueDesiredState
             self.times = [240]* self.desiredState.shape[1]
             self.trajectoryDimensions = 'xy'
+        
+        if(challengeID==7): #square
+            self.TrueDesiredState = np.zeros((12,9))
+            self.TrueDesiredState[:3,0] = [squareRadius,-squareRadius,0]
+            self.TrueDesiredState[:3,1] = [-squareRadius,-squareRadius,0]
+            self.TrueDesiredState[:3,2] = [-squareRadius,squareRadius,0]
+            self.TrueDesiredState[:3,3] = [squareRadius,squareRadius,0]
+            self.TrueDesiredState[:3,4] = [squareRadius,-squareRadius,0]
+
+        
+            self.TrueDesiredState[:3,5] = [-squareRadius,-squareRadius,0]
+            self.TrueDesiredState[:3,6] = [-squareRadius,squareRadius,0]
+            self.TrueDesiredState[:3,7] = [squareRadius,squareRadius,0]
+            self.TrueDesiredState[:3,8] = [squareRadius,-squareRadius,0]
+
+
+            self.desiredState= self.TrueDesiredState
+            self.times = [240]* self.desiredState.shape[1]
+            self.trajectoryDimensions = 'xy'
+        
+        
+        
         if(challengeID==6): #square fixed rotation
             self.TrueDesiredState = np.zeros((12,5))
             self.TrueDesiredState[:3,0] = [squareRadius,-squareRadius,0]
@@ -66,17 +88,17 @@ class PlanarProblem:
 
         
             self.desiredState= self.TrueDesiredState
-            self.times = [240]* self.desiredState.shape[1]
+            self.times = [360]* self.desiredState.shape[1]
         if(challengeID==1): #diamond
             angle = 45 /(180/np.pi) 
-            R = np.array([[np.cos(angle),-np.sin(angle)],
+            R = 0.75 * np.array([[np.cos(angle),-np.sin(angle)],
                           [np.sin(angle),np.cos(angle)]])
             
             for i in range(5):   
                 self.TrueDesiredState[:2,i] = np.dot(R,self.TrueDesiredState[:2,i])
         
             self.desiredState= self.TrueDesiredState
-            self.times = [180]* self.desiredState.shape[1]
+            self.times = [360]* self.desiredState.shape[1]
             self.trajectoryDimensions = 'xyt'
 
         if(challengeID==2): #stationary rotation
