@@ -21,7 +21,7 @@ def save(filename,globals_in,dir_in):
             print('ERROR shelving: {0}'.format(key))
     my_shelf.close()
 def load(filename,globals_in):
-    my_shelf = shelve.open(filename)
+    my_shelf = shelve.open(filename,protocol=2)
     for key in my_shelf:
         try:
             globals_in[key]=my_shelf[key]

@@ -62,7 +62,6 @@ import matplotlib.pyplot as plt
 
 
 
-
 start = -1050
 end = -850
 

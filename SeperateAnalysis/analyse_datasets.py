@@ -5,13 +5,15 @@ Created on Fri Oct  9 17:42:34 2020
 @author: griffin
 """
 
-import dataloader
 import sys
-from environments import PlanarProblem,SpaceProblem
 sys.path.append("..") # Adds higher directory to python modules path.
 sys.path.append("../scripts") # Adds higher directory to python modules path.
 import visualization
 import numpy as np
+import dataloader
+
+from environments import PlanarProblem,SpaceProblem
+
 np.set_printoptions(threshold=np.inf)
 #np.set_printoptions(precision=3)
 
@@ -21,10 +23,13 @@ from os import listdir
 from os.path import isfile, join
 from matplotlib.patches import Ellipse
 
-#folder = 'orientation'
-folder = 'no_orientation'
+folder = 'nature'
+folder = 'double_cube'
+folder='dummy'
 
-mypath = "C:/Users/Griffin Tabor/Documents/experiments/" + folder + "/"
+#folder = 'no_orientation'
+
+mypath = "/home/tabor/experiments/" + folder + "/"
 onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
 
 PositionErrors = []
@@ -41,34 +46,51 @@ name = 'Paths ' + folder
 #fig.suptitle(name)
 
 for fileName in onlyfiles:
-    if('bag' not in fileName and 'pdf' not in fileName and 'csv' not in fileName):
-        dataloader.load(mypath+fileName,globals())
-        #print("vel error ",totalVelSquaredError/numSteps)
-        #print("pos error ",totalPosSquaredError/numSteps)
+    if('bag' not in fileName and 'pdf' not in fileName and 'csv' not in fileName and 'dir' not in fileName and 'bak' not in fileName):
+        if folder == 'nature':
+            dataloader.load(mypath+fileName,globals())
+        else:
+            dataloader.load((mypath+fileName)[:-4],globals())
 
-        npdesiredStates = np.array(desiredStates)
-        npStates = np.array(states)
-        npStates[:,1,:] *=-1 #flip y to make plots z down
-        npdesiredStates[:,1,:] *=-1
-        print(npStates[0,5,:])
-        #npStates[:,5,:] -= npStates[0,5,:]
+        print(fileName)
+        if 'useSphere' in globals():
+            from se3Utils import buildSkew,buildTF,matrixLog,skewToVector
+            errors = []
+            for k in range(numSteps):
+                desired = desiredStates[k+(len(states)-numSteps)]
+                current =  states[k+(len(states)-numSteps)]
+                currentTF = current[0]
+                desiredTF = buildTF(desired[:3,0],desired[3:6,0])
+                positionError = controller.computeError(currentTF, desiredTF)
+                
+                rotVelError = desired[6:9]-np.dot(currentTF[:3,:3],current[1])
+                linearVelError = desired[6:9]-np.dot(currentTF[:3,:3],current[2])
+                velError = np.concatenate((linearVelError,rotVelError),0)
+                errors.append(np.concatenate((positionError,velError)))
+            error = np.array(errors)
+        else:
+
+            npdesiredStates = np.array(desiredStates)
+            npStates = np.array(states)
+            npStates[:,1,:] *=-1 #flip y to make plots z down
+            npdesiredStates[:,1,:] *=-1
+            
+            allStates.append(npStates)
+            plt.plot(npStates[:,0,0],npStates[:,1,0],'k',alpha=0.5)
+    
+            error = npdesiredStates - npStates
+            
         
-        allStates.append(npStates)
-        plt.plot(npStates[:,0,0],npStates[:,1,0],'k',alpha=0.5)
-
-        error = npdesiredStates - npStates
         sqError =  np.power(error,2)
         absError = np.abs(error)        
         
         
         positionError = np.sqrt(sqError[:,0,0] + sqError[:,1,0])
-        print(npStates[:5,5,:])
 
         PositionErrors.append(positionError)
         
         
         velocityError = np.sqrt(sqError[:,6,0] + sqError[:,7,0])
-        print(np.min(velocityError))
         VelocityErrors.append(velocityError)
         
         orientationErrors.append(absError[:,5,0]) 
@@ -77,7 +99,7 @@ for fileName in onlyfiles:
         
         rotationalVelocityErrors.append(absError[:,11,0])
     
-    
+
 print('average position error ' + str(np.average(PositionErrors)) +' std '+ str(np.std(PositionErrors)) + ' max ' + str(np.max(np.abs(PositionErrors))))
 
 print('average velocity error ' + str(np.average(VelocityErrors)) +' std '+ str(np.std(VelocityErrors)) + ' max ' + str(np.max(np.abs(VelocityErrors))))

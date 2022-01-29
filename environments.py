@@ -21,10 +21,13 @@ class PlanarProblem:
         self.lims = [(-width/2,width/2)
                ,(-length/2,length/2)
                ,(-height/2,height/2)]
-        magnets = np.array([(0.1, 0.1, 0.15) #marker 0.365m away
-                            ,(-0.1, 0.1,0.15)
-                            ,(-0.1, -0.1, 0.15)
-                            ,(0.1, -0.1, 0.15)])
+        
+        
+        z_value = 0.15
+        magnets = np.array([(0.1, 0.1,z_value) #marker 0.365m away
+                            ,(-0.1, 0.1,z_value)
+                            ,(-0.1, -0.1, z_value)
+                            ,(0.1, -0.1, z_value)])
         self.magnets = magnets.tolist()
         
         self.radius = 0.065
@@ -35,7 +38,7 @@ class PlanarProblem:
         self.tolerances = (linearTolerance,rotationalTolerance)
         
         self.startState = np.zeros((12,1))
-        squareRadius = -0.075
+        squareRadius = 0.075
         if(challengeID==-1): #line 
             self.TrueDesiredState = np.zeros((12,2))
             self.TrueDesiredState[:3,0] = [squareRadius,-squareRadius,0]
@@ -118,38 +121,38 @@ class PlanarProblem:
             self.times[0] = 360
 
         if(challengeID==3): # rotate while square
-            self.startState[5] = -np.pi/4
+            self.startState[5] = -np.pi/4 + np.pi
 
             self.TrueDesiredState = np.zeros((12,10))
-            self.TrueDesiredState[5,0] = -np.pi/4
+            self.TrueDesiredState[5,0] = -np.pi/4 + np.pi
 
 
             self.TrueDesiredState[:3,0] = [squareRadius,-squareRadius,0]
             self.TrueDesiredState[:3,1] = self.TrueDesiredState[:3,0]
-            self.TrueDesiredState[5,1] = -np.pi
-            self.TrueDesiredState[5,2] = -np.pi
+            self.TrueDesiredState[5,1] = -np.pi + np.pi
+            self.TrueDesiredState[5,2] = -np.pi + np.pi
 
             self.TrueDesiredState[:3,2] = [-squareRadius,-squareRadius,0]
             self.TrueDesiredState[:3,3] = self.TrueDesiredState[:3,2]
-            self.TrueDesiredState[5,3] = -3.0 *np.pi /2.0
-            self.TrueDesiredState[5,4] = -3.0 *np.pi /2.0
+            self.TrueDesiredState[5,3] = -3.0 *np.pi /2.0 + np.pi
+            self.TrueDesiredState[5,4] = -3.0 *np.pi /2.0 + np.pi
 
 
             self.TrueDesiredState[:3,4] = [-squareRadius,squareRadius,0]
             self.TrueDesiredState[:3,5] = self.TrueDesiredState[:3,4]
-            self.TrueDesiredState[5,5] = -2.0 *np.pi
-            self.TrueDesiredState[5,6] = -2.0 *np.pi
+            self.TrueDesiredState[5,5] = -2.0 *np.pi + np.pi 
+            self.TrueDesiredState[5,6] = -2.0 *np.pi + np.pi
 
 
             self.TrueDesiredState[:3,6] = [squareRadius,squareRadius,0]
             self.TrueDesiredState[:3,7] = self.TrueDesiredState[:3,6]
-            self.TrueDesiredState[5,7] = -2.5 *np.pi
-            self.TrueDesiredState[5,8] = -2.5 *np.pi
+            self.TrueDesiredState[5,7] = -2.5 *np.pi + np.pi
+            self.TrueDesiredState[5,8] = -2.5 *np.pi + np.pi
 
             
             self.TrueDesiredState[:3,8] = [squareRadius,-squareRadius,0]
             self.TrueDesiredState[:3,9] = self.TrueDesiredState[:3,8]
-            self.TrueDesiredState[5,9] = -3.0 *np.pi
+            self.TrueDesiredState[5,9] = -3.0 *np.pi + np.pi
 
         
             self.desiredState= self.TrueDesiredState

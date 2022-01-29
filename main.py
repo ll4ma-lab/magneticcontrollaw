@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
     simTime = np.sum(env.times)
     dt = 1
-    numSteps = 1000# int(simTime/dt)
+    numSteps = 200# int(simTime/dt)
     radius = 0.02
     mass = sphereProperties(8940,radius)
     
