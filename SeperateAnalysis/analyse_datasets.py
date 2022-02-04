@@ -26,6 +26,7 @@ from matplotlib.patches import Ellipse
 folder = 'nature'
 folder = 'double_cube'
 folder='dummy'
+folder = 'base_real'
 
 #folder = 'no_orientation'
 
@@ -56,6 +57,8 @@ for fileName in onlyfiles:
         if 'useSphere' in globals():
             from se3Utils import buildSkew,buildTF,matrixLog,skewToVector
             errors = []
+            numSteps = 2000
+
             for k in range(numSteps):
                 desired = desiredStates[k+(len(states)-numSteps)]
                 current =  states[k+(len(states)-numSteps)]
