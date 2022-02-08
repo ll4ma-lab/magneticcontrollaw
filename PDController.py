@@ -49,13 +49,13 @@ class PDController:
         
         linearErrorW = np.dot(currentTransform[:3,:3],linearError)
         rotationErrorW = np.dot(currentTransform[:3,:3],rotationError)
-        print('rot',rotationErrorW)
         return np.concatenate((linearErrorW,rotationErrorW))
         
     def getDesiredWrench(self,current,desired):
             
             currentTF = current[0]
             desiredTF = buildTF(desired[:3,0],desired[3:6,0])
+            
             positionError = self.computeError(currentTF, desiredTF)
             #(bodyToWorld,Ωsc,Vsc)
             

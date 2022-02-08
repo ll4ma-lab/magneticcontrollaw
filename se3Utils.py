@@ -49,9 +49,8 @@ def buildTF(position,angles):
     worldToBodyRotation = R.from_euler('xyz',angles)
     worldToBodyR = worldToBodyRotation.as_matrix()
     
-    bodyToWorldR = np.transpose(worldToBodyR)
-    bodyToWorld = np.eye(4)
-    bodyToWorld[:3,:3] = bodyToWorldR
-    bodyToWorld[:3,3] = position
+    transform = np.eye(4)
+    transform[:3,:3] = worldToBodyR
+    transform[:3,3] = position
 
-    return bodyToWorld
+    return transform
