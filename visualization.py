@@ -23,7 +23,8 @@ def addCube(center,radius,op,ax):
     if(center[2] == 0):
         color = (102/256.0,0,0,op)
     if(True or center[2] >0):
-        color = (119/256.0,27/256.0,12/256.0,op)
+        color = (184/256.0,115/256.0,51/256.0,op)
+        #color = (119/256.0,27/256.0,12/256.0,op)
     elif(center[2] <0):
         color = (0,0,1,op)
     faces = plot_cube(cube_definition,color,ax)
@@ -48,7 +49,7 @@ def drawCubes(allMagnets,magnets,ax,radius=0.065):
     for magnet in allMagnets:
         op = 0.2
         if magnet in magnets:
-            op = 0.8
+            op = 1.0
         face = addCube(np.array(magnet)*1,radius,op,ax)
         allFaces.append(face)
     return allFaces
