@@ -20,17 +20,17 @@ from ll4ma_opt.solvers.line_search import NewtonMethod,GaussNewtonMethod,Gradien
 
 from models import rotZ,modelCallRotatedWrench,getOmniFrame
 
-sphere_parameters = {'alpha':1.0,'ro':0.5,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-10}
-cylinder_parameters = {'alpha':1.0,'ro':0.5,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-15}
+sphere_parameters = {'alpha':1.0,'rho':0.5,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-10}
+cylinder_parameters = {'alpha':1.0,'rho':0.5,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-15}
 
 def sphere_optimize(prob):
     solver = NewtonMethod(problem=prob,**sphere_parameters) 
-    solution, cost, converged, iterates = solver.optimize(prob.initial_solution,max_iterations=25)  
-    return solution, cost, converged, iterates, prob.costTime,prob.gradientTime,prob.hessianTime
+    result = solver.optimize(prob.initial_solution,max_iterations=25)  
+    return result
 def cylinder_optimize(prob):
     solver = NewtonMethod(problem=prob,**cylinder_parameters) 
-    solution, cost, converged, iterates = solver.optimize(prob.initial_solution,max_iterations=25)  
-    return solution, cost, converged, iterates, prob.costTime,prob.gradientTime,prob.hessianTime
+    result = solver.optimize(prob.initial_solution,max_iterations=25)  
+    return result
 
 
 
@@ -53,14 +53,17 @@ class cylinderOptimization(Problem):
     def __init__(self,weights): 
         super().__init__()
         self.initial_solution = np.array([20,0]).reshape((2,1))
-        self.boundConstraints[0] = (0.1,40)
+        self.max_bounds[0] = 40
+        self.min_bounds[0] = 0.1
         
         self.desiredWrench = torch.zeros((6,1))
         self.unitStrengthWrench = torch.zeros((6,1))
         self.frame = torch.eye(3)
         self.rhoMode = False
         self.weights = torch.tensor(weights)
-        
+    
+    def size(self):
+        return 2
     def pointingModelLoss(self,x,frame):
         selectedWrench = x[0]**2 * torch.cat((frame@self.unitStrengthWrench[:3],frame@self.unitStrengthWrench[3:]))
         error = 1e13*(self.desiredWrench - selectedWrench)
@@ -80,7 +83,8 @@ class sphericalOptimization(Problem):
     def __init__(self,weights): 
         super().__init__()
         self.initial_solution = np.array([20,0,0]).reshape((3,1))
-        self.boundConstraints[0] = (0.1,40)
+        self.min_bounds[0] = 0.1
+        self.max_bounds[0] = 40
         
         self.desiredWrench = torch.zeros((6,1))
 
@@ -95,6 +99,10 @@ class sphericalOptimization(Problem):
         self.rho = torch.tensor(np.zeros((3,1)))
         
         self.zero = torch.zeros(1)
+    
+    def size(self):
+        return 3
+    
     def tensor_cost(self, x): 
         selectedWrench = modelCallRotatedWrench(x[0],x[1:],(self.frho0,self.trho0,self.frho90,self.fphi90,self.ttheta90),self.rho,library=torch,zero = self.zero)
         error = 1e10*(self.desiredWrench - selectedWrench)[0]
@@ -182,10 +190,10 @@ class multiMagSolver():
         s = time.time()
         self.modifyProblems(desiredWrench, position)
         results = self.pool.map(cylinder_optimize,self.problems)
-        iterations = [result[3].shape[0] for result in results]
+        iterations = [result.iterates.shape[0] for result in results]
         self.iterations.append((iterations))
         noActionCost  = self.problems[0].cost(np.zeros((2,1)))
-        costs = [result[1] for result in results]
+        costs = [result.cost for result in results]
         self.costs.append(costs)
         bestAction = np.argmin(costs)
 
@@ -195,8 +203,8 @@ class multiMagSolver():
         else:
             magNum = bestAction//3
             modelNum = bestAction%3
-            strength = results[bestAction][0][0,0]
-            theta = results[bestAction][0][1,0]
+            strength = results[bestAction].solution[0,0]
+            theta = results[bestAction].solution[1,0]
             control = [magNum,modelNum,strength,theta]
             
         timestep = time.time()-s
@@ -215,15 +223,15 @@ class multiMagSolver():
         #results = [sphere_optimize(prob) for prob in self.problems]
         results = self.pool.map(sphere_optimize,self.problems)
 
-        iterations = [result[3].shape[0] for result in results]
-        self.cost_time += np.sum([result[4] for result in results])
-        self.gradient_time += np.sum([result[5] for result in results])
-        self.hessian_time += np.sum([result[6] for result in results])
+        iterations = [result.iterates.shape[0] for result in results]
+        #self.cost_time += np.sum([result[4] for result in results])
+        #self.gradient_time += np.sum([result[5] for result in results])
+        #self.hessian_time += np.sum([result[6] for result in results])
 
         
         self.iterations.append((iterations))
         noActionCost  = self.problems[0].cost(np.zeros((3,1)))
-        costs = [result[1] for result in results]
+        costs = [result.cost for result in results]
         self.costs.append(costs)
         
         bestAction = np.argmin(costs)
@@ -233,9 +241,9 @@ class multiMagSolver():
             #print('shit')
         else:
             magNum = bestAction//2
-            strength = results[bestAction][0][0,0]
-            psi = results[bestAction][0][1,0]
-            xi = results[bestAction][0][2,0]
+            strength = results[bestAction].solution[0,0]
+            psi = results[bestAction].solution[1,0]
+            xi = results[bestAction].solution[2,0]
             control = [magNum,strength,psi,xi]
             
         timestep = time.time()-s

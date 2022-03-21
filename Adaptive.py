@@ -20,9 +20,9 @@ class Adaptive:
         self.problem = sysIDoptimization.radiusSysid(np.diag((2e3,2e3,0,0,0,1e0)),physical=physical)
         
         step = 1e-12/ batch_size
-        optimizerParams = {'alpha':step,'ro':0.9,'min_alpha': step/2} 
+        optimizerParams = {'alpha':step,'rho':0.9,'min_alpha': step/2} 
         
-        optimizerParams = {'alpha':step,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-20, 'momentum':0.8}
+        optimizerParams = {'alpha':step,'rho':0.9,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-20, 'momentum':0.8}
         
         self.optimizer = Momentum(problem=self.problem,**optimizerParams)
         self.batch_size = batch_size

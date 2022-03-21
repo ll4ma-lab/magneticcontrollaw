@@ -31,14 +31,19 @@ def sysIDDemo(controls,magnets,positions,linearVelocity,rotationalVelocity):
 class radiusSysid(Problem): 
     def __init__(self,weights,physical = False): 
         super().__init__()
-        self.boundConstraints[0] = (1e-2,1e-1)
         self.singleModel = sphereModel(1)
         self.initial_solution = np.ones((3,1)) * 0.001
         self.initial_solution[1] = 5.8E+07
         self.initial_solution[2] = 0.00067
 
-        self.boundConstraints[1] = (2.5e7,6e7)
-        self.boundConstraints[2] = (self.initial_solution[2]-1e-10,self.initial_solution[2]+1e-10)
+        self.min_bounds[0] = 1e-2
+        self.max_bounds[0] = 1e-1
+
+        self.min_bounds[1] = 2.5e7
+        self.max_bounds[1] = 6e7
+        
+        self.min_bounds[2] = self.initial_solution[2]-1e-10
+        self.max_bounds[2] = self.initial_solution[2]+1e-10
 
         self.weights = torch.tensor(weights)
         self.physical = physical
@@ -91,6 +96,10 @@ class radiusSysid(Problem):
         M = buildMassMatrix(objectProperties,torch,False)
         
         return torch.linalg.inv(M)@ wrenches.T
+    
+    def size(self):
+        return 3
+    
     def tensor_cost(self, x):
 
         modeledAccelerations = self.forwardAcceleration(x,self.dists,self.dipoleStrength,self.angles,self.rhos,self.zero)
