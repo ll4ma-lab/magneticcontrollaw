@@ -17,7 +17,9 @@ class Adaptive:
         self.object_properties = object_properties
         
         
-        self.problem = sysIDoptimization.radiusSysid(np.diag((2e3,2e3,0,0,0,1e0)),physical=physical)
+        Q = buildQ(dimensions,2e3,1e0)
+        print(Q)
+        self.problem = sysIDoptimization.radiusSysid(Q,physical=physical)
         
         step = 1e-12/ batch_size
         optimizerParams = {'alpha':step,'rho':0.9,'min_alpha': step/2} 
@@ -70,11 +72,11 @@ class Adaptive:
         
 
         
-        solution, cost, converged, iterates = self.optimizer.optimize(current_solution,max_iterations=1) 
-        self.parameters.append(solution)
-        print(solution)
-        self.object_properties['radius'] = solution[0,0]
-        self.object_properties['sigma'] = solution[1,0]
+        result = self.optimizer.optimize(current_solution,max_iterations=1) 
+        self.parameters.append(result.solution)
+        print(result.solution)
+        self.object_properties['radius'] = result.solution[0,0]
+        self.object_properties['sigma'] = result.solution[1,0]
     def plot(self,true_vector):
         parameters = np.stack(self.parameters)
         fig,axs = plt.subplots(3,1)

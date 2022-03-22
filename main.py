@@ -66,7 +66,7 @@ if __name__ == '__main__':
     velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
     
 
-    adaptive = Adaptive(env.magnets, object_properties_approximate, 25)
+    adaptive = Adaptive(env.magnets,'all', object_properties_approximate, 25)
     
     states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=numSteps,dt=dt,cheat=cheat,runAdaptive=runAdaptive)
     

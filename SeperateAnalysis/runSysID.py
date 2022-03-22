@@ -54,16 +54,17 @@ import time
 #dataloader.load('/home/tabor/catkin_ws/src/magnetic_system/MagneticControlLaw/data/real_2022-01-22 00:52:58.546108',globals())
 
 
-dataloader.load('/home/tabor/catkin_ws/src/magnetic_system/MagneticControlLaw/data/real_2022-01-22 13:07:42.600754',globals())
+#dataloader.load('/home/tabor/catkin_ws/src/magnetic_system/MagneticControlLaw/data/real_2022-01-22 13:07:42.600754',globals())
 
+#dataloader.load('/home/tabor/Documents/magneticcontrollaw/data/sim_200s_2022-03-21 14.00.25.715581',globals())
 
-physical = True
+#physical = True
 import matplotlib.pyplot as plt
 
 
 
-start = -1050
-end = -850
+start = -2000
+end = -5
 
 
 
@@ -95,17 +96,17 @@ else:
 
 from sysIDoptimization import radiusSysid
 from ll4ma_opt.solvers.line_search import NewtonMethod,GradientDescent
-optimizerParams = {'alpha':5e-3/(abs(start-end)),'ro':0.9,'c1':1e-3,'FP_PRECISION': 1e-5,'min_alpha': 1e-20}
+optimizerParams = {'alpha':5e-3/(abs(start-end)),'rho':0.9,'c1':1e-3,'FP_PRECISION': 1e-5,'min_alpha': 1e-20}
 prob = radiusSysid(np.diag((2e3,2e3,0,0,0,1e0)),physical=physical) # built with M(0.04) Q M(0.04)
 optimizer = GradientDescent(problem=prob,**optimizerParams)
 s = time.time()
 prob.updateVals(some_controls,env.magnets,positions,noisylinearVelocity,noisyrotationalVelocity)
-solution, cost, converged, iterates = optimizer.optimize(prob.initial_solution,max_iterations=50)
-solutions.append(solution[0,0])
+result = optimizer.optimize(prob.initial_solution,max_iterations=50)
+solutions.append(result.solution[0,0])
 print('opt time ', time.time()-s)
 
 
-possible_r = np.linspace(prob.boundConstraints[0][0],prob.boundConstraints[0][1],100)
+possible_r = np.linspace(prob.min_bounds[0],prob.max_bounds[0],100)[:,0]
 
 possibleCosts = [prob.cost(np.stack((possible_r[i],prob.initial_solution[1,0],prob.initial_solution[2,0])).reshape((3,1))) for i in range(len(possible_r))]
 fig = plt.figure()
@@ -114,9 +115,9 @@ plt.plot(possible_r,np.log(possibleCosts),'r')
 
 print('opt time ', time.time()-s)
 s = time.time()
-_ = prob.visualize_optimization(iterates,np.log)
+_ = prob.visualize_optimization(result.iterates,np.log)
 print('brute time ', time.time()-s)
-print('solution ',solution)
+print('solution ',result.solution)
 
 a=b
 

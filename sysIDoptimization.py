@@ -22,9 +22,9 @@ def sysIDDemo(controls,magnets,positions,linearVelocity,rotationalVelocity):
     prob = radiusSysid(np.diag((2e5,2e5,2e5,1,1,1))) # built with M(0.04) Q M(0.04)
     optimizer = NewtonMethod(problem=prob,**optimizerParams)
     prob.updateVals(controls,magnets,positions,linearVelocity,rotationalVelocity)
-    solution, cost, converged, iterates = optimizer.optimize(prob.initial_solution,max_iterations=25)
-    prob.visualize_optimization(iterates)
-    print(solution)
+    result = optimizer.optimize(prob.initial_solution,max_iterations=25)
+    prob.visualize_optimization(result.iterates)
+    print(result.solution)
 
 
 
@@ -112,8 +112,8 @@ class radiusSysid(Problem):
 
         return cost
     def visualize_optimization(self,iterates,func = np.abs): 
-        possible_r = np.linspace(self.boundConstraints[0][0],self.boundConstraints[0][1],50)
-        possible_sigma = np.linspace(self.boundConstraints[1][0],self.boundConstraints[1][1],50)
+        possible_r = np.linspace(self.min_bounds[0],self.max_bounds[0],50)
+        possible_sigma = np.linspace(self.min_bounds[1],self.max_bounds[1],50)
         rs,sigmas = np.meshgrid(possible_r,possible_sigma)
         rs = rs.flatten()
         sigmas = sigmas.flatten()
