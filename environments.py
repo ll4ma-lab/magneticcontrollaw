@@ -227,6 +227,45 @@ class PlanarProblem:
             self.times[13] = 360
             self.times[14] = 360
 
+        if(challengeID==6): # block U
+            
+
+            self.TrueDesiredState = np.zeros((12,18))
+            
+            
+            self.TrueDesiredState[:2] = np.array([[  30,   30],
+                                                  [  30,  446],
+                                                  [ 169,  447],
+                                                  [ 170, 1129],
+                                                  [ 454, 1411],
+                                                  [1133, 1411],
+                                                  [1417, 1129],
+                                                  [1418,  447],
+                                                  [1550,  446],
+                                                  [1550,   30],
+                                                  [ 859,   30],
+                                                  [ 859,  446],
+                                                  [ 998,  447],
+                                                  [ 998,  993],
+                                                  [ 582,  993],   
+                                                  [ 582,  447],
+                                                  [ 721,  446],
+                                                  [ 721,   30]
+                                                    ]).T - np.array([[750,750]]).T
+
+                                                  
+            short_time = 120
+            long_time = 180
+            
+            self.desiredState= self.TrueDesiredState * 0.0001
+            self.startState[:2,0] = self.desiredState[:2,-1]
+
+            self.times = [long_time]* self.desiredState.shape[1]
+            self.times[2] = short_time
+            self.times[16] = short_time
+            self.times[12] = short_time
+            self.times[8] = short_time
+
 
             #self.trajectoryDimensions = 'xy'
         import warnings
