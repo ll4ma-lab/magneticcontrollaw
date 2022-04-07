@@ -56,14 +56,23 @@ import time
 
 #dataloader.load('/home/tabor/catkin_ws/src/magnetic_system/MagneticControlLaw/data/real_2022-01-22 13:07:42.600754',globals())
 
-#dataloader.load('/home/tabor/Documents/magneticcontrollaw/data/sim_200s_2022-03-21 14.00.25.715581',globals())
+#adaptive U
+#dataloader.load('/home/tabor/catkin_ws/src/magnetic_system/MagneticControlLaw/data/test_real_2022-03-24 17:00:48.946183',globals())
+
+#dataloader.load('/home/tabor/catkin_ws/src/magnetic_system/MagneticControlLaw/data/test_real_2022-03-25 13:25:01.501892',globals())
+
+
+#dataloader.load('/home/tabor/catkin_ws/src/magnetic_system/MagneticControlLaw/data/real_2022-03-28 12:21:41.207511',globals())
+
+#dataloader.load('/home/tabor/catkin_ws/src/magnetic_system/MagneticControlLaw/data/real_2022-03-28 18:22:30.645765',globals())
+
 
 #physical = True
 import matplotlib.pyplot as plt
 
 
 
-start = -2000
+start = -4000
 end = -5
 
 
