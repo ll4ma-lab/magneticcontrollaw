@@ -233,7 +233,8 @@ class PlanarProblem:
             self.TrueDesiredState = np.zeros((12,18))
             
             
-            self.TrueDesiredState[:2] = np.array([[  30,   30],
+            self.TrueDesiredState[:2] = np.array([[ 721,   30],
+                                                  [  30,   30],
                                                   [  30,  446],
                                                   [ 169,  447],
                                                   [ 170, 1129],
@@ -249,22 +250,21 @@ class PlanarProblem:
                                                   [ 998,  993],
                                                   [ 582,  993],   
                                                   [ 582,  447],
-                                                  [ 721,  446],
-                                                  [ 721,   30]
-                                                    ]).T - np.array([[750,750]]).T
+                                                  [ 721,  446]
+                                                  ]).T - np.array([[750,750]]).T
 
                                                   
-            short_time = 120
-            long_time = 180
+            short_time = 240
+            long_time = 240
             
             self.desiredState= self.TrueDesiredState * 0.0001
             self.startState[:2,0] = self.desiredState[:2,-1]
 
             self.times = [long_time]* self.desiredState.shape[1]
-            self.times[2] = short_time
-            self.times[16] = short_time
-            self.times[12] = short_time
-            self.times[8] = short_time
+            self.times[3] = short_time
+            self.times[17] = short_time
+            self.times[13] = short_time
+            self.times[9] = short_time
 
 
             #self.trajectoryDimensions = 'xy'
