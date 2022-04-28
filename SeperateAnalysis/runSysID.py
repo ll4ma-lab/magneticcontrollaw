@@ -67,12 +67,29 @@ import time
 #dataloader.load('/home/tabor/catkin_ws/src/magnetic_system/MagneticControlLaw/data/real_2022-03-28 18:22:30.645765',globals())
 
 
+#dataloader.load('/home/tabor/catkin_ws/src/magnetic_system/MagneticControlLaw/data/real_2022-04-19 13:42:36.530973',globals())
+
+#dataloader.load('/media/tabor/Storage/new_experiments/U/real_2022-04-01 17:06:41.504047',globals())
+#dataloader.load('/media/tabor/Storage/new_experiments/U/real_2022-04-04 17:10:16.939314',globals())
+#dataloader.load('/media/tabor/Storage/new_experiments/U/real_2022-04-04 18:33:05.822924',globals())
+#dataloader.load('/media/tabor/Storage/new_experiments/U/real_2022-04-05 13:32:50.136111',globals())
+#dataloader.load('/media/tabor/Storage/new_experiments/U/real_2022-04-05 17:30:39.811535',globals())
+
+
+#square 
+#dataloader.load('/media/tabor/Storage/new_experiments/square/real_2022-04-26 14:05:48.643385',globals())
+#dataloader.load('/media/tabor/Storage/new_experiments/square/real_2022-04-26 15:03:52.189066',globals())
+#dataloader.load('/media/tabor/Storage/new_experiments/square/real_2022-04-26 16:06:02.773579',globals())
+#dataloader.load('/media/tabor/Storage/new_experiments/square/real_2022-04-26 17:03:51.259098',globals())
+dataloader.load('/media/tabor/Storage/new_experiments/square/real_2022-04-26 18:05:06.499346',globals())
+
+
 #physical = True
 import matplotlib.pyplot as plt
 
 
 
-start = -4000
+start = -numSteps + 5
 end = -5
 
 
@@ -105,15 +122,14 @@ else:
 
 from sysIDoptimization import radiusSysid
 from ll4ma_opt.solvers.line_search import NewtonMethod,GradientDescent
-optimizerParams = {'alpha':5e-3/(abs(start-end)),'rho':0.9,'c1':1e-3,'FP_PRECISION': 1e-5,'min_alpha': 1e-20}
+optimizerParams = {'alpha':1,'rho':0.9,'c1':1e-3,'FP_PRECISION': 1e-10,'min_alpha': 1e-20}
 prob = radiusSysid(np.diag((2e3,2e3,0,0,0,1e0)),physical=physical) # built with M(0.04) Q M(0.04)
-optimizer = GradientDescent(problem=prob,**optimizerParams)
+optimizer = NewtonMethod(problem=prob,**optimizerParams)
 s = time.time()
 prob.updateVals(some_controls,env.magnets,positions,noisylinearVelocity,noisyrotationalVelocity)
-result = optimizer.optimize(prob.initial_solution,max_iterations=50)
+result = optimizer.optimize(prob.initial_solution,max_iterations=500)
 solutions.append(result.solution[0,0])
 print('opt time ', time.time()-s)
-
 
 possible_r = np.linspace(prob.min_bounds[0],prob.max_bounds[0],100)[:,0]
 

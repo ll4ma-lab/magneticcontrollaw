@@ -40,7 +40,7 @@ class radiusSysid(Problem):
         self.max_bounds[0] = 1e-1
 
         self.min_bounds[1] = 2.5e6
-        self.max_bounds[1] = 6e7
+        self.max_bounds[1] = 10e8
         
         self.min_bounds[2] = self.initial_solution[2]-1e-10
         self.max_bounds[2] = self.initial_solution[2]+1e-10
