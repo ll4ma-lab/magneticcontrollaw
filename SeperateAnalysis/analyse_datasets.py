@@ -24,14 +24,19 @@ from os.path import isfile, join
 from matplotlib.patches import Ellipse
 from matplotlib.patches import Polygon
 
+def rms(error,axis=None):
+    return np.sqrt(np.mean(error **2,axis=axis))
+
+
+
 #folder = 'nature'
 #folder = 'double_cube'
 #folder = 'base_real'
 #folder= 'U'
 #folder = 'cuboid'
-folder = 'copper_sphere'
+#folder = 'copper_sphere'
 #folder = 'no_orientation'
-#folder = 'cylinder'
+folder = 'cylinder'
 #folder = 'aluminum_sphere'
 #folder = 'copper_sphere_lower_lower_bounds'
 #folder = 'copper_half_conductivity'
@@ -40,7 +45,8 @@ folder = 'copper_sphere'
 #folder = 'copper_larger_radius'
 #folder = 'copper_double_both'
 #folder = 'square'
-mypath = "/home/tabor/experiments/" + folder + "/"
+#folder = 'different_radius'
+#mypath = "/media/tabor/Storage/experiments/" + folder + "/"
 mypath = '/media/tabor/Storage/new_experiments/' + folder + '/'
 onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
 
@@ -59,7 +65,7 @@ fig = plt.figure()
 fig.add_subplot()
 all_adaptive_params = []
 
-parameter_fig,parameter_ax = plt.subplots((2))
+parameter_fig,parameter_ax = plt.subplots((2),sharex=True,gridspec_kw={'height_ratios': [3,1]})
 
 name = 'Paths ' + folder
 #fig.suptitle(name)
@@ -97,14 +103,14 @@ for fileName in onlyfiles:
             npdesiredStates[:,1] *=-1
             allStates.append(npStates.T)
 
-            fig.axes[0].plot(npStates[:,0],npStates[:,1],'k',alpha=0.5)
+            fig.axes[0].plot(npStates[:,0],npStates[:,1],c=Lanc1,alpha=0.5)
             
             if runAdaptive:
                 #first parameter was held until 1/2 batch size(25)
                 adaptive_parameters = np.array([adaptive.parameters[0]] * 12 + adaptive.parameters)
                 all_adaptive_params.append(adaptive_parameters)
                 #parameter_ax[0].plot(adaptive_parameters[:,0],'k',alpha=0.6)
-                parameter_ax[1].plot(adaptive_parameters[:,1],c=Lanc1,alpha=0.6)
+                #parameter_ax[1].plot(adaptive_parameters[:,1],c=Lanc1,alpha=0.6)
                 print(adaptive_parameters.shape)
         else:
 
@@ -136,10 +142,10 @@ for fileName in onlyfiles:
 
         
         rotationalVelocityErrors.append(absError[:,11,0])
-    
-parameter_ax[0].plot([0,numSteps],[0.02,0.02],'k--')
-#parameter_ax[1].plot([0,numSteps],[5.8E+07,5.8E+07],'k--')
-parameter_ax[1].plot([0,numSteps],[3.77E+07,3.77E+07],'k--')
+
+adaptive_plot_max_t = 600
+
+#parameter_ax[1].plot([0,adaptive_plot_max_t],[3.77E+07,3.77E+07],'k--')
 #parameter_fig.suptitle('Adapted parameters over time')
 parameter_ax[0].set_ylabel('Radius (m)')
 parameter_ax[1].set_ylabel('Conductivity')
@@ -149,42 +155,62 @@ if runAdaptive:
     np_adaptive_params = np.array(all_adaptive_params)
     average_params = np.mean(np_adaptive_params,0)
     std_params = np.std(np_adaptive_params,0)
-    parameter_ax[0].plot(average_params[:,0],c=Lanc1)
+
+    
+    i=0
+    parameter_ax[0].plot(all_adaptive_params[i][:adaptive_plot_max_t,0],c=Lanc3)
+    parameter_ax[1].plot(all_adaptive_params[i][:adaptive_plot_max_t,1],c=Lanc3)
+
+    i=1
+    parameter_ax[0].plot(all_adaptive_params[i][:adaptive_plot_max_t,0],c=Lanc2)
+    parameter_ax[1].plot(all_adaptive_params[i][:adaptive_plot_max_t,1],c=Lanc2)
+
+
+    #parameter_ax[0].plot(average_params[:adaptive_plot_max_t,0],c=Lanc1)
+    #parameter_ax[1].plot(average_params[:adaptive_plot_max_t,1],c=Lanc1)
+
     deviations = 1
-    upper_bound = (average_params+std_params*deviations)[:,:,0]
-    lower_bound = (average_params-std_params*deviations)[:,:,0]
+    upper_bound = (average_params+std_params*deviations)[:adaptive_plot_max_t,:,0]
+    lower_bound = (average_params-std_params*deviations)[:adaptive_plot_max_t,:,0]
     
     bounds = np.concatenate((upper_bound[:,0],np.flip(lower_bound[:,0])))
-    timesteps = list(range(numSteps))
+    timesteps = list(range(adaptive_plot_max_t))
     
     poly_points = np.stack((np.concatenate((timesteps,np.flip(timesteps))),bounds)).T
     #poly_points = np.stack((timesteps,upper_bound[:,0])).T
     poly = Polygon(poly_points,facecolor = Lanc2)
-    parameter_ax[0].add_patch(poly)
+    #parameter_ax[0].add_patch(poly)
 
     #parameter_ax[0].plot(upper_bound[:,0],c=UtahU)
     #parameter_ax[0].plot(lower_bound[:,0],c=UtahU)
 
-    #parameter_ax[1].plot(average_params[:,1],'k')
-    parameter_ax[0].set_xticks(np.linspace(0,2400,11))
-    parameter_ax[1].set_xticks(np.linspace(0,2400,11))
-parameter_ax[0].set_yticks(np.linspace(0.01,0.025,4))
+    #parameter_ax[0].set_xticks(np.linspace(0,adaptive_plot_max_t,11))
+    parameter_ax[1].set_xticks(np.linspace(0,adaptive_plot_max_t,6))
+    
+parameter_ax[0].plot([0,adaptive_plot_max_t],[0.02,0.02],'k--')
+parameter_ax[1].plot([0,adaptive_plot_max_t],[5.8E+07,5.8E+07],'k--')
+    
+#parameter_ax[0].set_yticks(np.linspace(0.01,0.025,4))
+parameter_ax[0].set_yticks(np.linspace(0.01,0.04,7))
+
 parameter_ax[1].set_yticks(np.linspace(2e7,7e7,3))
-parameter_fig.set_size_inches(8,3)
+parameter_fig.set_size_inches(5,3)
 parameter_fig.tight_layout()
 
 
 
 print('average position error ' + str(np.average(PositionErrors)) +' std '+ str(np.std(PositionErrors)) + ' max ' + str(np.max(np.abs(PositionErrors))))
-
 print('average velocity error ' + str(np.average(VelocityErrors)) +' std '+ str(np.std(VelocityErrors)) + ' max ' + str(np.max(np.abs(VelocityErrors))))
 print('average orientation error ' + str(np.average(orientationErrors)) +' std '+ str(np.std(orientationErrors)) + ' max ' + str(np.max(np.abs(orientationErrors))))
 print('average orientation velocity error ' + str(np.average(rotationalVelocityErrors)) +' std '+ str(np.std(rotationalVelocityErrors)) + ' max ' + str(np.max(np.abs(rotationalVelocityErrors))))
 
+print('RMS position '+str(rms(np.array(PositionErrors)))+' RMS orientation ' + str(rms(np.array(orientationErrors))))
+print('RMS position '+str([rms(PositionErrors[i]) for i in range(len(PositionErrors))])+' RMS orientation ' + str([rms(orientationErrors[i]) for i in range(len(PositionErrors))]))
+
+print('Average position error '+str([np.average(PositionErrors[i]) for i in range(len(PositionErrors))])+' Average orientation ' + str([np.average(orientationErrors[i]) for i in range(len(PositionErrors))]))
 
 
-
-#plt.plot(npdesiredStates[240:,0,0],npdesiredStates[240:,1,0],color=Lanc1,linewidth=4)
+#fig.axes[0].plot(npdesiredStates[240:,0,0],npdesiredStates[240:,1,0],color=Lanc1,linewidth=4)
 fig.axes[0].tick_params(axis='both', which='major', labelsize=20)
 fig.axes[0].tick_params(axis='both', which='minor', labelsize=20)
 
@@ -235,7 +261,7 @@ for i in range(numSteps):
     ellipseDataset.append(trials_data+ellipseDatum[:7])
     fig.axes[0].add_artist(ells)
     ells.set_alpha(1)
-    ells.set_facecolor(UtahU)
+    ells.set_facecolor(Lanc2)
     ells.set_clip_box(fig.axes[0].bbox)
     
 num = 5
