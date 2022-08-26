@@ -8,6 +8,22 @@ Created on Wed Jul  7 17:23:35 2021
 import numpy as np
 import torch
 import time
+from dataclasses import dataclass
+        
+@dataclass 
+class CylinderControlCommand:
+    mag_num: int = 0
+    model_num: int = 0
+    dipole_strength: float = 0
+    theta: float = 0
+
+@dataclass 
+class SphereControlCommand:
+    mag_num: int = 0
+    dipole_strength: float = 0
+    psi: float = 0
+    xi: float = 0
+
 
 #cylinder model helper
 def getOmniFrame(pos):
@@ -131,16 +147,12 @@ class multiMagModel():
             return self.forwardCylinder(position, control)
         
     def forwardCylinder(self,position,control):
-        #control[0] = magnetNumber
-        #control[1] = modelNumber
-        #control[2] = power
-        #control[3] = theta
         s = time.time()
-        chosenMagnetPose = (np.array(self.magnets) - np.transpose(position)).tolist()[control[0]]
+        chosenMagnetPose = (np.array(self.magnets) - np.transpose(position)).tolist()[control.mag_num]
         omniFrame = getOmniFrame(chosenMagnetPose)
         
-        if(control[1] == 2):
-            rotation = np.dot(omniFrame,rotZ(control[3]))
+        if(control.model_num == 2):
+            rotation = np.dot(omniFrame,rotZ(control.theta))
         else:
             rotation = omniFrame
         
@@ -148,23 +160,19 @@ class multiMagModel():
         doubleRotMatrix[:3,:3] = rotation
         doubleRotMatrix[3:,3:] = rotation
         
-        wrench = self.cylinderModel.modelCall(np.linalg.norm(chosenMagnetPose),control[2])[control[1]]
+        wrench = self.cylinderModel.modelCall(np.linalg.norm(chosenMagnetPose),control.dipole_strength)[control.model_num]
         
         rotatedWrench = doubleRotMatrix@wrench
         self.time += time.time()-s
         return rotatedWrench
     def forwardSphere(self,position,control):
-        #control[0] = magnetNumber
-        #control[1] = power
-        #control[2] = psi
-        #control[3] = xi
         s = time.time()
-        chosenMagnetPose = (np.array(self.magnets)[control[0]] - np.transpose(position)).transpose()
+        chosenMagnetPose = (np.array(self.magnets)[control.mag_num] - np.transpose(position)).transpose()
         dist = np.linalg.norm(chosenMagnetPose)
         rho = (-1*chosenMagnetPose).reshape((3,1))
 
         modelVals = self.sphereModel.modelCall(dist,1)
-        wrench = modelCallRotatedWrench(np.array(control[1]).reshape(1),np.array(control[2:]),modelVals,rho).reshape((6,1))
+        wrench = modelCallRotatedWrench(np.array(control.dipole_strength).reshape(1),np.array((control.psi,control.xi)),modelVals,rho).reshape((6,1))
 
         self.time += time.time()-s
         return wrench

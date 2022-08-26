@@ -8,7 +8,7 @@ import numpy as np
 import time
 from se3Utils import buildSkew,repairRotMatrix
 from tqdm import tqdm
-
+from modelOptimization import SphereControlCommand
 
 
 def buildMassMatrix(object_properties,library=np,torqueTop=True):
@@ -79,7 +79,7 @@ def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,ada
         desiredWrenchs.append(desired_wrench)
         if(cheat):
             trueWrench = desired_wrench
-            control = [0,0,0,0]
+            control = SphereControlCommand()
         else:
             control =  solver.solveWrench(state[0][:3,3],desired_wrench)
             trueWrench = model.forwardPass(state[0][:3,3],control)

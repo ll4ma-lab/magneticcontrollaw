@@ -7,8 +7,6 @@ Created on Tue Jul 27 14:28:31 2021
 """
 import numpy as np
 import torch
-
-
 import time
 from ll4ma_opt.problems import Problem
 
@@ -18,7 +16,7 @@ import torch.multiprocessing  as multiprocessing
 
 from ll4ma_opt.solvers.line_search import NewtonMethod,GaussNewtonMethod,GradientDescent
 
-from models import rotZ,modelCallRotatedWrench,getOmniFrame
+from models import rotZ,modelCallRotatedWrench,getOmniFrame,CylinderControlCommand,SphereControlCommand
 
 sphere_parameters = {'alpha':1.0,'rho':0.5,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-10}
 cylinder_parameters = {'alpha':1.0,'rho':0.5,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-15}
@@ -118,8 +116,8 @@ class sphericalOptimization(Problem):
         plt.plot(iterates[:,0,0],iterates[:,1,0]) 
 
 
-def getCost(control):
-    return control[0].cost(control[1])
+def getCost(iterate):
+    return iterate['problem'].cost(iterate['variables'])
 
 
 class multiMagSolver():
@@ -198,14 +196,14 @@ class multiMagSolver():
         bestAction = np.argmin(costs)
 
         if(costs[bestAction]>noActionCost):
-            control = [0,0,0.0,0.0]
+            control = CylinderControlCommand()
             #print('shit')
         else:
-            magNum = bestAction//3
-            modelNum = bestAction%3
+            mag_num = bestAction//3
+            model_num = bestAction%3
             strength = results[bestAction].solution[0,0]
             theta = results[bestAction].solution[1,0]
-            control = [magNum,modelNum,strength,theta]
+            control = CylinderControlCommand(mag_num = mag_num, model_num = model_num, dipole_strength = strength, theta = theta)
             
         timestep = time.time()-s
         self.times.append(timestep)
@@ -237,14 +235,15 @@ class multiMagSolver():
         bestAction = np.argmin(costs)
 
         if(costs[bestAction]>noActionCost):
-            control = [0,0.0,0.0,0.0]
+            control = SphereControlCommand()
             #print('shit')
         else:
-            magNum = bestAction//2
+            mag_num = bestAction//2
             strength = results[bestAction].solution[0,0]
             psi = results[bestAction].solution[1,0]
             xi = results[bestAction].solution[2,0]
-            control = [magNum,strength,psi,xi]
+            control = SphereControlCommand(mag_num = mag_num, dipole_strength = strength,
+                                           psi = psi, xi = xi)
             
         timestep = time.time()-s
         self.times.append(timestep)
@@ -254,21 +253,27 @@ class multiMagSolver():
         self.modifyProblems(desiredWrench, position)
 
         s = time.time()
-        controls = []
+        iterates = []
         for mag in range(len(self.model.magnets)):
             for i in range(-180,180,3):
                 for j in range(-180,180,3):
                     for k in range(0,40):
-                        control = (self.problems[mag*2],np.array((k,i,j)).reshape((3,1)),mag)
-                        controls.append(control)
                         
-        results = self.pool.map(getCost,controls)
+                        iterate = {'problem':self.problems[mag*2],
+                                   'variables':np.array((k,i,j)).reshape((3,1)),
+                                   'mag':mag}
+                        iterates.append(iterate)
+                        
+        results = self.pool.map(getCost,iterates)
         index = np.argmin(results)
         print('brute time ' , time.time()-s)
-        selected = controls[index]
-        control = [selected[2],selected[1][0,0],selected[1][1,0],selected[1][2,0]]
+        selected = iterates[index]
         
-        
+        variables = selected['variables']
+        control = SphereControlCommand(mag_num = selected['mag'],
+                                       dipole_strength= variables[0,0],
+                                       psi = variables[1,0],
+                                       xi = variables[2,0])
         return control
     
     

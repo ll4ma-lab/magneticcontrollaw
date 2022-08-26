@@ -177,7 +177,7 @@ def animate2DPath(environment,positions,transforms,controls,savePlotSteps = [],n
             cube = cubes[i]
             colorinfo = [119/256.0,27/256.0,12/256.0,0.2]
             #print(controls[num][0],i)
-            if(controls[num][0] ==i):
+            if(controls[num].mag_num ==i):
                 colorinfo[3] = 0.8
             cube.set_facecolor(colorinfo)
 
