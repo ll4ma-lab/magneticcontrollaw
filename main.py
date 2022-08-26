@@ -7,7 +7,7 @@ Created on Mon Nov 18 15:27:35 2019
 import numpy as np
 from PDController import PDController
 from discreteTimeSimulator import discreteTimeSimulator,sphereProperties,simulateExperiment
-from environments import PlanarProblem,SpaceProblem
+from environments import PlanarProblem,SpaceProblem,PlanarEnvironments,SpaceEnvironments
 from se3Utils import buildTF
 import matplotlib.pyplot as plt
 import time
@@ -33,14 +33,14 @@ if __name__ == '__main__':
     controlNoise = False
     runAdaptive = False
     
-    env = SpaceProblem(4)
+    env = SpaceProblem(SpaceEnvironments.REGULATOR)
     env.magnets = env.magnets[:]
     #env.trajectoryDimensions = 'xyz'
     physical = False
 
     simTime = np.sum(env.times)
     dt = 1
-    numSteps = 200# int(simTime/dt)
+    numSteps = int(simTime/dt)
     radius = 0.02
     mass = sphereProperties(8940,radius)
     
@@ -60,7 +60,7 @@ if __name__ == '__main__':
         solver = cylinderSolver(env.magnets)
         solver.setup(model,env.trajectoryDimensions,object_properties,env.tolerances)
     
-    controller = PDController(env.startState,0.005,0.000002,0.005,0.000002,0.0,0.000)
+    controller = PDController(env.startState,0.005,0.000001,0.005,0.000002,0.0,0.000)
     
     simulator = discreteTimeSimulator(env.startState,dt,object_properties) #density, diamter
     velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)

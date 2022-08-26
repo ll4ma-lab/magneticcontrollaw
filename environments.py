@@ -5,6 +5,28 @@ Created on Thu Feb 20 13:20:28 2020
 @author: tabor
 """
 import numpy as np
+from enum import Enum
+
+class PlanarEnvironments(Enum):
+    LINE = 1
+    SQUARE = 2
+    DIAMOND = 3
+    DOUBLE_SQUARE = 4
+    SQUARE_FIXED_HEADING  = 5
+    ROTATE_IN_PLACE = 6
+    SQUARE_ROTATE = 7
+    INFINITY = 8
+    OMEGA = 9
+    U = 10
+
+class SpaceEnvironments(Enum):
+    SQUARE = 1
+    AXIS  = 2
+    SPIRAL = 3
+    REGULATOR = 4
+    CUBE = 5
+    CUBE_ROTATE = 6
+    
 
 class PlanarProblem:
     def __init__(self,challengeID=0):
@@ -39,7 +61,7 @@ class PlanarProblem:
         
         self.startState = np.zeros((12,1))
         squareRadius = 0.075
-        if(challengeID==-1): #line 
+        if(challengeID==PlanarEnvironments.LINE): #line 
             self.TrueDesiredState = np.zeros((12,2))
             self.TrueDesiredState[:3,0] = [squareRadius,-squareRadius,0]
             #self.TrueDesiredState[:3,1] = [0.075,-0.075,0]
@@ -47,7 +69,7 @@ class PlanarProblem:
             self.desiredState= self.TrueDesiredState
             self.times = [180]* self.desiredState.shape[1]
             self.times[0] = 180
-        if(challengeID==0 or challengeID==1): #square
+        if(challengeID==PlanarEnvironments.SQUARE or challengeID==PlanarEnvironments.DIAMOND): #square
             self.TrueDesiredState = np.zeros((12,5))
             self.TrueDesiredState[:3,0] = [squareRadius,-squareRadius,0]
             self.TrueDesiredState[:3,1] = [-squareRadius,-squareRadius,0]
@@ -60,7 +82,7 @@ class PlanarProblem:
             self.times = [240]* self.desiredState.shape[1]
             self.trajectoryDimensions = 'xy'
         
-        if(challengeID==7): #square
+        if(challengeID==PlanarEnvironments.DOUBLE_SQUARE): #square
             self.TrueDesiredState = np.zeros((12,9))
             self.TrueDesiredState[:3,0] = [squareRadius,-squareRadius,0]
             self.TrueDesiredState[:3,1] = [-squareRadius,-squareRadius,0]
@@ -81,7 +103,7 @@ class PlanarProblem:
         
         
         
-        if(challengeID==6): #square fixed rotation
+        if(challengeID==PlanarEnvironments.SQUARE_FIXED_HEADING): #square fixed rotation
             self.TrueDesiredState = np.zeros((12,5))
             self.TrueDesiredState[:3,0] = [squareRadius,-squareRadius,0]
             self.TrueDesiredState[:3,1] = [-squareRadius,-squareRadius,0]
@@ -92,7 +114,7 @@ class PlanarProblem:
         
             self.desiredState= self.TrueDesiredState
             self.times = [360]* self.desiredState.shape[1]
-        if(challengeID==1): #diamond
+        if(challengeID==PlanarEnvironments.DIAMOND): #diamond
             angle = 45 /(180/np.pi) 
             R = 0.75 * np.array([[np.cos(angle),-np.sin(angle)],
                           [np.sin(angle),np.cos(angle)]])
@@ -104,7 +126,7 @@ class PlanarProblem:
             self.times = [360]* self.desiredState.shape[1]
             self.trajectoryDimensions = 'xyt'
 
-        if(challengeID==2): #stationary rotation
+        if(challengeID==PlanarEnvironments.ROTATE_IN_PLACE): #stationary rotation
             self.TrueDesiredState = np.zeros((12,5))
             #self.TrueDesiredState[1,:] = -0.075
 
@@ -120,7 +142,7 @@ class PlanarProblem:
             self.times = [180]* self.desiredState.shape[1]
             self.times[0] = 360
 
-        if(challengeID==3): # rotate while square
+        if(challengeID==PlanarEnvironments.SQUARE_ROTATE): # rotate while square
             self.startState[5] = -np.pi/4 
             
             self.TrueDesiredState = np.zeros((12,10))
@@ -159,7 +181,7 @@ class PlanarProblem:
             self.times = [240]* self.desiredState.shape[1]
                     
             
-        if(challengeID==4): #infinity
+        if(challengeID==PlanarEnvironments.INFINITY): #infinity
             vel = 0.0005            
             
             self.TrueDesiredState = np.zeros((12,8))
@@ -190,7 +212,7 @@ class PlanarProblem:
             self.times = [180]* self.desiredState.shape[1]
             self.times[0] = 180
             #self.trajectoryDimensions = 'xy'
-        if(challengeID==5): #U
+        if(challengeID==PlanarEnvironments.OMEGA): #U
             vel = 0.1       
             self.TrueDesiredState = np.zeros((12,15))
             self.TrueDesiredState[:3,0] = [5,-7,0] 
@@ -227,12 +249,8 @@ class PlanarProblem:
             self.times[13] = 360
             self.times[14] = 360
 
-        if(challengeID==6): # block U
-            
-
+        if(challengeID==PlanarEnvironments.U): # block U
             self.TrueDesiredState = np.zeros((12,18))
-            
-            
             self.TrueDesiredState[:2] = np.array([[ 721,   30],
                                                   [  30,   30],
                                                   [  30,  446],
@@ -336,7 +354,7 @@ class SpaceProblem:
         self.magnets = magnets.tolist()
         self.startState = np.zeros((12,1))
         
-        if(challengeID==0): #floating square
+        if(challengeID==SpaceEnvironments.SQUARE): #floating square
             self.TrueDesiredState = np.zeros((12,5))
             self.TrueDesiredState[:3,0] = [0.075,-0.075,-0.075]
             self.TrueDesiredState[:3,1] = [-0.075,-0.075,-0.075]
@@ -348,7 +366,7 @@ class SpaceProblem:
             self.desiredState= self.TrueDesiredState
             self.times = [480]* self.desiredState.shape[1]
         
-        if(challengeID==1): # individual axis
+        if(challengeID==SpaceEnvironments.AXIS): # individual axis
             self.TrueDesiredState = np.zeros((12,12))
             self.TrueDesiredState[0,0] = 0.1
             
@@ -364,7 +382,7 @@ class SpaceProblem:
         
             self.desiredState= self.TrueDesiredState
             self.times = [180]* self.desiredState.shape[1]
-        if(challengeID==2): #spiral WIP
+        if(challengeID==SpaceEnvironments.SPIRAL): #spiral WIP
             i = 0
             self.startState[:,0] = self.spiralHelper(0) 
             components = 40
@@ -373,7 +391,7 @@ class SpaceProblem:
                 self.TrueDesiredState[:,i] = self.spiralHelper(i*2*np.pi/components)
             self.desiredState= self.TrueDesiredState
             self.times = [120]* self.desiredState.shape[1]
-        if(challengeID==3):
+        if(challengeID==SpaceEnvironments.REGULATOR):
             self.startState[:3,0] = np.linspace(0.05,0.05,3) 
             self.startState[3:6,0] = np.linspace(0.5,1.5,3)
  
@@ -381,7 +399,7 @@ class SpaceProblem:
 
             self.desiredState= self.TrueDesiredState
             self.times = [600]
-        if(challengeID==4): #floating square
+        if(challengeID==SpaceEnvironments.CUBE): #floating square
             self.TrueDesiredState = np.zeros((12,9))
             r = 0.075
             self.TrueDesiredState[:3,0] = [r,-r,-r]
@@ -398,7 +416,7 @@ class SpaceProblem:
 
             self.desiredState= self.TrueDesiredState
             self.times = [300]* self.desiredState.shape[1]
-        if(challengeID==5): #floating square
+        if(challengeID==SpaceEnvironments.CUBE_ROTATE): #floating square
             self.TrueDesiredState = np.zeros((12,18))
             r = 0.075
             self.startState[3,0] = -3*np.pi/4
@@ -460,12 +478,7 @@ class SpaceProblem:
 
             self.desiredState= self.TrueDesiredState
             self.times = [300]* self.desiredState.shape[1]
-        if(challengeID==6):
-
-            self.TrueDesiredState = np.zeros((12,1))
-            self.TrueDesiredState[0]=1e-6
-            self.desiredState= self.TrueDesiredState
-            self.times = [20]  
+  
     def spiralHelper(self, t):
         xyz = np.zeros((12))
         scale = 0.02
