@@ -17,17 +17,13 @@ import SplineProfile
 import TrapProfile
 from Adaptive import Adaptive
 
-ll4maOpt = True
-useSphere = True
 
-if ll4maOpt:
-    from models import multiMagModel
-    from modelOptimization import multiMagSolver
-else:
-    from deprecated.cylinderModel import cylinderSolver,cylinderModel
+from models import multiMagModel
+from modelOptimization import multiMagSolver
 
 if __name__ == '__main__':
 
+    useSphere = True
     cheat = False
     velNoise = False
     controlNoise = False
@@ -50,16 +46,10 @@ if __name__ == '__main__':
     object_properties_approximate = {'mass':mass[0],'MOI':mass[1],'radius':0.02, 'sigma':sigma_copper}
 
 
-    if(ll4maOpt):
-        model = multiMagModel(env.magnets,object_properties,useSphere)
-        solverModel = multiMagModel(env.magnets,object_properties_approximate,useSphere)
-        solver = multiMagSolver(solverModel,env.trajectoryDimensions,useSphere,10)
-        
-    else:
-        model = cylinderModel(env.magnets,object_properties[radius])
-        solver = cylinderSolver(env.magnets)
-        solver.setup(model,env.trajectoryDimensions,object_properties,env.tolerances)
-    
+    model = multiMagModel(env.magnets,object_properties,useSphere)
+    solverModel = multiMagModel(env.magnets,object_properties_approximate,useSphere)
+    solver = multiMagSolver(solverModel,env.trajectoryDimensions,useSphere,10)
+
     controller = PDController(env.startState,0.005,0.000001,0.005,0.000002,0.0,0.000)
     
     simulator = discreteTimeSimulator(env.startState,dt,object_properties) #density, diamter
