@@ -20,16 +20,17 @@ from Adaptive import Adaptive
 
 from models import multiMagModel
 from modelOptimization import multiMagSolver
-
+from axisAlignedSolver import axisAlignedSolver
 if __name__ == '__main__':
 
-    useSphere = True
+    useSpecialCaseSolver = False
+    useSphere = False and not useSpecialCaseSolver 
     cheat = False
     velNoise = False
     controlNoise = False
-    runAdaptive = False
+    runAdaptive = False and useSphere
     
-    env = SpaceProblem(SpaceEnvironments.REGULATOR)
+    env = SpaceProblem(SpaceEnvironments.SPIN2)
     env.magnets = env.magnets[:]
     #env.trajectoryDimensions = 'xyz'
     physical = False
@@ -46,16 +47,21 @@ if __name__ == '__main__':
     object_properties_approximate = {'mass':mass[0],'MOI':mass[1],'radius':0.02, 'sigma':sigma_copper}
 
 
-    model = multiMagModel(env.magnets,object_properties,useSphere)
-    solverModel = multiMagModel(env.magnets,object_properties_approximate,useSphere)
-    solver = multiMagSolver(solverModel,env.trajectoryDimensions,useSphere,10)
+    model = multiMagModel(env.magnets,object_properties,useSphere) #correct object properties for simulator
+    solverModel = multiMagModel(env.magnets,object_properties_approximate,useSphere) # approximate object properties for controller
+    
+    if useSpecialCaseSolver:
+        solver = axisAlignedSolver(solverModel, env.trajectoryDimensions)
+
+    else:
+        solver = multiMagSolver(solverModel,env.trajectoryDimensions,useSphere,10)
 
     controller = PDController(env.startState,0.005,0.000001,0.005,0.000002,0.0,0.000)
+  
     
+  
     simulator = discreteTimeSimulator(env.startState,dt,object_properties) #density, diamter
     velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
-    
-
     adaptive = Adaptive(env.magnets,'all', object_properties_approximate, 25)
     
     states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=numSteps,dt=dt,cheat=cheat,runAdaptive=runAdaptive)

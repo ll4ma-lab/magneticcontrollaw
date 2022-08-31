@@ -26,6 +26,8 @@ class SpaceEnvironments(Enum):
     REGULATOR = 4
     CUBE = 5
     CUBE_ROTATE = 6
+    SPIN = 7
+    SPIN2 = 8
     
 
 class PlanarProblem:
@@ -478,7 +480,27 @@ class SpaceProblem:
 
             self.desiredState= self.TrueDesiredState
             self.times = [300]* self.desiredState.shape[1]
-  
+        
+        if(challengeID==SpaceEnvironments.SPIN): # individual axis
+            self.magnets = [self.magnets[i] for i in [4,5]]
+            self.TrueDesiredState = np.zeros((12,2))
+
+            self.TrueDesiredState[5,0] = np.pi/2
+        
+            self.desiredState= self.TrueDesiredState
+            self.times = [360]* self.desiredState.shape[1]
+            
+        if(challengeID==SpaceEnvironments.SPIN2): # individual axis
+            self.magnets = [self.magnets[i] for i in [4,5]]
+            self.TrueDesiredState = np.zeros((12,6))
+
+            self.TrueDesiredState[5,0] = np.pi/2
+            self.TrueDesiredState[3,2] = np.pi/2
+            self.TrueDesiredState[4,4] = np.pi/2
+
+            self.desiredState= self.TrueDesiredState
+            self.times = [360]* self.desiredState.shape[1]    
+        
     def spiralHelper(self, t):
         xyz = np.zeros((12))
         scale = 0.02
