@@ -6,7 +6,7 @@ Created on Mon Nov 18 15:27:35 2019
 """
 import numpy as np
 from PDController import PDController
-from discreteTimeSimulator import discreteTimeSimulator,sphereProperties,simulateExperiment
+from discreteTimeSimulator import discreteTimeSimulator,simulateExperiment
 from environments import PlanarProblem,SpaceProblem,PlanarEnvironments,SpaceEnvironments
 from se3Utils import buildTF
 import matplotlib.pyplot as plt
@@ -21,30 +21,37 @@ from Adaptive import Adaptive
 from models import multiMagModel
 from modelOptimization import multiMagSolver
 from axisAlignedSolver import axisAlignedSolver
+
+from ObjectProperties import ObjectProperties,boatProperties,sphereProperties
+
 if __name__ == '__main__':
 
     useSpecialCaseSolver = False
-    useSphere = False and not useSpecialCaseSolver 
+    useSphere = True and not useSpecialCaseSolver 
     cheat = False
     velNoise = False
     controlNoise = False
-    runAdaptive = False and useSphere
+    runAdaptive = True and useSphere
     
-    env = SpaceProblem(SpaceEnvironments.SPIN2)
+    env = SpaceProblem(SpaceEnvironments.CUBE)
     env.magnets = env.magnets[:]
     #env.trajectoryDimensions = 'xyz'
-    physical = False
 
     simTime = np.sum(env.times)
     dt = 1
-    numSteps = int(simTime/dt)
+    numSteps = 500#int(simTime/dt)
     radius = 0.02
-    mass = sphereProperties(8940,radius)
+    mass,MOI = sphereProperties(8940,radius)
     
     sigma_copper = 5.8E+07
     sigma_al = 3.77E+07
-    object_properties = {'mass':mass[0],'MOI':mass[1],'radius':radius,'sigma':sigma_copper}
-    object_properties_approximate = {'mass':mass[0],'MOI':mass[1],'radius':0.02, 'sigma':sigma_copper}
+    object_properties = ObjectProperties(mass=mass, MOI=MOI, radius=radius, sigma=sigma_copper )
+    
+    object_properties_approximate = ObjectProperties(mass=mass, MOI=MOI, radius=0.02, sigma=sigma_copper )
+    
+    boat_mass, boat_MOI = boatProperties(0.059,0.075,0.07,0.031)
+    boat_properties = ObjectProperties(mass=boat_mass, MOI=boat_MOI)
+
 
 
     model = multiMagModel(env.magnets,object_properties,useSphere) #correct object properties for simulator

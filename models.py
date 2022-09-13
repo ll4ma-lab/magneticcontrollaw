@@ -220,9 +220,9 @@ class cylinderModel():
 
     def modelEquation(self,constants,distance,dipoleStrength,p0RPower,radii=None,sigma=None):
         if(radii is None):
-            radii = self.object_properties['radius']
+            radii = self.object_properties.radius
         if(sigma is None):
-            sigma = self.object_properties['sigma']
+            sigma = self.object_properties.sigma
         #P0 has r^4 for forces and r^3 for torques
         P1 = sigma*self.mu*self.freq*radii*radii
         P2 = distance/radii

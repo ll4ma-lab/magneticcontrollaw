@@ -9,23 +9,8 @@ import time
 from se3Utils import buildSkew,repairRotMatrix
 from tqdm import tqdm
 from modelOptimization import SphereControlCommand
+from ObjectProperties import buildMassMatrix
 
-
-def buildMassMatrix(object_properties,library=np,torqueTop=True):
-    mass = object_properties['mass']
-    MOI = object_properties['MOI']
-
-    massComponent = library.eye(3) *mass
-    offDiagonal = library.zeros((3,3))
-    
-    if torqueTop:
-        top = library.vstack((MOI,offDiagonal))    
-        bottom = library.vstack((offDiagonal,massComponent))
-    else:
-        top = library.vstack((massComponent,offDiagonal))    
-        bottom = library.vstack((offDiagonal,MOI))
-    full = library.vstack((top.T,bottom.T)).T
-    return full
 
 def state_noise(state):
     
@@ -48,10 +33,6 @@ def state_noise(state):
     state = [transform,tf_inverse @ current_rotational_velocity, tf_inverse @ current_linear_velocity]
     return state
     
-    
-        
-    
-
 
 def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=10,dt=1,cheat=False,debugPrints = True,runAdaptive= False):
     state = simulator.state
@@ -70,7 +51,7 @@ def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,ada
     
     for i in iterates:
         if i == 300 and runAdaptive:
-            model.cylinderModel.object_properties['radius']*=1.5
+            model.cylinderModel.object_properties.radius *=1.5
             #arbitrarily change radius without updating mass
         desiredState = velocityProfile.getDesiredState(i*dt,state)
         desired_wrench,p,d = controller.getDesiredWrench(state,desiredState)
@@ -178,27 +159,4 @@ class discreteTimeSimulator:
         return (bodyToWorld,Ωsc,Vsc)
    # def setState(self,state):
    #     self.state = np.copy(state)
-def sphereProperties(density,radius,library=np):
-    volume = 4.0/3 * np.pi*(radius**3)
-    mass = volume * density
-    I = library.eye(3)*(2.0/5) *mass * (radius**2)
-    return mass, I
-def boatProperties(cylinder_mass,radius,cylinder_height,base_mass):
-    base_x = (1/4) * base_mass *radius*radius
-    base_y = base_x
-    base_z = (1/2)*base_mass * radius * radius
-    
-    cylinder_x = (cylinder_mass/12) * (3*(radius**2+radius**2) + cylinder_height**2)
-    cylinder_y = cylinder_x
-    cylinder_z = (cylinder_mass/2) * (radius**2+radius**2)
-    
-    bases = 2
-    cylinders = 1.5
-    mass = base_mass * bases + cylinders* cylinder_mass
-    MOI = (base_x*bases + cylinder_x*cylinders,
-           base_y*bases + cylinder_y*cylinders,
-           base_z*bases + cylinder_z*cylinders)
-    MOI = np.diag(MOI)
-    return mass,MOI
-    
     

@@ -10,7 +10,8 @@ import numpy as np
 import time
 import torch
 from models import modelCallRotatedWrench,sphereModel
-from discreteTimeSimulator import buildMassMatrix,sphereProperties,boatProperties
+from ObjectProperties import ObjectProperties,buildMassMatrix,sphereProperties
+
 from modelOptimization import buildQ
 from ll4ma_opt.problems import Problem 
 import matplotlib.pyplot as plt 
@@ -18,7 +19,7 @@ import matplotlib.pyplot as plt
 from ll4ma_opt.solvers.line_search import NewtonMethod
 def sysIDDemo(controls,magnets,positions,linearVelocity,rotationalVelocity):
 
-    optimizerParams = {'alpha':1,'ro':0.9,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-20}
+    optimizerParams = {'alpha':1,'rho':0.9,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-20}
     prob = radiusSysid(np.diag((2e5,2e5,2e5,1,1,1))) # built with M(0.04) Q M(0.04)
     optimizer = NewtonMethod(problem=prob,**optimizerParams)
     prob.updateVals(controls,magnets,positions,linearVelocity,rotationalVelocity)
@@ -29,7 +30,7 @@ def sysIDDemo(controls,magnets,positions,linearVelocity,rotationalVelocity):
 
 
 class radiusSysid(Problem): 
-    def __init__(self,weights,physical = False): 
+    def __init__(self,weights,boat = None): 
         super().__init__()
         self.singleModel = sphereModel(1)
         self.initial_solution = np.ones((3,1)) * 0.001
@@ -46,23 +47,22 @@ class radiusSysid(Problem):
         self.max_bounds[2] = self.initial_solution[2]+1e-10
 
         self.weights = torch.tensor(weights)
-        self.physical = physical
-        if(physical):
-            self.boat_mass, boat_MOI = boatProperties(0.059,0.075,0.07,0.031)
-            self.boat_MOI = torch.tensor(boat_MOI)
+        
+        self.boat = boat
         
     def updateVals(self,controls,magnets,positions,linearVelocity,rotationalVelocity):
         #remove first control and position as we dont know its acceleration
-        npControl = np.array(controls[1:]).reshape((-1,4))
-        magNums = npControl[:,0].astype(int).tolist()
+        
+        magNums = [control.mag_num for control in controls[1:]]
         chosenMagnetPose = np.array(magnets)[magNums]-positions[1:]
-    
-    
-        dipoleStrength = npControl[:,1]
-        angles = npControl[:,2:].T
+        dipoleStrength = [control.dipole_strength for control in controls[1:]]
+        angles =  np.array([(control.psi,control.xi) for control in controls[1:]]).T
+        self.n = len(controls[1:])
+        
+        
         rhos = -chosenMagnetPose.T
         dists=np.linalg.norm(chosenMagnetPose,axis=1)
-        zero = np.array([0]*npControl.shape[0])
+        zero = np.array([0]*self.n)
 
         self.dipoleStrength = torch.tensor(dipoleStrength)
         self.angles = torch.tensor(angles)
@@ -71,29 +71,28 @@ class radiusSysid(Problem):
         
         self.zero = torch.tensor(zero)
 
-        self.n = npControl.shape[0]
         
         npA = np.hstack((linearVelocity[1:,:]-linearVelocity[:-1,:],rotationalVelocity[1:,:]-rotationalVelocity[:-1,:]))        
         self.accelerations = torch.tensor(npA.T)
         
         self.materialDensity = torch.tensor(8940.0)
     def forwardAcceleration(self, x,dists,dipoleStrengths,angles,rhos,zero):
-        radii = x[0:1]
+        radius = x[0:1]
         sigma = x[1:2,0]
         boat_MOIzz = x[2:3,0]
         
-        modelVals = self.singleModel.modelCall(dists,1,radii=radii,sigma=sigma)
+        modelVals = self.singleModel.modelCall(dists,1,radii=radius,sigma=sigma)
         modelVals = [modelVal.squeeze() for modelVal in modelVals]
 
         wrenches = modelCallRotatedWrench(dipoleStrengths,angles,modelVals,rhos,library=torch,zero = zero).squeeze()
     
-        mass = sphereProperties(self.materialDensity,radii,torch)
-        objectProperties = {'mass':mass[0],'MOI':mass[1],'radius':radii}
-        if self.physical:
-            objectProperties['mass'] += self.boat_mass
-            objectProperties['MOI'] = objectProperties['MOI'] + self.boat_MOI
+        mass,MOI = sphereProperties(self.materialDensity,radius,torch)
+        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma)        
+        
+        if self.boat:
+            object_properties = object_properties+self.boat
             
-        M = buildMassMatrix(objectProperties,torch,False)
+        M = buildMassMatrix(object_properties,torch,False)
         
         return torch.linalg.inv(M)@ wrenches.T
     

@@ -165,7 +165,6 @@ def animate2DPath(environment,positions,transforms,controls,savePlotSteps = [],n
     
     savePlotSteps = savePlotSteps.copy()
 
-    print('new2')
     def update_lines(num, positions, transforms, controls, traj_plot, scatter,lines,cubes):
         #num = num + states.shape[1]/2
         updateAxesWithTF(transforms[num], lines)
@@ -203,7 +202,6 @@ def animate2DPath(environment,positions,transforms,controls,savePlotSteps = [],n
     
     ax.view_init(elev=environment.el, azim=environment.az)
     plt.show()
-    print('newer dpi')
     if(save):
         line_ani.save('videos/animation.mp4', writer='ffmpeg', fps=20,dpi=400)
     return line_ani
