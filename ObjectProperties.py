@@ -20,7 +20,7 @@ class ObjectProperties:
     def __add__(self,o):
         mass = self.mass + o.mass
         MOI = self.MOI + o.MOI
-        radius = self.radius + o.MOI
+        radius = self.radius + o.radius
         sigma = self.sigma + o.sigma
         return ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma)
     def torch(self):
