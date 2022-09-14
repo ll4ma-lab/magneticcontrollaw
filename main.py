@@ -23,6 +23,7 @@ from modelOptimization import multiMagSolver
 from axisAlignedSolver import axisAlignedSolver
 
 from ObjectProperties import ObjectProperties,boatProperties,sphereProperties
+from sysIDoptimization import radiusSysid,SeperateRadiusSysid,MassSysID
 
 if __name__ == '__main__':
 
@@ -68,7 +69,7 @@ if __name__ == '__main__':
   
     simulator = discreteTimeSimulator(env.startState,dt,object_properties+boat_properties) 
     velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
-    adaptive = Adaptive(env.magnets,'all', object_properties_approximate, 25,boat_properties)
+    adaptive = Adaptive(env.magnets,'all', object_properties_approximate, 25,radiusSysid,boat_properties)
     
     states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=numSteps,dt=dt,cheat=cheat,runAdaptive=runAdaptive)
     
