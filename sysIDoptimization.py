@@ -19,12 +19,17 @@ import matplotlib.pyplot as plt
 from ll4ma_opt.solvers.line_search import NewtonMethod
 
 class radiusSysid(Problem): 
-    def __init__(self,weights,boat = None): 
+    def __init__(self,weights,object_properties=None,boat = None): 
         super().__init__()
+        
+        
         self.singleModel = sphereModel(1)
-        self.initial_solution = np.ones((3,1)) * 0.001
-        self.initial_solution[1] = 5.8E+07
-        self.initial_solution[2] = 0.00067
+        if object_properties:
+            self.initial_solution = np.array([object_properties.radius,object_properties.sigma,1]).reshape((-1,1))
+        else:
+            self.initial_solution = np.ones((3,1)) * 0.001
+            self.initial_solution[1] = 5.8E+07
+            self.initial_solution[2] = 0.00067
 
         self.min_bounds[0] = 1e-2
         self.max_bounds[0] = 1e-1
@@ -32,8 +37,6 @@ class radiusSysid(Problem):
         self.min_bounds[1] = 2.5e6
         self.max_bounds[1] = 10e8
         
-        self.min_bounds[2] = self.initial_solution[2]-1e-10
-        self.max_bounds[2] = self.initial_solution[2]+1e-10
 
         self.weights = torch.tensor(weights)
         if boat:
@@ -126,9 +129,13 @@ class radiusSysid(Problem):
         return rs,sigmas,possibleCosts
 
 class SeperateRadiusSysid(radiusSysid):
-    def __init__(self,weights,boat = None): 
+    def __init__(self,weights,object_properties,boat = None): 
         super().__init__(weights=weights,boat=boat)
-        self.initial_solution[2] = 0.1
+        
+        if object_properties:
+            self.initial_solution = np.array([object_properties.radius,object_properties.sigma,1]).reshape((-1,1))
+        else:
+            self.initial_solution[2] = 0.1
 
         #radius and sigma keep the same
         
@@ -146,15 +153,19 @@ class SeperateRadiusSysid(radiusSysid):
         
 
 class MassSysID(radiusSysid):
-    def __init__(self,weights,boat = None): 
+    def __init__(self,weights,object_properties,boat = None): 
         super().__init__(weights=weights,boat=boat)
-        self.initial_solution = np.array([self.initial_solution[0,0],
-                                          self.initial_solution[1,0],
-                                          1.0, #mass
-                                          1.0, #Ixx
-                                          1.0, #Iyy
-                                          1.0  #Izz
-                                          ]).reshape((-1,1))
+        
+        if object_properties:
+            self.initial_solution = np.array([object_properties.radius,object_properties.sigma,1]).reshape((-1,1))
+        else:
+            self.initial_solution = np.array([self.initial_solution[0,0],
+                                              self.initial_solution[1,0],
+                                              1.0, #mass
+                                              1.0, #Ixx
+                                              1.0, #Iyy
+                                              1.0  #Izz
+                                              ]).reshape((-1,1))
         
         #radius and sigma keep the same
         self.min_bounds[2] = 1e-3

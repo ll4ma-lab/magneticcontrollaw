@@ -17,6 +17,7 @@ import torch.multiprocessing  as multiprocessing
 from ll4ma_opt.solvers.line_search import NewtonMethod,GaussNewtonMethod,GradientDescent
 
 from models import rotZ,modelCallRotatedWrench,getOmniFrame,CylinderControlCommand,SphereControlCommand
+from ObjectProperties import buildMassMatrix
 
 sphere_parameters = {'alpha':1.0,'rho':0.5,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-10}
 cylinder_parameters = {'alpha':1.0,'rho':0.5,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-15}
@@ -30,7 +31,11 @@ def cylinder_optimize(prob):
     result = solver.optimize(prob.initial_solution,max_iterations=25)  
     return result
 
+def build_acceleration_Q(stateCostString):
+    return buildQ(stateCostString,2e3,1)
 
+def build_force_Q(stateCostString):
+    return buildQ(stateCostString)
 
 def buildQ(stateCostString,linear_cost = 1.0, orientation_cost = 200):
     letterOptions = ["x","y","z","r","p","t"]
@@ -54,7 +59,7 @@ class cylinderOptimization(Problem):
         self.max_bounds[0] = 40
         self.min_bounds[0] = 0.1
         
-        self.desiredWrench = torch.zeros((6,1))
+        self.desired = torch.zeros((6,1))
         self.unitStrengthWrench = torch.zeros((6,1))
         self.frame = torch.eye(3)
         self.rhoMode = False
@@ -64,7 +69,7 @@ class cylinderOptimization(Problem):
         return 2
     def pointingModelLoss(self,x,frame):
         selectedWrench = x[0]**2 * torch.cat((frame@self.unitStrengthWrench[:3],frame@self.unitStrengthWrench[3:]))
-        error = 1e13*(self.desiredWrench - selectedWrench)
+        error = 1e13*(self.desired - selectedWrench)
         cost = error.t()@self.weights@error
         return cost    
     def rhoLoss(self,x):
@@ -84,7 +89,7 @@ class sphericalOptimization(Problem):
         self.min_bounds[0] = 0.1
         self.max_bounds[0] = 40
         
-        self.desiredWrench = torch.zeros((6,1))
+        self.desired = torch.zeros((6,1))
 
         self.weights = torch.tensor(weights)
         
@@ -100,41 +105,70 @@ class sphericalOptimization(Problem):
     
     def size(self):
         return 3
-    
+    def get_wrench(self,x):
+        return  modelCallRotatedWrench(x[0],x[1:],(self.frho0,self.trho0,self.frho90,self.fphi90,self.ttheta90),self.rho,library=torch,zero = self.zero)
     def tensor_cost(self, x): 
-        selectedWrench = modelCallRotatedWrench(x[0],x[1:],(self.frho0,self.trho0,self.frho90,self.fphi90,self.ttheta90),self.rho,library=torch,zero = self.zero)
-        error = 1e10*(self.desiredWrench - selectedWrench)[0]
+        selectedWrench = self.get_wrench(x)
+        error = 1e10*(self.desired - selectedWrench)[0]
         cost = error.t()@self.weights@error
         return cost
     def tensor_error(self, x): 
-        selectedWrench = modelCallRotatedWrench(x[0],x[1:],(self.frho0,self.trho0,self.frho90,self.fphi90,self.ttheta90),self.rho,library=torch,zero = self.zero)
-        error = 1e10*(self.desiredWrench - selectedWrench)[0]
+        selectedWrench = self.get_wrench(x)
+        error = 1e5*(self.desired - selectedWrench)[0]
         weighted_error = torch.sqrt(self.weights) @ error
         return weighted_error
     
     def visualize_optimization(self,iterates): 
         plt.plot(iterates[:,0,0],iterates[:,1,0]) 
 
+class sphericalAccelOptimization(sphericalOptimization):
+    def __init__(self,weights): 
+        super().__init__(weights)
+        self.mass_matrix_inv = torch.eye(6)
+    def tensor_cost(self, x): 
+        selectedWrench = self.get_wrench(x)
+        error = 1e10*(self.desired - self.mass_matrix_inv @selectedWrench)[0]
+        cost = error.t()@self.weights@error
+        return cost
+    def tensor_error(self, x): 
+        selectedWrench = self.get_wrench(x)
+        error = 1e5*(self.desired - self.mass_matrix_inv @selectedWrench)[0]
+        weighted_error = torch.sqrt(self.weights) @ error
+        return weighted_error
 
 def getCost(iterate):
     return iterate['problem'].cost(iterate['variables'])
 
 
 class multiMagSolver():
-    def __init__(self,model,stateCostString,sphereModel = False,numProcesses=8):
+    def __init__(self,model,stateCostString,object_properties,sphereModel = False,inverse_dynamics = False,boat=None,numProcesses=8):
         self.model = model
         self.problems = []
         self.time = 0
         self.useSphereModel = sphereModel
+        self.boat = boat
+        self.inverse_dynamics = inverse_dynamics
+        self.object_properties = object_properties
+        
         self.costs = []
         self.selected_optimizer = NewtonMethod
         self.cost_time = 0
         self.gradient_time = 0
         self.hessian_time = 0
-        Qweights = buildQ(stateCostString)
+        
+        if inverse_dynamics:    
+            Qweights = build_acceleration_Q(stateCostString)
+        else:
+            Qweights = build_force_Q(stateCostString)
+        print('controller weights ',Qweights)
+
+        
         if(sphereModel):
             for i in range(2*len(model.magnets)):
-                prob = sphericalOptimization(Qweights)
+                if inverse_dynamics:
+                    prob = sphericalAccelOptimization(Qweights)
+                else:
+                    prob = sphericalOptimization(Qweights)
                 if i%2 == 0:
                     prob.initial_solution = np.array([20,0,0]).reshape((3,1))
                 if i%2 == 1:
@@ -155,8 +189,17 @@ class multiMagSolver():
             self.modifySphereProblems(desiredWrench,position)
         else: 
             self.modifyCylinderProblems(desiredWrench, position)
-    def modifySphereProblems(self,desiredWrench,position):
+    def modifySphereProblems(self,desired,position):
         relativePoses = np.array(self.model.magnets) - np.transpose(position)
+        
+        
+        if self.inverse_dynamics:
+            object_properties = self.object_properties
+            if self.boat:
+                object_properties = object_properties + self.boat
+            mass_matrix = torch.tensor(buildMassMatrix(object_properties,np,False))
+            mass_matrix_inv = torch.linalg.inv(mass_matrix)
+        
         for i in range(len(self.model.magnets)):
             chosenMagnetPose = relativePoses[i]
             rho = (-1*chosenMagnetPose).reshape((3,1))
@@ -169,10 +212,13 @@ class multiMagSolver():
                 self.problems[i*2+j].fphi90 = torch.tensor(fphi90)
                 self.problems[i*2+j].ttheta90 = torch.tensor(ttheta90)
                 
-                self.problems[i*2+j].desiredWrench = torch.Tensor(desiredWrench)
+                self.problems[i*2+j].desired = torch.Tensor(desired)
                 self.problems[i*2+j].rho = torch.tensor(rho)
+                
+                if self.inverse_dynamics:
+                    self.problems[i*2+j].mass_matrix_inv = mass_matrix_inv
 
-    def modifyCylinderProblems(self,desiredWrench,position):
+    def modifyCylinderProblems(self,desired,position):
         relativePoses = (np.array(self.model.magnets) - np.transpose(position)).tolist()
 
         for i in range(len(self.model.magnets)):
@@ -182,7 +228,7 @@ class multiMagSolver():
             wrenches = self.model.cylinderModel.modelCall(dist,1) #1 dipole strength
             for j in range(3):
                 self.problems[i*3+j].frame = torch.Tensor(omniFrame)
-                self.problems[i*3+j].desiredWrench = torch.Tensor(desiredWrench)
+                self.problems[i*3+j].desired = torch.Tensor(desired)
                 self.problems[i*3+j].unitStrengthWrench = torch.tensor(wrenches[j])
     def solveWrenchCylinder(self,position,desiredWrench):
         s = time.time()

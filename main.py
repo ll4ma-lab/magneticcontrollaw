@@ -30,9 +30,14 @@ if __name__ == '__main__':
     useSpecialCaseSolver = False
     useSphere = True and not useSpecialCaseSolver 
     cheat = False
+    runAdaptive = False and useSphere
+    inverseDynamics = False and useSphere
+    
+    simulate_boat = False
+    controllerKnowsBoat = False and simulate_boat
+
     velNoise = False
     controlNoise = False
-    runAdaptive = True and useSphere
     
     env = SpaceProblem(SpaceEnvironments.REGULATOR)
     env.magnets = env.magnets[:]
@@ -41,17 +46,33 @@ if __name__ == '__main__':
     simTime = np.sum(env.times)
     dt = 1
     numSteps = int(simTime/dt)
-    radius = 0.02
-    mass,MOI = sphereProperties(8940,radius)
+
     
     sigma_copper = 5.8E+07
     sigma_al = 3.77E+07
+    
+    #simulator object
+    radius = 0.02
+    mass,MOI = sphereProperties(8940,radius)
     object_properties = ObjectProperties(mass=mass, MOI=MOI, radius=radius, sigma=sigma_copper )
     
-    object_properties_approximate = ObjectProperties(mass=mass, MOI=MOI, radius=0.02, sigma=sigma_copper )
+    #controller object
+    initial_radius_guess = 0.02
+    mass_initial,MOI_initial = sphereProperties(8940,radius)
+    object_properties_approximate = ObjectProperties(mass=mass_initial, MOI=MOI_initial, radius=initial_radius_guess, sigma=sigma_copper )
     
+    #boat object
     boat_mass, boat_MOI = boatProperties(0.059,0.075,0.07,0.031)
     boat_properties = ObjectProperties(mass=boat_mass, MOI=boat_MOI)
+    
+    if simulate_boat:
+        object_properties = object_properties + boat_properties
+    
+    if controllerKnowsBoat:
+        controller_boat = boat_properties
+    else: 
+        controller_boat = None
+
 
 
 
@@ -61,13 +82,22 @@ if __name__ == '__main__':
     if useSpecialCaseSolver:
         solver = axisAlignedSolver(solverModel, env.trajectoryDimensions)
     else:
-        solver = multiMagSolver(solverModel,env.trajectoryDimensions,useSphere,10)
-
-    controller = PDController(env.startState,0.005,0.000001,0.005,0.000002,0.0,0.000)
+        solver = multiMagSolver(model=solverModel,
+                                stateCostString=env.trajectoryDimensions,
+                                object_properties=object_properties_approximate,
+                                sphereModel=useSphere,
+                                inverse_dynamics=inverseDynamics,
+                                boat=boat_properties,
+                                numProcesses=10)
+    
+    if inverseDynamics:
+        controller = PDController(env.startState,0.017,0.021,0.017,0.042,0.0,0.000)
+    else:
+        controller = PDController(env.startState,0.005,0.000001,0.005,0.000002,0.0,0.000)
   
     
   
-    simulator = discreteTimeSimulator(env.startState,dt,object_properties+boat_properties) 
+    simulator = discreteTimeSimulator(env.startState,dt,object_properties) 
     velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
     adaptive = Adaptive(env.magnets,'all', object_properties_approximate, 25,radiusSysid,boat_properties)
     

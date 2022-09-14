@@ -7,20 +7,18 @@ Created on Tue Dec 14 13:02:06 2021
 """
 import sysIDoptimization
 from ll4ma_opt.solvers import Momentum
-from modelOptimization import buildQ
+from modelOptimization import build_acceleration_Q
 import numpy as np
 import matplotlib.pyplot as plt
 class Adaptive:
     def __init__(self, magnets, dimensions, object_properties, batch_size = 1,internal_sysID = sysIDoptimization.radiusSysid,boat=False):
         
-        self.magnets = magnets
+        self.magnets = magnets       
         self.object_properties = object_properties
-        
-        
-        Q = buildQ(dimensions,2e3,1e0)
-        print(Q)
-        self.problem = internal_sysID(Q,boat=boat)
-        
+        Q = build_acceleration_Q(dimensions)
+        print('adaptive weights ',Q)
+        self.problem = internal_sysID(Q,object_properties,boat=boat)
+        self.current_solution = self.problem.initial_solution
         step = 1e-12/ batch_size
         optimizerParams = {'alpha':step,'rho':0.9,'min_alpha': step/2} 
         
@@ -49,9 +47,8 @@ class Adaptive:
         self.add_state(state)
         self.controls.append(control)
         
-        current_solution = np.array((self.object_properties.radius,self.object_properties.sigma,1)).reshape(((3,1)))
         if(len(self.parameters) == 0):
-            self.parameters.append(current_solution)
+            self.parameters.append(self.current_solution)
         
         
         batch_size = min(self.batch_size,len(self.controls)-1)
@@ -70,11 +67,12 @@ class Adaptive:
                                 selected_linear_velocities,
                                 selected_rotation_velocities)
         
-        result = self.optimizer.optimize(current_solution,max_iterations=1)
+        result = self.optimizer.optimize(self.current_solution,max_iterations=1)
+        self.current_solution = result.solution
+        self.parameters.append(self.current_solution)
+
         
         updated_properties = self.problem.get_object_properties(result.solution,np)
-        self.parameters.append(result.solution)
-
         self.object_properties.radius = updated_properties.radius
         self.object_properties.sigma = updated_properties.sigma
         self.object_properties.mass = updated_properties.mass
