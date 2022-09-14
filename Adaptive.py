@@ -11,7 +11,7 @@ from modelOptimization import buildQ
 import numpy as np
 import matplotlib.pyplot as plt
 class Adaptive:
-    def __init__(self, magnets, dimensions, object_properties, batch_size = 1,boat=False):
+    def __init__(self, magnets, dimensions, object_properties, batch_size = 1,internal_sysID = sysIDoptimization.radiusSysid,boat=False):
         
         self.magnets = magnets
         self.object_properties = object_properties
@@ -19,7 +19,7 @@ class Adaptive:
         
         Q = buildQ(dimensions,2e3,1e0)
         print(Q)
-        self.problem = sysIDoptimization.radiusSysid(Q,boat=boat)
+        self.problem = internal_sysID(Q,boat=boat)
         
         step = 1e-12/ batch_size
         optimizerParams = {'alpha':step,'rho':0.9,'min_alpha': step/2} 
@@ -70,13 +70,17 @@ class Adaptive:
                                 selected_linear_velocities,
                                 selected_rotation_velocities)
         
+        result = self.optimizer.optimize(current_solution,max_iterations=1)
+        
+        updated_properties = self.problem.get_object_properties(result.solution,np)
+        self.parameters.append(result.solution)
+
+        self.object_properties.radius = updated_properties.radius
+        self.object_properties.sigma = updated_properties.sigma
+        self.object_properties.mass = updated_properties.mass
+        self.object_properties.MOI = updated_properties.MOI
 
         
-        result = self.optimizer.optimize(current_solution,max_iterations=1) 
-        self.parameters.append(result.solution)
-        print(result.solution)
-        self.object_properties.radius = result.solution[0,0]
-        self.object_properties.sigma = result.solution[1,0]
     def plot(self,true_vector):
         parameters = np.stack(self.parameters)
         fig,axs = plt.subplots(3,1)

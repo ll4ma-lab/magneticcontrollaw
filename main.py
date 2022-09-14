@@ -33,13 +33,13 @@ if __name__ == '__main__':
     controlNoise = False
     runAdaptive = True and useSphere
     
-    env = SpaceProblem(SpaceEnvironments.CUBE)
+    env = SpaceProblem(SpaceEnvironments.REGULATOR)
     env.magnets = env.magnets[:]
     #env.trajectoryDimensions = 'xyz'
 
     simTime = np.sum(env.times)
     dt = 1
-    numSteps = 500#int(simTime/dt)
+    numSteps = int(simTime/dt)
     radius = 0.02
     mass,MOI = sphereProperties(8940,radius)
     
@@ -59,7 +59,6 @@ if __name__ == '__main__':
     
     if useSpecialCaseSolver:
         solver = axisAlignedSolver(solverModel, env.trajectoryDimensions)
-
     else:
         solver = multiMagSolver(solverModel,env.trajectoryDimensions,useSphere,10)
 
@@ -67,9 +66,9 @@ if __name__ == '__main__':
   
     
   
-    simulator = discreteTimeSimulator(env.startState,dt,object_properties) #density, diamter
+    simulator = discreteTimeSimulator(env.startState,dt,object_properties+boat_properties) 
     velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
-    adaptive = Adaptive(env.magnets,'all', object_properties_approximate, 25)
+    adaptive = Adaptive(env.magnets,'all', object_properties_approximate, 25,boat_properties)
     
     states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=numSteps,dt=dt,cheat=cheat,runAdaptive=runAdaptive)
     

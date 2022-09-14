@@ -17,17 +17,6 @@ from ll4ma_opt.problems import Problem
 import matplotlib.pyplot as plt 
 
 from ll4ma_opt.solvers.line_search import NewtonMethod
-def sysIDDemo(controls,magnets,positions,linearVelocity,rotationalVelocity):
-
-    optimizerParams = {'alpha':1,'rho':0.9,'c1':1e-9,'FP_PRECISION': 1e-5,'min_alpha': 1e-20}
-    prob = radiusSysid(np.diag((2e5,2e5,2e5,1,1,1))) # built with M(0.04) Q M(0.04)
-    optimizer = NewtonMethod(problem=prob,**optimizerParams)
-    prob.updateVals(controls,magnets,positions,linearVelocity,rotationalVelocity)
-    result = optimizer.optimize(prob.initial_solution,max_iterations=25)
-    prob.visualize_optimization(result.iterates)
-    print(result.solution)
-
-
 
 class radiusSysid(Problem): 
     def __init__(self,weights,boat = None): 
@@ -47,8 +36,12 @@ class radiusSysid(Problem):
         self.max_bounds[2] = self.initial_solution[2]+1e-10
 
         self.weights = torch.tensor(weights)
+        if boat:
+            self.boat = boat.torch()
+        else: 
+            self.boat = boat
         
-        self.boat = boat
+        
         
     def updateVals(self,controls,magnets,positions,linearVelocity,rotationalVelocity):
         #remove first control and position as we dont know its acceleration
@@ -76,32 +69,36 @@ class radiusSysid(Problem):
         self.accelerations = torch.tensor(npA.T)
         
         self.materialDensity = torch.tensor(8940.0)
-    def forwardAcceleration(self, x,dists,dipoleStrengths,angles,rhos,zero):
-        radius = x[0:1]
-        sigma = x[1:2,0]
-        boat_MOIzz = x[2:3,0]
+    def forward_acceleration(self, object_properties,dists,dipoleStrengths,angles,rhos,zero):
         
-        modelVals = self.singleModel.modelCall(dists,1,radii=radius,sigma=sigma)
+        mass_matrix = self.construct_mass_matrix(object_properties,torch)
+        modelVals = self.singleModel.modelCall(dists,1,radii=object_properties.radius,sigma=object_properties.sigma)
         modelVals = [modelVal.squeeze() for modelVal in modelVals]
-
-        wrenches = modelCallRotatedWrench(dipoleStrengths,angles,modelVals,rhos,library=torch,zero = zero).squeeze()
+        wrenches = modelCallRotatedWrench(dipoleStrengths,angles,modelVals,rhos,library=torch,zero = zero).squeeze()     
+        return torch.linalg.inv(mass_matrix)@ wrenches.T
     
-        mass,MOI = sphereProperties(self.materialDensity,radius,torch)
-        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma)        
-        
+    def get_object_properties(self, x, library=np):
+        radius = x[0,0]
+        sigma = x[1,0]
+        mass,MOI = sphereProperties(self.materialDensity,radius,library)
+        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma)
+        return object_properties
+    
+    
+    def construct_mass_matrix(self, object_properties, library=np):
         if self.boat:
             object_properties = object_properties+self.boat
-            
-        M = buildMassMatrix(object_properties,torch,False)
-        
-        return torch.linalg.inv(M)@ wrenches.T
+        M = buildMassMatrix(object_properties,library,False)
+        return M
     
     def size(self):
         return 3
     
     def tensor_cost(self, x):
 
-        modeledAccelerations = self.forwardAcceleration(x,self.dists,self.dipoleStrength,self.angles,self.rhos,self.zero)
+        object_properties = self.get_object_properties(x,torch)
+
+        modeledAccelerations = self.forward_acceleration(object_properties,self.dists,self.dipoleStrength,self.angles,self.rhos,self.zero)
         error = (self.accelerations - modeledAccelerations)*1e6 
         
         
@@ -128,3 +125,69 @@ class radiusSysid(Problem):
         print('best brute force ',rs[np.argmin(possibleCosts)],sigmas[np.argmin(possibleCosts)],np.min(possibleCosts))
         return rs,sigmas,possibleCosts
 
+class SeperateRadiusSysid(radiusSysid):
+    def __init__(self,weights,boat = None): 
+        super().__init__(weights=weights,boat=boat)
+        self.initial_solution[2] = 0.1
+
+        #radius and sigma keep the same
+        
+        #second radius for mass and MOI
+        self.min_bounds[2] = 1e-5
+        self.max_bounds[2] = 1e-1
+    def get_object_properties(self, x, library=np):
+        radius = x[0,0]
+        sigma = x[1,0]
+
+        mass_radius = x[2:3,0]
+        mass,MOI = sphereProperties(self.materialDensity,mass_radius,library)
+        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma)
+        return object_properties
+        
+
+class MassSysID(radiusSysid):
+    def __init__(self,weights,boat = None): 
+        super().__init__(weights=weights,boat=boat)
+        self.initial_solution = np.array([self.initial_solution[0,0],
+                                          self.initial_solution[1,0],
+                                          1.0, #mass
+                                          1.0, #Ixx
+                                          1.0, #Iyy
+                                          1.0  #Izz
+                                          ]).reshape((-1,1))
+        
+        #radius and sigma keep the same
+        self.min_bounds[2] = 1e-3
+        self.max_bounds[2] = 2
+        
+        self.min_bounds[3] = 1e-5 #mass
+        self.min_bounds[3:] = 1e-10 #MOI
+    def size(self):
+        return 6
+    
+    def get_object_properties(self, x, library=np):
+        radius = x[0,0]
+        sigma = x[1,0]
+        mass = x[2,0]
+        MOI = torch.diag(x[3:,0])
+        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma)
+        
+        return object_properties
+    def visualize_optimization(self,iterates): 
+        fig,axs = plt.subplots(self.size(),1)
+            
+        for i in range(self.size()):
+            axs[i].plot(iterates[:,i,0],'r')
+ 
+    
+    
+        
+def sysIDDemo(controls,magnets,positions,linearVelocity,rotationalVelocity,sysID_type = radiusSysid, boat=None):
+
+    optimizerParams = {'alpha':1,'rho':0.9,'c1':1e-9,'FP_PRECISION': 1e-8,'min_alpha': 1e-20}
+    prob = sysID_type(np.diag((2e3,2e3,2e3,1,1,1)),boat) # built with M(0.04) Q M(0.04)
+    optimizer = NewtonMethod(problem=prob,**optimizerParams)
+    prob.updateVals(controls,magnets,positions,linearVelocity,rotationalVelocity)
+    result = optimizer.optimize(prob.initial_solution,max_iterations=50)
+    prob.visualize_optimization(result.iterates)
+    return result

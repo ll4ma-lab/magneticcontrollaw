@@ -14,13 +14,13 @@ from dataclasses import dataclass
 class CylinderControlCommand:
     mag_num: int = 0
     model_num: int = 0
-    dipole_strength: float = 0
+    dipole_strength: float = 0.0
     theta: float = 0
 
 @dataclass 
 class SphereControlCommand:
     mag_num: int = 0
-    dipole_strength: float = 0
+    dipole_strength: float = 0.0
     psi: float = 0
     xi: float = 0
 
