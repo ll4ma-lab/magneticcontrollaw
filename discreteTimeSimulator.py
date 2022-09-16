@@ -34,7 +34,7 @@ def state_noise(state):
     return state
     
 
-def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=10,dt=1,cheat=False,debugPrints = True,runAdaptive= False):
+def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=10,dt=1,cheat=False,debugPrints = True,runAdaptive= False, inverse_dynamics=False):
     state = simulator.state
     states = []
     wrenches = []
@@ -50,8 +50,8 @@ def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,ada
         iterates = tqdm(iterates)
     
     for i in iterates:
-        if i == 300 and runAdaptive:
-            model.cylinderModel.object_properties.radius *=1.5
+        #if i == 300 and runAdaptive:
+        #    model.cylinderModel.object_properties.radius *=1.5
             #arbitrarily change radius without updating mass
         desiredState = velocityProfile.getDesiredState(i*dt,state)
         desired_wrench,p,d = controller.getDesiredWrench(state,desiredState)
@@ -59,8 +59,20 @@ def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,ada
         desiredStates.append(desiredState)
         desiredWrenchs.append(desired_wrench)
         if(cheat):
-            trueWrench = desired_wrench
-            control = SphereControlCommand()
+
+            if inverse_dynamics:
+                inverted_accel = np.zeros(desired_wrench.shape)
+                inverted_accel[:3] = desired_wrench[3:]
+                inverted_accel[3:] = desired_wrench[:3]
+                inverted_wrench = simulator.Isc @ inverted_accel
+                
+                trueWrench = np.zeros(inverted_wrench.shape)
+                trueWrench[:3] = inverted_wrench[3:]
+                trueWrench[3:] = inverted_wrench[:3]
+            else:
+                trueWrench = desired_wrench
+                control = SphereControlCommand()
+
         else:
             control =  solver.solveWrench(state[0][:3,3],desired_wrench)
             trueWrench = model.forwardPass(state[0][:3,3],control)

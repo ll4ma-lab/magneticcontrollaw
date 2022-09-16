@@ -31,7 +31,7 @@ if __name__ == '__main__':
     useSphere = True and not useSpecialCaseSolver 
     cheat = False
     runAdaptive = False and useSphere
-    inverseDynamics = False and useSphere
+    inverseDynamics = True and useSphere and not cheat
     
     simulate_boat = False
     controllerKnowsBoat = False and simulate_boat
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     velNoise = False
     controlNoise = False
     
-    env = SpaceProblem(SpaceEnvironments.REGULATOR)
+    env = SpaceProblem(SpaceEnvironments.CUBE)
     env.magnets = env.magnets[:]
     #env.trajectoryDimensions = 'xyz'
 
@@ -57,13 +57,15 @@ if __name__ == '__main__':
     object_properties = ObjectProperties(mass=mass, MOI=MOI, radius=radius, sigma=sigma_copper )
     
     #controller object
-    initial_radius_guess = 0.02
+    initial_radius_guess = 0.015
     mass_initial,MOI_initial = sphereProperties(8940,radius)
     object_properties_approximate = ObjectProperties(mass=mass_initial, MOI=MOI_initial, radius=initial_radius_guess, sigma=sigma_copper )
     
     #boat object
     boat_mass, boat_MOI = boatProperties(0.059,0.075,0.07,0.031)
     boat_properties = ObjectProperties(mass=boat_mass, MOI=boat_MOI)
+    
+    adaptive_model = MassSysID
     
     if simulate_boat:
         object_properties = object_properties + boat_properties
@@ -72,7 +74,6 @@ if __name__ == '__main__':
         controller_boat = boat_properties
     else: 
         controller_boat = None
-
 
 
 
@@ -87,21 +88,18 @@ if __name__ == '__main__':
                                 object_properties=object_properties_approximate,
                                 sphereModel=useSphere,
                                 inverse_dynamics=inverseDynamics,
-                                boat=boat_properties,
+                                boat=controller_boat,
                                 numProcesses=10)
     
     if inverseDynamics:
-        controller = PDController(env.startState,0.017,0.021,0.017,0.042,0.0,0.000)
+        controller = PDController(env.startState,0.02,0.004,0.02,0.004,0,0)
     else:
         controller = PDController(env.startState,0.005,0.000001,0.005,0.000002,0.0,0.000)
-  
-    
-  
     simulator = discreteTimeSimulator(env.startState,dt,object_properties) 
     velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
-    adaptive = Adaptive(env.magnets,'all', object_properties_approximate, 25,radiusSysid,boat_properties)
+    adaptive = Adaptive(env.magnets,'all', object_properties_approximate, 25,adaptive_model, boat_properties)
     
-    states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=numSteps,dt=dt,cheat=cheat,runAdaptive=runAdaptive)
+    states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=numSteps,dt=dt,cheat=cheat,runAdaptive=runAdaptive,inverse_dynamics=inverseDynamics)
     
     
     print('Time spent doing forwad model ' + str(model.time))
