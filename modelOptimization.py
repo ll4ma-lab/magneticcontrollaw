@@ -32,7 +32,7 @@ def cylinder_optimize(prob):
     return result
 
 def build_acceleration_Q(stateCostString):
-    return buildQ(stateCostString,2e3,1)
+    return buildQ(stateCostString,2e4,1)
 
 def build_force_Q(stateCostString):
     return buildQ(stateCostString)
@@ -127,7 +127,7 @@ class sphericalAccelOptimization(sphericalOptimization):
         self.mass_matrix_inv = torch.eye(6)
     def tensor_cost(self, x): 
         selectedWrench = self.get_wrench(x)
-        error = 1e10*(self.desired - self.mass_matrix_inv @selectedWrench)[0]
+        error = 1e12*(self.desired - self.mass_matrix_inv @selectedWrench)[0]
         cost = error.t()@self.weights@error
         return cost
     def tensor_error(self, x): 

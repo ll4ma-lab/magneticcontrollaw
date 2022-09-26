@@ -34,18 +34,19 @@ if __name__ == '__main__':
     inverseDynamics = True and useSphere and not cheat
     
     simulate_boat = False
-    controllerKnowsBoat = False and simulate_boat
+
+    controllerKnowsBoat = True and simulate_boat
 
     velNoise = False
     controlNoise = False
     
-    env = SpaceProblem(SpaceEnvironments.CUBE)
+    env = SpaceProblem(SpaceEnvironments.CUBE_ROTATE)
     env.magnets = env.magnets[:]
     #env.trajectoryDimensions = 'xyz'
 
     simTime = np.sum(env.times)
     dt = 1
-    numSteps = int(simTime/dt)
+    numSteps = 800#int(simTime/dt)
 
     
     sigma_copper = 5.8E+07
@@ -92,7 +93,7 @@ if __name__ == '__main__':
                                 numProcesses=10)
     
     if inverseDynamics:
-        controller = PDController(env.startState,0.02,0.004,0.02,0.004,0,0)
+        controller = PDController(env.startState,0.06,0.004,0.06,0.004,0,0)
     else:
         controller = PDController(env.startState,0.005,0.000001,0.005,0.000002,0.0,0.000)
     simulator = discreteTimeSimulator(env.startState,dt,object_properties) 
@@ -134,6 +135,13 @@ if __name__ == '__main__':
              'Orientation Error(radians)':-np.transpose(remainingError[:,3:6,0])}
     
     visualization.plotStuff(Plots,'Error')
+    
+    
+    Plots = {'desired Position(m)':np.array(desiredStates)[:,:3].T,
+             'desired Orientation (radians)':np.array(desiredStates)[:,3:6].T}
+    
+    visualization.plotStuff(Plots,'Error')
+    
     print('Time spent doing visualization ' + str(time.time()-visStart))
     
     plt.figure()    

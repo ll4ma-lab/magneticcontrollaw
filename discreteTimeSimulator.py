@@ -10,6 +10,7 @@ from se3Utils import buildSkew,repairRotMatrix
 from tqdm import tqdm
 from modelOptimization import SphereControlCommand
 from ObjectProperties import buildMassMatrix
+from se3Utils import buildTF
 
 
 def state_noise(state):
@@ -102,20 +103,16 @@ class discreteTimeSimulator:
         self.t = timestep
         self.dt = 0.002
             
-        from scipy.spatial.transform import Rotation as R
         
-        worldToBodyRotation = R.from_euler('xyz',state[3:6,0])
-        worldToBodyR = worldToBodyRotation.as_matrix()
+        bodyToWorld = buildTF(state[:3,0],state[3:6,0])
+        
+        worldToBodyR = bodyToWorld[:3,:3].T
         
         
-        bodyToWorldR = np.transpose(worldToBodyR)
-        bodyToWorld = np.eye(4)
-        bodyToWorld[:3,:3] = bodyToWorldR
-        bodyToWorld[:3,3] = state[:3,0]
+        
 
-
-        Ωsc = np.dot(worldToBodyR,state[9:12,:])
-        Vsc = np.dot(worldToBodyR,state[6:9,:])
+        Ωsc = worldToBodyR @ state[9:12,:]
+        Vsc = worldToBodyR @ state[6:9,:]
         self.state = (bodyToWorld,Ωsc,Vsc)
 
         self.Isc = buildMassMatrix(object_properties)
