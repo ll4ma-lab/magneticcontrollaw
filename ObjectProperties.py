@@ -12,8 +12,8 @@ from dataclasses import dataclass
 
 @dataclass
 class ObjectProperties:
-    mass: float = 0
-    MOI: np.ndarray = np.zeros(3)
+    mass: float = 1
+    MOI: np.ndarray = np.eye(3)
     radius: float = 0
     sigma: float = 0
     

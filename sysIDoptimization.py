@@ -25,17 +25,15 @@ class radiusSysid(Problem):
         
         self.singleModel = sphereModel(1)
         if object_properties:
-            self.initial_solution = np.array([object_properties.radius,object_properties.sigma,1]).reshape((-1,1))
+            self.initial_solution = np.array([object_properties.radius,object_properties.sigma]).reshape((-1,1))
         else:
-            self.initial_solution = np.ones((3,1)) * 0.001
+            self.initial_solution = np.ones((2,1)) * 0.001
             self.initial_solution[1] = 5.8E+07
-            self.initial_solution[2] = 0.00067
-
         self.min_bounds[0] = 1e-2
         self.max_bounds[0] = 1e-1
 
         self.min_bounds[1] = 2.5e6
-        self.max_bounds[1] = 10e8
+        self.max_bounds[1] = 2e8
         
 
         self.weights = torch.tensor(weights)
@@ -53,6 +51,8 @@ class radiusSysid(Problem):
         chosenMagnetPose = np.array(magnets)[magNums]-positions[1:]
         dipoleStrength = [control.dipole_strength for control in controls[1:]]
         angles =  np.array([(control.psi,control.xi) for control in controls[1:]]).T
+        timesteps = np.array([control.seconds for control in controls[1:]]).reshape((-1,1))
+
         self.n = len(controls[1:])
         
         
@@ -68,7 +68,9 @@ class radiusSysid(Problem):
         self.zero = torch.tensor(zero)
 
         
-        npA = np.hstack((linearVelocity[1:,:]-linearVelocity[:-1,:],rotationalVelocity[1:,:]-rotationalVelocity[:-1,:]))        
+        deltaV = np.hstack((linearVelocity[1:,:]-linearVelocity[:-1,:],rotationalVelocity[1:,:]-rotationalVelocity[:-1,:]))    
+        npA = deltaV /timesteps
+        
         self.accelerations = torch.tensor(npA.T)
         
         self.materialDensity = torch.tensor(8940.0)
@@ -95,7 +97,7 @@ class radiusSysid(Problem):
         return M
     
     def size(self):
-        return 3
+        return 2
     
     def tensor_cost(self, x):
 
@@ -116,7 +118,7 @@ class radiusSysid(Problem):
         rs,sigmas = np.meshgrid(possible_r,possible_sigma)
         rs = rs.flatten()
         sigmas = sigmas.flatten()
-        possibleCosts = [self.cost(np.stack((rs[i],sigmas[i],1)).reshape((3,1))) for i in range(len(rs))]
+        possibleCosts = [self.cost(np.stack((rs[i],sigmas[i])).reshape((2,1))) for i in range(len(rs))]
         clip_value = 2*np.median(possibleCosts)
         possibleCosts = np.array(possibleCosts)
         possibleCosts[possibleCosts>clip_value] = clip_value
@@ -142,19 +144,44 @@ class SeperateRadiusSysid(radiusSysid):
         #second radius for mass and MOI
         self.min_bounds[2] = 1e-5
         self.max_bounds[2] = 1e-1
+    def size(self):
+        return 3
     def get_object_properties(self, x, library=np):
         radius = x[0,0]
         sigma = x[1,0]
-
-        mass_radius = x[2:3,0]
+        mass_radius = x[2,0]
         mass,MOI = sphereProperties(self.materialDensity,mass_radius,library)
         object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma)
         return object_properties
+    def visualize_optimization(self,iterates,func = np.abs): 
+        fig,axs = plt.subplots(self.size(),1)
         
+        for i in range(self.size()):
+            axs[i].plot(iterates[:,i,0],'r')
+        fig.suptitle('Iterates over time')
+        
+        fig,axs = plt.subplots(self.size(),1)
+        fig.suptitle('Cost as iterate changes')
 
-class MassSysID(radiusSysid):
+        for i in range(self.size()):
+            min_value = self.min_bounds[i]
+            max_value = self.max_bounds[i]
+            xs = np.linspace(min_value,max_value,100)
+                        
+            ys = []
+            for x in xs:
+                iterate = np.copy(iterates[-1])
+                iterate[i] = x
+                ys.append(self.cost(iterate))
+            
+            x = iterates[-1][i]
+            y = self.cost(iterates[-1])
+            axs[i].plot([x],func([y]),'r',marker='o')
+            axs[i].plot(xs,func(ys),'b')
+
+class MassSysID(SeperateRadiusSysid):
     def __init__(self,weights,object_properties=None,boat = None): 
-        super().__init__(weights=weights,boat=boat)
+        super().__init__(weights=weights,object_properties=object_properties,boat=boat)
         
         if object_properties:
             self.initial_solution = np.array([object_properties.radius,
@@ -195,28 +222,7 @@ class MassSysID(radiusSysid):
         object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma)
         
         return object_properties
-    def visualize_optimization(self,iterates): 
-        fig,axs = plt.subplots(self.size(),1)
-        
-        for i in range(self.size()):
-            axs[i].plot(iterates[:,i,0],'r')
-            
-            
-        fig,axs = plt.subplots(self.size(),1)
-            
-        for i in range(self.size()):
-            min_value = self.min_bounds[i]
-            max_value = self.max_bounds[i]
-            xs = np.linspace(min_value,max_value,100)
-                        
-            ys = []
-            for x in xs:
-                iterate = np.copy(iterates[-1])
-                iterate[i] = x
-                ys.append(self.cost(iterate))
-                
-            
-            axs[i].plot(xs,np.log(ys),'b')
+
  
     
     

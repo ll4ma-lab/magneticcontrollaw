@@ -16,6 +16,7 @@ class CylinderControlCommand:
     model_num: int = 0
     dipole_strength: float = 0.0
     theta: float = 0
+    seconds: float = 1.0
 
 @dataclass 
 class SphereControlCommand:
@@ -23,6 +24,7 @@ class SphereControlCommand:
     dipole_strength: float = 0.0
     psi: float = 0
     xi: float = 0
+    seconds: float = 1.0
 
 
 #cylinder model helper

@@ -35,7 +35,7 @@ def state_noise(state):
     return state
     
 
-def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=10,dt=1,cheat=False,debugPrints = True,runAdaptive= False, inverse_dynamics=False):
+def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,sim_time=10,cheat=False,debugPrints = True,runAdaptive= False, inverse_dynamics=False):
     state = simulator.state
     states = []
     wrenches = []
@@ -44,9 +44,10 @@ def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,ada
     controls = []
     start = time.time()
     minimizationCosts = []
+    times = []
 
 
-    iterates = range(1,numSteps+1)
+    iterates = range(1,sim_time+1)
     if(debugPrints):
         iterates = tqdm(iterates)
     
@@ -54,7 +55,7 @@ def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,ada
         #if i == 300 and runAdaptive:
         #    model.cylinderModel.object_properties.radius *=1.5
             #arbitrarily change radius without updating mass
-        desiredState = velocityProfile.getDesiredState(i*dt,state)
+        desiredState = velocityProfile.getDesiredState(simulator.simulator_time,state)
         desired_wrench,p,d = controller.getDesiredWrench(state,desiredState)
        
         desiredStates.append(desiredState)
@@ -82,12 +83,13 @@ def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,ada
             minimizationCosts.append(cost)
         wrenches.append(trueWrench)
         controls.append(control)
-       
+        times.append(simulator.simulator_time)
+
         env.problem_specific_modification(state,trueWrench)
         if runAdaptive:
             adaptive.step(state_noise(state),control)
         states.append(state)
-        state = simulator.simulate(trueWrench)
+        state = simulator.simulate(trueWrench,control.seconds)
 
     
     
@@ -99,8 +101,7 @@ def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,ada
 
 
 class discreteTimeSimulator:
-    def __init__(self,state,timestep,object_properties):
-        self.t = timestep
+    def __init__(self,state,object_properties):
         self.dt = 0.002
             
         
@@ -116,14 +117,48 @@ class discreteTimeSimulator:
         self.state = (bodyToWorld,Ωsc,Vsc)
 
         self.Isc = buildMassMatrix(object_properties)
-        self.steps = int(self.t/self.dt)
         
+        self.simulator_time = 0.0
         self.time = 0
 
-    def simulate(self,control):
-        self.state = self.forwardPass(self.state,control)
+    def simulate(self,control,seconds):
+        self.state = self.forwardPass(self.state,control,seconds)
         return self.state
-    def forwardPass(self,state,FT):
+    
+    def simulator_step(self,bodyToWorld,Ωsc,Vsc,FT,dt):
+        rotrot = np.concatenate((np.concatenate((np.transpose(bodyToWorld[:3,:3]),np.zeros((3,3))),1),np.concatenate((np.zeros((3,3)),np.transpose(bodyToWorld[:3,:3])),1)),0)
+        TF = np.zeros(FT.shape)
+        TF[:3] = FT[3:]
+        TF[3:] = FT[:3]
+        bodyTF = np.dot(rotrot,TF)
+    
+        ξsc = np.concatenate([Ωsc,Vsc])
+        ΩscX = buildSkew(Ωsc)
+        VscX = buildSkew(Vsc)
+        ξscV = np.concatenate((np.concatenate((ΩscX,Vsc),1),np.zeros((1,4))),0)
+        
+        adξ = np.concatenate((np.concatenate((ΩscX,np.zeros((3,3))),1),np.concatenate((VscX,ΩscX),1)),0)
+        adξs = np.transpose(adξ)
+        
+        
+        rightSide = np.dot(adξs,np.dot(self.Isc,ξsc)) +  bodyTF
+        
+        ξsc_dot = np.dot(np.linalg.inv(self.Isc), rightSide)
+        bodyToStrange = np.eye(4)
+        bodyToStrange[:3,:3] = bodyToWorld[:3,:3]
+        bodyToWorld_dot = np.dot(bodyToStrange,ξscV) #gsc_dot = gsc * ξscV
+    
+        bodyToWorld+= bodyToWorld_dot*dt
+        bodyToWorld = repairRotMatrix(bodyToWorld)
+
+
+        Ωsc += ξsc_dot[:3,:] * dt
+        Vsc += ξsc_dot[3:,:] * dt
+        return bodyToWorld,Ωsc,Vsc
+    
+    def forwardPass(self,state,FT,seconds):
+        
+        steps = int(seconds/self.dt)
         start = time.time()
 
         #Notation and math from https://downloads.hindawi.com/journals/ijae/2017/4034328.pdf
@@ -135,36 +170,15 @@ class discreteTimeSimulator:
         
         FT = np.reshape(FT,(6,1))
         
-        for i in range(self.steps):
-            rotrot = np.concatenate((np.concatenate((np.transpose(bodyToWorld[:3,:3]),np.zeros((3,3))),1),np.concatenate((np.zeros((3,3)),np.transpose(bodyToWorld[:3,:3])),1)),0)
-            TF = np.zeros(FT.shape)
-            TF[:3] = FT[3:]
-            TF[3:] = FT[:3]
-            bodyTF = np.dot(rotrot,TF)
+        for i in range(steps):
+            bodyToWorld,Ωsc,Vsc = self.simulator_step(bodyToWorld,Ωsc,Vsc,FT,self.dt)
         
-            ξsc = np.concatenate([Ωsc,Vsc])
-            ΩscX = buildSkew(Ωsc)
-            VscX = buildSkew(Vsc)
-            ξscV = np.concatenate((np.concatenate((ΩscX,Vsc),1),np.zeros((1,4))),0)
-            
-            adξ = np.concatenate((np.concatenate((ΩscX,np.zeros((3,3))),1),np.concatenate((VscX,ΩscX),1)),0)
-            adξs = np.transpose(adξ)
-            
-            
-            rightSide = np.dot(adξs,np.dot(self.Isc,ξsc)) +  bodyTF
-            
-            ξsc_dot = np.dot(np.linalg.inv(self.Isc), rightSide)
-            bodyToStrange = np.eye(4)
-            bodyToStrange[:3,:3] = bodyToWorld[:3,:3]
-            bodyToWorld_dot = np.dot(bodyToStrange,ξscV) #gsc_dot = gsc * ξscV
-            
-            bodyToWorld+= bodyToWorld_dot*self.dt
-            bodyToWorld = repairRotMatrix(bodyToWorld)
-
-            
-            Ωsc += ξsc_dot[:3,:] * self.dt
-            Vsc += ξsc_dot[3:,:] * self.dt
+        time_left = seconds - self.dt*steps
+        bodyToWorld,Ωsc,Vsc = self.simulator_step(bodyToWorld,Ωsc,Vsc,FT,time_left)
+        self.simulator_time+=seconds
+        
         self.time += time.time() - start
+        
         return (bodyToWorld,Ωsc,Vsc)
    # def setState(self,state):
    #     self.state = np.copy(state)

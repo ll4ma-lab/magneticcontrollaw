@@ -40,13 +40,11 @@ if __name__ == '__main__':
     velNoise = False
     controlNoise = False
     
-    env = SpaceProblem(SpaceEnvironments.CUBE_ROTATE)
+    env = SpaceProblem(SpaceEnvironments.AXIS)
     env.magnets = env.magnets[:]
     #env.trajectoryDimensions = 'xyz'
 
-    simTime = np.sum(env.times)
-    dt = 1
-    numSteps = 800#int(simTime/dt)
+    sim_time = np.sum(env.times)
 
     
     sigma_copper = 5.8E+07
@@ -93,14 +91,14 @@ if __name__ == '__main__':
                                 numProcesses=10)
     
     if inverseDynamics:
-        controller = PDController(env.startState,0.06,0.004,0.06,0.004,0,0)
+        controller = PDController(env.startState,1.2,0.004,1.2,0.004,0,0)
     else:
         controller = PDController(env.startState,0.005,0.000001,0.005,0.000002,0.0,0.000)
-    simulator = discreteTimeSimulator(env.startState,dt,object_properties) 
-    velocityProfile = SplineProfile.SplineProfile(env,simTime,env.times)
+    simulator = discreteTimeSimulator(env.startState,object_properties) 
+    velocityProfile = SplineProfile.SplineProfile(env,sim_time,env.times)
     adaptive = Adaptive(env.magnets,'all', object_properties_approximate, 25,adaptive_model, boat_properties)
     
-    states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,numSteps=numSteps,dt=dt,cheat=cheat,runAdaptive=runAdaptive,inverse_dynamics=inverseDynamics)
+    states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,sim_time = sim_time,cheat=cheat,runAdaptive=runAdaptive,inverse_dynamics=inverseDynamics)
     
     
     print('Time spent doing forwad model ' + str(model.time))
@@ -137,10 +135,10 @@ if __name__ == '__main__':
     visualization.plotStuff(Plots,'Error')
     
     
-    Plots = {'desired Position(m)':np.array(desiredStates)[:,:3].T,
-             'desired Orientation (radians)':np.array(desiredStates)[:,3:6].T}
+    Plots = {'desired Position(m)':np.array(desiredStates)[:,:3,0].T,
+             'desired Orientation (radians)':np.array(desiredStates)[:,3:6,0].T}
     
-    visualization.plotStuff(Plots,'Error')
+    visualization.plotStuff(Plots,'Desired Pose')
     
     print('Time spent doing visualization ' + str(time.time()-visStart))
     
@@ -149,4 +147,4 @@ if __name__ == '__main__':
 
     import dataloader
     from datetime import datetime
-    dataloader.save("data/sim_" + str(numSteps) + 's_' +  str(datetime.now()).replace(":","."),globals(),dir())
+    dataloader.save("data/sim_" + str(sim_time) + 's_' +  str(datetime.now()).replace(":","."),globals(),dir())
