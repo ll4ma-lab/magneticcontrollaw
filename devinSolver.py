@@ -6,7 +6,7 @@ Created on Tue Sep 27 19:35:46 2022
 """
 import numpy as np
 import time
-from models import SphereControlCommand,deconstruct_omega
+from models import SphereControlCommand,deconstruct_omega,modelCallRotatedWrench
 
 
 
@@ -28,17 +28,18 @@ class devinSolver:
 
     def calculate_duty_cycling(self,position,wrench):
         # Determine the position vectors/unit vectors/normal unit vectors    
-        p1,p2 = np.array(self.model.magnets) - np.transpose(position).tolist()
+        p1,p2 = -1*(np.array(self.model.magnets) - np.transpose(position))
+        print(p1,p2)
+        Fdes = np.copy(wrench[:3,0])
         
-        Fdes = wrench[:3,0]
-        print(p1,p2,Fdes)
+        #seemed like different coordinate system 
+        Fdes[1]*=-1
+        
+        
         if Fdes[0] < 0:
             p3 = p2;
         else:
             p3 = p1;
-            
-            
-
 
         # Determine the parrallel and perpendicular forces and the rotation about
         # the x-axis
@@ -78,11 +79,14 @@ class devinSolver:
         iphi1 = np.cross(w1hat,p1)/np.linalg.norm(np.cross(w1hat,p1))
         iphi2 = np.cross(w2hat,p2)/np.linalg.norm(np.cross(w2hat,p2))
         iphi3 = np.cross(w3hat,p3)/np.linalg.norm(np.cross(w3hat,p3))
+        
+
         iphi3b = np.cross(w3bhat,p3)/np.linalg.norm(np.cross(w3bhat,p3))
         itheta1 = np.cross(iphi1,ip1)
         itheta2 = np.cross(iphi2,ip2)
         itheta3 = np.cross(iphi3,ip3)
         itheta3b = np.cross(iphi3b,ip3)
+                
         
         # print('constnats')
         # r = self.model.object_properties.radius
@@ -144,31 +148,14 @@ class devinSolver:
         
         # print(f1_p0,t1_p0,t1_theta90,f1_phi90)
 
-        
-        
-        mag1_call = self.model.cylinderModel.modelCall(np.linalg.norm(p1),1)
-        _,_,f1_p0,_,_,t1_p0 = mag1_call[0][:,0]
-        
-        _,neg_f1_phi90,f1_p90,neg_t1_theta90,_,_ =  mag1_call[2][:,0]
-        t1_theta90 = -1 * neg_t1_theta90
-        f1_phi90 = -1 *neg_f1_phi90
 
-        mag2_call = self.model.cylinderModel.modelCall(np.linalg.norm(p2),1)
+        #can just get these values from model        
+        f1_p0,t1_p0,f1_p90,f1_phi90,t1_theta90 = self.model.sphereModel.modelCall(dist = np.linalg.norm(p1),dipole_strength = 1)
         
-        _,_,f2_p0,_,_,t2_p0 = mag2_call[0][:,0]
-        _,neg_f2_phi90,f2_p90,neg_t2_theta90,_,_ =  mag2_call[2][:,0]
-        t2_theta90 = -1 * neg_t2_theta90
-        f2_phi90 = -1 *neg_f2_phi90
+        f2_p0,t2_p0,f2_p90,f2_phi90,t2_theta90 = self.model.sphereModel.modelCall(dist = np.linalg.norm(p2),dipole_strength = 1)
 
-
-        mag3_call = self.model.cylinderModel.modelCall(np.linalg.norm(p3),1)
+        f3_p0,t3_p0,f3_p90,f3_phi90,t3_theta90 = self.model.sphereModel.modelCall(dist = np.linalg.norm(p3),dipole_strength = 1)
         
-        _,_,f3_p0,_,_,t3_p0 = mag3_call[0][:,0]
-        
-
-        _,neg_f3_phi90,f3_p90,neg_t3_theta90,_,_ =  mag3_call[2][:,0]
-        t3_theta90 = -1 * neg_t3_theta90
-        f3_phi90 = -1 *neg_f3_phi90
 
         # Calculate the Forces at theta location
         f1_p = -(f1_p90 - f1_p0)/2*np.cos(2*theta1) + (f1_p90 + f1_p0)/2
@@ -213,6 +200,20 @@ class devinSolver:
             t3b = (t3b_p*np.transpose(ip3))* self.max_dipole_strength**2
         else:
             t3b = (t3b_p*np.transpose(ip3) + t3b_theta*np.transpose(itheta3b))* self.max_dipole_strength**2
+        
+        
+        #this is identical for f1,f2,f3, not sure what f3b is supposed to be but you can figure that out and delete a lot of code
+        print('wrenches')
+        print(f1,f2,f3)
+        
+        #this function expects a numpy array of dipole strengths, psi+xi angles, the model values and the rho vector
+        mag1_wrench = modelCallRotatedWrench(np.array(self.max_dipole_strength).reshape(1),deconstruct_omega(w1hat),(f1_p0,t1_p0,f1_p90,f1_phi90,t1_theta90),p1.reshape((3,1)))
+        mag2_wrench = modelCallRotatedWrench(np.array(self.max_dipole_strength).reshape(1),deconstruct_omega(w2hat),(f2_p0,t2_p0,f2_p90,f2_phi90,t2_theta90),p2.reshape((3,1)))
+        mag3_wrench = modelCallRotatedWrench(np.array(self.max_dipole_strength).reshape(1),deconstruct_omega(w3hat),(f3_p0,t3_p0,f3_p90,f3_phi90,t3_theta90),p3.reshape((3,1)))
+        f1 = mag1_wrench[0,:3,0]
+        f2 = mag2_wrench[0,:3,0]
+        f3 = mag3_wrench[0,:3,0]
+        print(f1,f2,f3)
         
         Fyz = np.linalg.norm(f1 + f2)
         Fx = np.linalg.norm(f3)
@@ -271,28 +272,32 @@ class devinSolver:
         model_id =   self.count % (2 * len(self.model.magnets))    
         self.count += 1
         if model_id == 0:
-            _,_,w1, w2, w3, w3b, m1_set, m2_set, m3_set, m3_set, d_yz, _, d_x, _ = self.calculate_duty_cycling(position, desired_wrench)
-            print( d_yz, d_x)
+            F,T,w1, w2, w3, w3b, m1_set, m2_set, m3_set, m3_set, d_yz, _, d_x, _ = self.calculate_duty_cycling(position, desired_wrench)
+            print(m1_set, m2_set, m3_set, m3_set, d_yz, d_x)
             
             
+            #rescale everything so a magnet is on for increments of self.duty_percent of the time
             scale_factor_t1 = 1 
             scale_factor_t2 = 1 
             
-            if d_yz > 0.45 or d_x>0.45:
+            if np.isnan(d_x) or np.isnan(d_yz) or d_x==0.0 or d_yz==0.0:
+                d_x = 0 if np.isnan(d_x) else d_x
+                d_yz = 0 if np.isnan(d_yz) else d_yz
                 self.T1 = d_yz
                 self.T2 = d_x
             else:
+                #rescale smaller one down, then adjust accordingly
                 if(d_yz < d_x):
                     self.T1 = self.duty_percent*int(d_yz/self.duty_percent)
                     self.T2 = 1/2 - self.T1
-                    scale_factor_t2 = np.sqrt((d_x*self.T1)/(d_yz*self.T2))
-                    
+                    if self.T2<0.5:
+                        scale_factor_t2 = np.sqrt((d_x*self.T1)/(d_yz*self.T2))
                 else:
-                    print(d_x,self.duty_percent,d_x/self.duty_percent)
                     self.T2 = self.duty_percent*int(d_x/self.duty_percent)
                     self.T1 = 1/2 - self.T2
-                    scale_factor_t1 =  np.sqrt((d_yz*self.T2)/(d_x*self.T1))
-                    
+                    if self.T1<0.5:
+                        scale_factor_t1 =  np.sqrt((d_yz*self.T2)/(d_x*self.T1))
+                
             
             dipole_1 = m1_set * scale_factor_t1
             dipole_2 = m2_set * scale_factor_t1
@@ -303,19 +308,28 @@ class devinSolver:
             self.omegas = [w1/np.linalg.norm(w1),
                            w2/np.linalg.norm(w2),
                            w3/np.linalg.norm(w3),
-                           w3b/np.linalg.norm(w3b)]
-            print('omegas',self.omegas)
+                           w3b/np.linalg.norm(w3b)]            
+            self.controls = []
+            
+            actual_wrench = np.zeros((6,1))
+            
+            for i in range(2 * len(self.model.magnets)):
+                angles = deconstruct_omega(self.omegas[i])
+                control = SphereControlCommand(mag_num = i%2,
+                                               dipole_strength=self.dipoles[i],
+                                               psi=angles[0],xi=angles[1])
+                if i <=1:
+                    control.seconds = self.T1 * self.duty_time
+                else:
+                    control.seconds = self.T2 * self.duty_time
+                
+                actual_wrench += self.model.forwardSphere(position,control)*control.seconds
+                
+                self.controls.append(control)
+
+        control = self.controls[model_id]
+
         
-        angles = deconstruct_omega(self.omegas[model_id])
-        
-        control = SphereControlCommand(mag_num = model_id%2,
-                                       dipole_strength=self.dipoles[model_id],
-                                       psi=angles[0],xi=angles[1])
-        if model_id <=1:
-            control.seconds = self.T1
-        else:
-            control.seconds = self.T2
-        
-        print('chosen control',control)
+        #print('chosen control',control)
         self.time += time.time()-start
         return control

@@ -503,16 +503,20 @@ class SpaceProblem:
             self.times = [360]* self.desiredState.shape[1]    
         
         if(challengeID==SpaceEnvironments.BACKANDFORTH): # individual axis
-            self.magnets = [self.magnets[i] for i in [0,1]]
+            self.magnets = [self.magnets[i] for i in [0,1]] 
+            self.magnets[0][1] += 1e-15
+            self.magnets[1][1] += 1e-15
+
             self.TrueDesiredState = np.zeros((12,4))
 
-            self.TrueDesiredState[1,0] = 0.01
-            self.TrueDesiredState[1,1] = 0.01
-            self.TrueDesiredState[1,2] = 0.05
-            self.TrueDesiredState[1,3] = 0.05
+            self.TrueDesiredState[0,0] = 0.001
+            self.TrueDesiredState[0,1] = -0.001
+            self.TrueDesiredState[0,2] = 0.005
+            self.TrueDesiredState[0,3] = -0.005
 
             self.desiredState= self.TrueDesiredState
-            self.times = [360]* self.desiredState.shape[1]    
+            self.times = [1000]* self.desiredState.shape[1]   
+            self.startState[1] = 1e-15
         
         
     def spiralHelper(self, t):

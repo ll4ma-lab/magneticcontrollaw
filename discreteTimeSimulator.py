@@ -76,10 +76,9 @@ def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,ada
                 control = SphereControlCommand()
 
         else:
-            print(state)
-            print(desired_wrench)
             control =  solver.solveWrench(state[0][:3,3],desired_wrench)
             trueWrench = model.forwardPass(state[0][:3,3],control)
+            trueWrench[3:]*=0
             wrenchError = trueWrench-desired_wrench
             cost = np.sum((wrenchError[:3,:]**2)) + 200*np.sum((wrenchError[3:,:]**2))
             minimizationCosts.append(cost)
@@ -159,7 +158,6 @@ class discreteTimeSimulator:
         return bodyToWorld,Ωsc,Vsc
     
     def forwardPass(self,state,FT,seconds):
-        print('simulator',state,FT)
         steps = int(seconds/self.dt)
         start = time.time()
 

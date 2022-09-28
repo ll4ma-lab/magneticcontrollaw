@@ -45,7 +45,7 @@ if __name__ == '__main__':
     env.magnets = env.magnets[:]
     #env.trajectoryDimensions = 'xyz'
 
-    sim_time = np.sum(env.times)
+    sim_time = 500##np.sum(env.times)
 
     
     sigma_copper = 5.87E+07
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     rotationalVelocity = np.array([np.dot(state[0][:3,:3],state[1][:,0]) for state in states])
     transforms = np.array([state[0] for state in states])
     desiredFinalTF = buildTF(desiredStates[-1][:3,0],desiredStates[-1][3:6,0])
-    remainingError = np.array([controller.computeError(desiredFinalTF,state[0]) for state in states])
+    remainingError = np.array([controller.computeError(transforms[0],state[0]) for state in states])
     
     
     #visualization stuff
