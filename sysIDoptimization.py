@@ -36,7 +36,7 @@ class radiusSysid(Problem):
         self.max_bounds[1] = 2e8
         
 
-        self.weights = torch.tensor(weights)
+        self.weights =  self.make_tensor(weights)
         if boat:
             self.boat = boat.torch()
         else: 
@@ -60,20 +60,20 @@ class radiusSysid(Problem):
         dists=np.linalg.norm(chosenMagnetPose,axis=1)
         zero = np.array([0]*self.n)
 
-        self.dipoleStrength = torch.tensor(dipoleStrength)
-        self.angles = torch.tensor(angles)
-        self.rhos = torch.tensor(rhos)
-        self.dists = torch.tensor(dists)
+        self.dipoleStrength = self.make_tensor(dipoleStrength)
+        self.angles = self.make_tensor(angles)
+        self.rhos =  self.make_tensor(rhos)
+        self.dists = self.make_tensor(dists)
         
-        self.zero = torch.tensor(zero)
+        self.zero =  self.make_tensor(zero)
 
         
         deltaV = np.hstack((linearVelocity[1:,:]-linearVelocity[:-1,:],rotationalVelocity[1:,:]-rotationalVelocity[:-1,:]))    
         npA = deltaV /timesteps
         
-        self.accelerations = torch.tensor(npA.T)
+        self.accelerations = self.make_tensor(npA.T)
         
-        self.materialDensity = torch.tensor(8940.0)
+        self.materialDensity = self.make_tensor([8940.0])[0]
     def forward_acceleration(self, object_properties,dists,dipoleStrengths,angles,rhos,zero):
         
         mass_matrix = self.construct_mass_matrix(object_properties,torch)
@@ -109,7 +109,7 @@ class radiusSysid(Problem):
         
         left = (error.T @ self.weights).unsqueeze(1)
         right = error.T.unsqueeze(2)
-        cost = torch.sum(torch.bmm(left,right))#/ self.rhos.shape[0] #-  5e14* (x[0:1])**2
+        cost = torch.sum(torch.bmm(left,right))/ self.rhos.shape[0] #-  5e14* (x[0:1])**2
 
         return cost
     def visualize_optimization(self,iterates,func = np.abs): 
@@ -200,6 +200,7 @@ class MassSysID(SeperateRadiusSysid):
                                               1.0  #Izz
                                               ]).reshape((-1,1))
         
+        self.min_bounds[0] = 1e-5
         #radius and sigma keep the same
         self.min_bounds[2] = 1e-3
         self.max_bounds[2] = 2
