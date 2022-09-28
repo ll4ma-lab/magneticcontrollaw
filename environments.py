@@ -28,6 +28,7 @@ class SpaceEnvironments(Enum):
     CUBE_ROTATE = 6
     SPIN = 7
     SPIN2 = 8
+    BACKANDFORTH = 9
     
 
 class PlanarProblem:
@@ -500,6 +501,19 @@ class SpaceProblem:
 
             self.desiredState= self.TrueDesiredState
             self.times = [360]* self.desiredState.shape[1]    
+        
+        if(challengeID==SpaceEnvironments.BACKANDFORTH): # individual axis
+            self.magnets = [self.magnets[i] for i in [0,1]]
+            self.TrueDesiredState = np.zeros((12,4))
+
+            self.TrueDesiredState[1,0] = 0.01
+            self.TrueDesiredState[1,1] = 0.01
+            self.TrueDesiredState[1,2] = 0.05
+            self.TrueDesiredState[1,3] = 0.05
+
+            self.desiredState= self.TrueDesiredState
+            self.times = [360]* self.desiredState.shape[1]    
+        
         
     def spiralHelper(self, t):
         xyz = np.zeros((12))

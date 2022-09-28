@@ -21,17 +21,18 @@ from Adaptive import Adaptive
 from models import multiMagModel
 from modelOptimization import multiMagSolver
 from axisAlignedSolver import axisAlignedSolver
+from devinSolver import devinSolver
 
 from ObjectProperties import ObjectProperties,boatProperties,sphereProperties
 from sysIDoptimization import radiusSysid,SeperateRadiusSysid,MassSysID
 
 if __name__ == '__main__':
 
-    useSpecialCaseSolver = False
-    useSphere = True and not useSpecialCaseSolver 
+    useSpecialCaseSolver = True
+    useSphere = True
     cheat = False
     runAdaptive = False and useSphere
-    inverseDynamics = True and useSphere and not cheat
+    inverseDynamics = False and useSphere and not cheat
     
     simulate_boat = False
 
@@ -40,14 +41,14 @@ if __name__ == '__main__':
     velNoise = False
     controlNoise = False
     
-    env = SpaceProblem(SpaceEnvironments.AXIS)
+    env = SpaceProblem(SpaceEnvironments.BACKANDFORTH)
     env.magnets = env.magnets[:]
     #env.trajectoryDimensions = 'xyz'
 
     sim_time = np.sum(env.times)
 
     
-    sigma_copper = 5.8E+07
+    sigma_copper = 5.87E+07
     sigma_al = 3.77E+07
     
     #simulator object
@@ -56,7 +57,7 @@ if __name__ == '__main__':
     object_properties = ObjectProperties(mass=mass, MOI=MOI, radius=radius, sigma=sigma_copper )
     
     #controller object
-    initial_radius_guess = 0.015
+    initial_radius_guess = 0.02
     mass_initial,MOI_initial = sphereProperties(8940,radius)
     object_properties_approximate = ObjectProperties(mass=mass_initial, MOI=MOI_initial, radius=initial_radius_guess, sigma=sigma_copper )
     
@@ -81,6 +82,7 @@ if __name__ == '__main__':
     
     if useSpecialCaseSolver:
         solver = axisAlignedSolver(solverModel, env.trajectoryDimensions)
+        solver = devinSolver(solverModel)
     else:
         solver = multiMagSolver(model=solverModel,
                                 stateCostString=env.trajectoryDimensions,

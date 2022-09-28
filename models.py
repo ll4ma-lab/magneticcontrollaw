@@ -66,6 +66,16 @@ def constructOmega(angles, library = np):
         library.cos(angles[0])]).reshape(3,-1)
     return omega
 
+def deconstruct_omega(omega):
+    first_angle = np.arccos(omega[2])
+    if(1-omega[2]**2 < 1e-3):
+        second_angle=0
+    else:
+        sin_angle2 = omega[1]/np.sin(first_angle)
+        second_angle = np.arcsin(sin_angle2)
+        print(sin_angle2)
+    print('deocnstruct ',omega,first_angle,second_angle)
+    return np.array([first_angle,second_angle])/(np.pi/180.0)
 
 
 def vectorNorm(vector,library):
