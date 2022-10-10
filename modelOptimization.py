@@ -32,7 +32,7 @@ def cylinder_optimize(prob):
     return result
 
 def build_acceleration_Q(stateCostString):
-    return buildQ(stateCostString,2e1,1)
+    return buildQ(stateCostString,2e3,1)
 
 def build_force_Q(stateCostString):
     return buildQ(stateCostString)

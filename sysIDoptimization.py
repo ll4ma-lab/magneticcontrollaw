@@ -200,7 +200,7 @@ class MassSysID(SeperateRadiusSysid):
                                               1.0  #Izz
                                               ]).reshape((-1,1))
         
-        self.min_bounds[0] = 1e-5
+        #self.min_bounds[0] = 1e-3
         #radius and sigma keep the same
         self.min_bounds[2] = 1e-3
         self.max_bounds[2] = 2
