@@ -73,7 +73,8 @@ def deconstruct_omega(omega):
         second_angle=0
     else:
         sin_angle2 = omega[1]/np.sin(first_angle)
-        second_angle = np.arcsin(sin_angle2)
+        cos_angle2 = omega[0]/np.sin(first_angle)
+        second_angle = np.arctan2(sin_angle2,cos_angle2)
     return np.array([first_angle,second_angle])/(np.pi/180.0)
 
 

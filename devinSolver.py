@@ -29,18 +29,33 @@ class devinSolver:
     def calculate_duty_cycling(self,position,wrench):
         # Determine the position vectors/unit vectors/normal unit vectors    
         p1,p2 = -1*(np.array(self.model.magnets) - np.transpose(position))
-        print(p1,p2)
+
         Fdes = np.copy(wrench[:3,0])
         
         #seemed like different coordinate system 
-        Fdes[1]*=-1
+        #Fdes[1]*=-1
         
         
         if Fdes[0] < 0:
-            p3 = p2;
-        else:
             p3 = p1;
+            mag3 = 0
+            mag4 = 0
+        else:
+            p3 = p2;
+            mag3 = 1
+            mag4 = 1
 
+        # print('')
+        # print('')
+        # print('F desired')
+        # print(Fdes)
+        # print(' rho vectors')
+        # print(p1,p2,p3)
+        # print('magnets')
+        # print(self.model.magnets)
+        # print('')
+        # print('')
+        
         # Determine the parrallel and perpendicular forces and the rotation about
         # the x-axis
         fxd = abs(Fdes[0])
@@ -61,6 +76,21 @@ class devinSolver:
         w3 = self.max_frequency*w3hat
         w3b = self.max_frequency*w3bhat
         
+        # print('')
+        # print('')
+        # print('Fdes')
+        # print(ix)
+        # print(fdes_parallel)
+        # print(fdes_perp)
+        # print(fhat_des_perp)
+        # print('omegas')
+        # print(w1)
+        # print(w2)
+        # print(w3)
+        # print(w3b)
+        # print('')
+        # print('')
+        
         # Calculate the Theta value for each magnet relative to the object
         theta1 = np.arctan2(np.linalg.norm(np.cross(w1hat,p1)),np.dot(w1hat,p1))
         theta2 = np.arctan2(np.linalg.norm(np.cross(w2hat,p2)),np.dot(w2hat,p2))
@@ -73,9 +103,9 @@ class devinSolver:
         ip1 = p1/np.linalg.norm(p1)
         ip2 = p2/np.linalg.norm(p2)
         if Fdes[0] < 0:
-            ip3 = ip2
-        else:
             ip3 = ip1
+        else:
+            ip3 = ip2
         iphi1 = np.cross(w1hat,p1)/np.linalg.norm(np.cross(w1hat,p1))
         iphi2 = np.cross(w2hat,p2)/np.linalg.norm(np.cross(w2hat,p2))
         iphi3 = np.cross(w3hat,p3)/np.linalg.norm(np.cross(w3hat,p3))
@@ -203,8 +233,8 @@ class devinSolver:
         
         
         #this is identical for f1,f2,f3, not sure what f3b is supposed to be but you can figure that out and delete a lot of code
-        print('wrenches')
-        print(f1,f2,f3)
+        #print('wrenches')
+        #print(f1,f2,f3)
         
         #this function expects a numpy array of dipole strengths, psi+xi angles, the model values and the rho vector
         mag1_wrench = modelCallRotatedWrench(np.array(self.max_dipole_strength).reshape(1),deconstruct_omega(w1hat),(f1_p0,t1_p0,f1_p90,f1_phi90,t1_theta90),p1.reshape((3,1)))
@@ -213,7 +243,7 @@ class devinSolver:
         f1 = mag1_wrench[0,:3,0]
         f2 = mag2_wrench[0,:3,0]
         f3 = mag3_wrench[0,:3,0]
-        print(f1,f2,f3)
+        #print(f1,f2,f3)
         
         Fyz = np.linalg.norm(f1 + f2)
         Fx = np.linalg.norm(f3)
@@ -227,7 +257,7 @@ class devinSolver:
         # Manipulate mx and myz to get force magnitude correct if desired force 
         # magnitude is possible else give max force values    
         if np.linalg.norm(Fdes) > np.linalg.norm(Fmax):
-            return Fmax, Tmax, w1, w2, w3, w3b,  self.max_dipole_strength,  self.max_dipole_strength,  self.max_dipole_strength,  self.max_dipole_strength, d_yz/2, d_yz/2, d_x/2, d_x/2
+            return Fmax, Tmax, w1, w2, w3, w3b, 0, 1, mag3, mag4,  self.max_dipole_strength,  self.max_dipole_strength,  self.max_dipole_strength,  self.max_dipole_strength, d_yz/2, d_yz/2, d_x/2, d_x/2
         else:
             Fratio = np.linalg.norm(Fdes)/np.linalg.norm(Fmax);
             m2ratio = np.sqrt(Fratio);
@@ -263,7 +293,7 @@ class devinSolver:
              
             F = f3*d_x/2 + f3b*d_x/2 + (f1 + f2)*d_yz;
             T = t3*d_x/2 + t3b*d_x/2 + (t1 + t2)*d_yz;
-            return F, T, w1, w2, w3, w3b, m1_set, m2_set, m3_set, m3_set, d_yz/2, d_yz/2, d_x/2, d_x/2
+            return F, T, w1, w2, w3, w3b, 0, 1, mag3, mag4,  m1_set, m2_set, m3_set, m3_set, d_yz/2, d_yz/2, d_x/2, d_x/2
 
 
         
@@ -272,9 +302,9 @@ class devinSolver:
         model_id =   self.count % (2 * len(self.model.magnets))    
         self.count += 1
         if model_id == 0:
-            F,T,w1, w2, w3, w3b, m1_set, m2_set, m3_set, m3_set, d_yz, _, d_x, _ = self.calculate_duty_cycling(position, desired_wrench)
-            print(m1_set, m2_set, m3_set, m3_set, d_yz, d_x)
-            
+            F,T,w1, w2, w3, w3b,mag1,mag2,mag3,mag4, m1_set, m2_set, m3_set, m3_set, d_yz, _, d_x, _ = self.calculate_duty_cycling(position, desired_wrench)
+            #print(m1_set, m2_set, m3_set, m3_set, d_yz, d_x)
+            mags = [mag1,mag2,mag3,mag4]
             
             #rescale everything so a magnet is on for increments of self.duty_percent of the time
             scale_factor_t1 = 1 
@@ -313,9 +343,21 @@ class devinSolver:
             
             actual_wrench = np.zeros((6,1))
             
+            print('')
+            print('')
+            print('Times')
+            print(self.T1)
+            print(self.T2)
+            print('')
+            print('')
+            
+            
+            
             for i in range(2 * len(self.model.magnets)):
                 angles = deconstruct_omega(self.omegas[i])
-                control = SphereControlCommand(mag_num = i%2,
+                
+                
+                control = SphereControlCommand(mag_num = mags[i],
                                                dipole_strength=self.dipoles[i],
                                                psi=angles[0],xi=angles[1])
                 if i <=1:
@@ -324,8 +366,15 @@ class devinSolver:
                     control.seconds = self.T2 * self.duty_time
                 
                 actual_wrench += self.model.forwardSphere(position,control)*control.seconds
-                
+                #print(F*self.duty_time,T*self.duty_time)
                 self.controls.append(control)
+            print('')
+            print('')
+            print(actual_wrench/4)
+            print(desired_wrench)
+           
+            print('')
+            print('')
 
         control = self.controls[model_id]
 

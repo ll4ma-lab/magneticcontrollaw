@@ -28,7 +28,7 @@ from sysIDoptimization import radiusSysid,SeperateRadiusSysid,MassSysID
 
 if __name__ == '__main__':
 
-    useSpecialCaseSolver = True
+    useSpecialCaseSolver = False
     useSphere = True
     cheat = False
     runAdaptive = False and useSphere
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     env.magnets = env.magnets[:]
     #env.trajectoryDimensions = 'xyz'
 
-    sim_time = 500##np.sum(env.times)
+    sim_time = np.sum(env.times)
 
     
     sigma_copper = 5.87E+07
@@ -94,6 +94,8 @@ if __name__ == '__main__':
     
     if inverseDynamics:
         controller = PDController(env.startState,1.2,0.004,1.2,0.004,0,0)
+    elif(useSpecialCaseSolver):
+        controller = PDController(env.startState,0.0005,0.0,0.0005,0.0,0.0,0.000)
     else:
         controller = PDController(env.startState,0.005,0.000001,0.005,0.000002,0.0,0.000)
     simulator = discreteTimeSimulator(env.startState,object_properties) 
@@ -103,10 +105,10 @@ if __name__ == '__main__':
     states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,sim_time = sim_time,cheat=cheat,runAdaptive=runAdaptive,inverse_dynamics=inverseDynamics)
     
     
-    print('Time spent doing forwad model ' + str(model.time))
-    print('Time spent doing solving model ' + str(solver.time))
-    print('Time spent doing velocity ' + str(velocityProfile.time))
-    print('Time spent doing simulation ' + str(simulator.time))
+    #print('Time spent doing forwad model ' + str(model.time))
+    #print('Time spent doing solving model ' + str(solver.time))
+    #print('Time spent doing velocity ' + str(velocityProfile.time))
+    #print('Time spent doing simulation ' + str(simulator.time))
     visStart = time.time()
     positions = np.array([state[0][:3,3] for state in states])
     linearVelocity = np.array([np.dot(state[0][:3,:3],state[2][:,0]) for state in states])
@@ -142,11 +144,7 @@ if __name__ == '__main__':
     
     visualization.plotStuff(Plots,'Desired Pose')
     
-    print('Time spent doing visualization ' + str(time.time()-visStart))
+    #print('Time spent doing visualization ' + str(time.time()-visStart))
     
     plt.figure()    
     plt.plot(minimizationCosts)
-
-    import dataloader
-    from datetime import datetime
-    dataloader.save("data/sim_" + str(sim_time) + 's_' +  str(datetime.now()).replace(":","."),globals(),dir())
