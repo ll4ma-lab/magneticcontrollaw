@@ -10,76 +10,124 @@ import dataloader
 import numpy as np
 import time
 import torch
-from models import modelCallRotatedWrench,sphereModel
-from ObjectProperties import ObjectProperties,buildMassMatrix,sphereProperties
+from models import modelCallRotatedWrench,sphereModel,SphereControlCommand
+from ObjectProperties import ObjectProperties,buildMassMatrix,sphereProperties,boatProperties
 
 from modelOptimization import buildQ,build_acceleration_Q
 from ll4ma_opt.problems import Problem 
 import matplotlib.pyplot as plt 
 
-from ll4ma_opt.solvers.line_search import NewtonMethod,GradientDescent
+from ll4ma_opt.solvers.line_search import NewtonMethod,GradientDescent,Momentum
 from sysIDoptimization import radiusSysid,SeperateRadiusSysid,MassSysID
 
-
-
-use_torch = False
-use_GPU = False
-def do_nothing(x):
-    return x
-def make_tensor(x):
-    return torch.DoubleTensor(x).to('cuda')
-
-
+import matplotlib.pyplot as plt
+from tqdm import tqdm
 #dataloader.load('C:/Users/tabor/OneDrive/Documents/magneticcontrollaw/data/sim_2160s_2022-09-27 17.51.31.467776',globals())
 #dataloader.load('/home/tabor/Documents/magneticcontrollaw/data/sim_5400s_2022-09-27 13.29.32.114902',globals())
 #dataloader.load('/home/tabor/Documents/magneticcontrollaw/data/sim_2160s_2022-09-27 15.42.16.145535',globals())
+
+controls = env = adaptive = mass = MOI = radius = sigma_copper = numSteps = None
+
+
+
+#dataloader.load('/home/tabor/Downloads/real_2022-10-10 15 54 23.074092',globals())
+dataloader.load('/home/tabor/Downloads/real_2022-04-27 17_35_24.878509',globals())
+if type(adaptive.controls[0]) == list:
+    adaptive.controls = [SphereControlCommand(mag_num = control[0],
+                                     dipole_strength = control[1],
+                                     psi = control[2],
+                                     xi = control[3]) for control in adaptive.controls]
+    boat_properties = ObjectProperties(mass=adaptive.problem.boat_mass, MOI=adaptive.problem.boat_MOI)
+    mass,MOI = mass
+boat = None#boat_properties
+
 magnets = env.magnets
 sysID_type = MassSysID
-boat = controller_boat
+optimizer_type = NewtonMethod
+reset = False
+max_iterations = 100 if reset else 2
+
+
+print('optimizer ' ,optimizer_type)
+print('reset ', reset)
+
+if optimizer_type is NewtonMethod:
+    optimizerParams = {'alpha':1,'rho':0.9,'c1':1e-9,'FP_PRECISION': 1e-10,'min_alpha': 1e-20}
+else:
+    optimizerParams = {'alpha':1e-8,'rho':0.9,'c1':1e-9,'FP_PRECISION': 1e-10,'min_alpha': 1e-20}
+if optimizer_type is Momentum:
+    optimizerParams['momentum'] = 0.9
+
+
+
 
 initial_object_properties=ObjectProperties(mass=mass, MOI=MOI, radius=radius, sigma=sigma_copper)
-optimizerParams = {'alpha':1,'rho':0.9,'c1':1e-9,'FP_PRECISION': 1e-18,'min_alpha': 1e-20}
+
 prob = sysID_type(build_acceleration_Q(env.trajectoryDimensions),object_properties=initial_object_properties, boat = boat) # built with M(0.04) Q M(0.04)
-
-if use_torch and use_GPU:
-    prob.make_tensor = make_tensor
-    prob.weights = make_tensor(prob.weights)
-
-batch_size = 500
-
-selected_controls = adaptive.controls[-batch_size-1:-1]
-selected_positions = np.array(adaptive.positions[-batch_size :])
-selected_linear_velocities = np.array(adaptive.linear_velocities[-batch_size:])
-selected_rotation_velocities = np.array(adaptive.rotational_velocities[-batch_size:])
+optimizer = optimizer_type(problem=prob,**optimizerParams)
 
 
-adaptive.problem.updateVals(selected_controls,
-                        adaptive.magnets,
-                        selected_positions, 
-                        selected_linear_velocities,
-                        selected_rotation_velocities)
+batch_size = 25
+start_index = -batch_size
+end_index = -1
+
+results = []
+
+for i in tqdm(range(1,numSteps-batch_size,1)):
+    #if i != 861:
+    #    continue
+    start_index = i
+    end_index = i + batch_size if numSteps > i+batch_size else numSteps
+
+    selected_controls = adaptive.controls[start_index-1:end_index-1]
+    selected_positions = np.array(adaptive.positions[start_index :end_index])
+    selected_linear_velocities = np.array(adaptive.linear_velocities[start_index:end_index])
+    selected_rotation_velocities = np.array(adaptive.rotational_velocities[start_index:end_index])
+    
+    prob.updateVals(selected_controls,adaptive.magnets,selected_positions,selected_linear_velocities,selected_rotation_velocities)
+    
+    
+    
+    result = optimizer.optimize(prob.initial_solution,max_iterations=max_iterations)
+    results.append(result)
+    
+    if not reset:
+        prob.initial_solution = result.solution
+    if reset and optimizer_type is Momentum:
+        optimizer.current_step *= 0
+        
+    
+    print(result.display())
+
+shared_name = str(optimizer_type) + 'reset ' + str(reset) + ' multiplier ' + str(prob.sigma_multiplier) + '\n'
+
+costs = [result.cost for result in results]
+iterates = [result.iterates for result in results]
+solutions = [result.solution for result in results]
+plt.figure()
+plt.title(shared_name + 'costs')
+plt.plot(costs)
 
 
 
-prob.updateVals(selected_controls,adaptive.magnets,selected_positions,selected_linear_velocities,selected_rotation_velocities)
+fig,axs = plt.subplots(prob.size(),1)
+plt.title(shared_name + 'iterates over time')
 
-
-if use_torch:
-    prob.initial_solution = prob.make_tensor(prob.initial_solution)
-    prob.min_bounds = prob.make_tensor(prob.min_bounds)
-    prob.max_bounds = prob.make_tensor(prob.max_bounds)
-    prob.make_tensor = do_nothing 
-    prob.unmake_tensor = do_nothing
-    optimizer = NewtonMethod(problem=prob,**optimizerParams,library=torch)
-    optimizer.cholesky_factorize = compute_inverse_cholesky_fast
-else:
-    optimizer = NewtonMethod(problem=prob,**optimizerParams)
-
-
-
-result = optimizer.optimize(prob.initial_solution,max_iterations=150)
-print(result.display())
-
+for i in range(prob.size()):
+    for iterate in iterates:
+        axs[i].plot(iterate[:,i])
+            
+        
+fig,axs = plt.subplots(prob.size(),1)
+plt.title(shared_name + 'solutions over time')
+solutions = np.array(solutions)
+for i in range(prob.size()):
+    axs[i].plot(solutions[:,i])
+            
 
 
 prob.visualize_optimization(result.iterates,np.abs)
+print('optimizer ' ,optimizer_type)
+print('reset ', reset)
+print(np.array([np.average(costs)]))
+print('multiplier ',prob.sigma_multiplier)

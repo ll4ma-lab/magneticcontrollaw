@@ -24,16 +24,21 @@ class radiusSysid(Problem):
         
         
         self.singleModel = sphereModel(1)
+        self.sigma_multiplier = 1e7
+
         if object_properties:
-            self.initial_solution = np.array([object_properties.radius,object_properties.sigma]).reshape((-1,1))
+            self.initial_solution = np.array([object_properties.radius,
+                                              object_properties.sigma/self.sigma_multiplier]).reshape((-1,1))
         else:
             self.initial_solution = np.ones((2,1)) * 0.001
-            self.initial_solution[1] = 5.8E+07
-        self.min_bounds[0] = 1e-2
-        self.max_bounds[0] = 1e-1
+            self.initial_solution[1] = 5.8e7/self.sigma_multiplier
+            
+        
+        self.min_bounds[0] = 1e-4
+        self.max_bounds[0] = 5e-1
 
-        self.min_bounds[1] = 2.5e6
-        self.max_bounds[1] = 2e8
+        self.min_bounds[1] = 2e5/self.sigma_multiplier
+        self.max_bounds[1] = 2e8/self.sigma_multiplier
         
 
         self.weights =  self.make_tensor(weights)
@@ -41,8 +46,7 @@ class radiusSysid(Problem):
             self.boat = boat.torch()
         else: 
             self.boat = boat
-        
-        
+
         
     def updateVals(self,controls,magnets,positions,linearVelocity,rotationalVelocity):
         #remove first control and position as we dont know its acceleration
@@ -86,10 +90,9 @@ class radiusSysid(Problem):
         radius = x[0,0]
         sigma = x[1,0]
         mass,MOI = sphereProperties(self.materialDensity,radius,library)
-        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma)
+        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma*self.sigma_multiplier)
         return object_properties
-    
-    
+
     def construct_mass_matrix(self, object_properties, library=np):
         if self.boat:
             object_properties = object_properties+self.boat
@@ -112,9 +115,22 @@ class radiusSysid(Problem):
         cost = torch.sum(torch.bmm(left,right))/ self.rhos.shape[0] #-  5e14* (x[0:1])**2
 
         return cost
-    def visualize_optimization(self,iterates,func = np.abs): 
-        possible_r = np.linspace(self.min_bounds[0],self.max_bounds[0],50)
-        possible_sigma = np.linspace(self.min_bounds[1],self.max_bounds[1],50)
+    
+    def tensor_error(self,x):
+        object_properties = self.get_object_properties(x,torch)
+
+        modeledAccelerations = self.forward_acceleration(object_properties,self.dists,self.dipoleStrength,self.angles,self.rhos,self.zero)
+        error = (self.accelerations - modeledAccelerations)*1e6 
+        
+        
+        weighted_error = (error.T @ torch.sqrt(self.weights/ self.rhos.shape[0]))
+        return weighted_error.reshape(((-1,1)))
+         
+    
+    
+    def visualize_optimization(self,iterates,func = np.abs, samples = 50, sample_func = np.linspace): 
+        possible_r = sample_func(self.min_bounds[0],self.max_bounds[0],samples)
+        possible_sigma = sample_func(self.min_bounds[1],self.max_bounds[1],samples)
         rs,sigmas = np.meshgrid(possible_r,possible_sigma)
         rs = rs.flatten()
         sigmas = sigmas.flatten()
@@ -125,8 +141,8 @@ class radiusSysid(Problem):
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
         ax.scatter(rs,sigmas,func(possibleCosts),'r')
-        foundCosts = [self.cost(iterate) for iterate in iterates[1:]]
-        ax.plot(iterates[1:,0,0],iterates[1:,1,0],func(foundCosts),'r',linewidth=10)
+        foundCosts = [self.cost(iterate) for iterate in iterates[:]]
+        ax.plot(iterates[:,0,0],iterates[:,1,0],func(foundCosts),'r',linewidth=10)
         print('best brute force ',rs[np.argmin(possibleCosts)],sigmas[np.argmin(possibleCosts)],np.min(possibleCosts))
         return rs,sigmas,possibleCosts
 
@@ -135,7 +151,9 @@ class SeperateRadiusSysid(radiusSysid):
         super().__init__(weights=weights,boat=boat)
         
         if object_properties:
-            self.initial_solution = np.array([object_properties.radius,object_properties.sigma,1]).reshape((-1,1))
+            self.initial_solution = np.array([object_properties.radius,
+                                              object_properties.sigma/self.sigma_multiplier,
+                                              object_properties.radius]).reshape((-1,1))
         else:
             self.initial_solution[2] = 0.1
 
@@ -143,7 +161,7 @@ class SeperateRadiusSysid(radiusSysid):
         
         #second radius for mass and MOI
         self.min_bounds[2] = 1e-5
-        self.max_bounds[2] = 1e-1
+        self.max_bounds[2] = 1e-0
     def size(self):
         return 3
     def get_object_properties(self, x, library=np):
@@ -151,7 +169,7 @@ class SeperateRadiusSysid(radiusSysid):
         sigma = x[1,0]
         mass_radius = x[2,0]
         mass,MOI = sphereProperties(self.materialDensity,mass_radius,library)
-        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma)
+        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma*self.sigma_multiplier)
         return object_properties
     def visualize_optimization(self,iterates,func = np.abs): 
         fig,axs = plt.subplots(self.size(),1)
@@ -185,7 +203,7 @@ class MassSysID(SeperateRadiusSysid):
         
         if object_properties:
             self.initial_solution = np.array([object_properties.radius,
-                                              object_properties.sigma,
+                                              object_properties.sigma/self.sigma_multiplier,
                                               object_properties.mass,
                                               object_properties.MOI[0,0],
                                               object_properties.MOI[1,1],
@@ -200,16 +218,19 @@ class MassSysID(SeperateRadiusSysid):
                                               1.0  #Izz
                                               ]).reshape((-1,1))
         
-        #self.min_bounds[0] = 1e-3
+        self.min_bounds[0] = 1e-3
+        
+        self.min_bounds[1] = 1e4/self.sigma_multiplier
+        
         #radius and sigma keep the same
-        self.min_bounds[2] = 1e-3
+        self.min_bounds[2] = 1e-10
         self.max_bounds[2] = 2
         
         self.min_bounds[3] = 1e-5 #mass
         self.min_bounds[3:] = 1e-10 #MOI
         
         self.max_bounds[3] = 2 #mass
-        self.max_bounds[3:] = 0.1 #MOI
+        self.max_bounds[3:] = 1e0 #MOI
         
         
     def size(self):
@@ -220,7 +241,7 @@ class MassSysID(SeperateRadiusSysid):
         sigma = x[1,0]
         mass = x[2,0]
         MOI = library.diag(x[3:,0])
-        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma)
+        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma*self.sigma_multiplier)
         
         return object_properties
 
