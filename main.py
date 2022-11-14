@@ -28,7 +28,7 @@ from sysIDoptimization import radiusSysid,SeperateRadiusSysid,MassSysID
 
 if __name__ == '__main__':
 
-    useSpecialCaseSolver = False
+    useSpecialCaseSolver = True
     useSphere = True
     cheat = False
     runAdaptive = False and useSphere
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     env.magnets = env.magnets[:]
     #env.trajectoryDimensions = 'xyz'
 
-    sim_time = np.sum(env.times)
+    sim_time = 10#np.sum(env.times)
 
     
     sigma_copper = 5.87E+07
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     #simulator object
     radius = 0.02
     mass,MOI = sphereProperties(8940,radius)
-    object_properties = ObjectProperties(mass=mass, MOI=MOI, radius=radius, sigma=sigma_copper )
+    object_properties = ObjectProperties(mass=mass, MOI=MOI, radius=radius, sigma=sigma_copper)
     
     #controller object
     initial_radius_guess = 0.02
@@ -155,4 +155,5 @@ if __name__ == '__main__':
     print(np.mean(np.square(diff)))
     print(np.amax(diff))
     
-    
+
+
