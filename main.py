@@ -95,9 +95,9 @@ if __name__ == '__main__':
     if inverseDynamics:
         controller = PDController(env.startState,1.2,0.004,1.2,0.004,0,0)
     elif(useSpecialCaseSolver):
-        controller = PDController(env.startState,0.0005,0.0,0.0005,0.0,0.0,0.000)
+        controller = PDController(env.startState,0.0005,0.0,0.1,0.0,0.0,0.000)
     else:
-        controller = PDController(env.startState,0.005,0.000001,0.005,0.000002,0.0,0.000)
+        controller = PDController(env.startState,0.0005,0.000001,0.0005,0.000002,0.0,0.000)
     simulator = discreteTimeSimulator(env.startState,object_properties) 
     velocityProfile = SplineProfile.SplineProfile(env,sim_time,env.times)
     adaptive = Adaptive(env.magnets,'all', object_properties_approximate, 25,adaptive_model, boat_properties)
@@ -148,3 +148,11 @@ if __name__ == '__main__':
     
     plt.figure()    
     plt.plot(minimizationCosts)
+    
+    diff = npdesiredStates[:,0,0] - positions[:,0]
+    plt.figure()
+    plt.plot(diff)
+    print(np.mean(np.square(diff)))
+    print(np.amax(diff))
+    
+    
