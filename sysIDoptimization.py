@@ -15,6 +15,7 @@ from ObjectProperties import ObjectProperties,buildMassMatrix,sphereProperties
 from modelOptimization import buildQ,build_acceleration_Q
 from ll4ma_opt.problems import Problem 
 import matplotlib.pyplot as plt 
+from matplotlib.animation import FuncAnimation
 
 from ll4ma_opt.solvers.line_search import NewtonMethod
 
@@ -25,7 +26,9 @@ class radiusSysid(Problem):
         
         self.singleModel = sphereModel(1)
         self.sigma_multiplier = 1e7
-
+        
+        self.error_multiplier = 1e1
+        
         if object_properties:
             self.initial_solution = np.array([object_properties.radius,
                                               object_properties.sigma/self.sigma_multiplier]).reshape((-1,1))
@@ -34,7 +37,7 @@ class radiusSysid(Problem):
             self.initial_solution[1] = 5.8e7/self.sigma_multiplier
             
         
-        self.min_bounds[0] = 1e-4
+        self.min_bounds[0] = 1e-3
         self.max_bounds[0] = 5e-1
 
         self.min_bounds[1] = 2e5/self.sigma_multiplier
@@ -103,11 +106,10 @@ class radiusSysid(Problem):
         return 2
     
     def tensor_cost(self, x):
-
         object_properties = self.get_object_properties(x,torch)
 
         modeledAccelerations = self.forward_acceleration(object_properties,self.dists,self.dipoleStrength,self.angles,self.rhos,self.zero)
-        error = (self.accelerations - modeledAccelerations)*1e6 
+        error = (self.accelerations - modeledAccelerations)*self.error_multiplier
         
         
         left = (error.T @ self.weights).unsqueeze(1)
@@ -120,7 +122,7 @@ class radiusSysid(Problem):
         object_properties = self.get_object_properties(x,torch)
 
         modeledAccelerations = self.forward_acceleration(object_properties,self.dists,self.dipoleStrength,self.angles,self.rhos,self.zero)
-        error = (self.accelerations - modeledAccelerations)*1e6 
+        error = (self.accelerations - modeledAccelerations)*self.error_multiplier
         
         
         weighted_error = (error.T @ torch.sqrt(self.weights/ self.rhos.shape[0]))
@@ -128,23 +130,76 @@ class radiusSysid(Problem):
          
     
     
-    def visualize_optimization(self,iterates,func = np.abs, samples = 50, sample_func = np.linspace): 
-        possible_r = sample_func(self.min_bounds[0],self.max_bounds[0],samples)
-        possible_sigma = sample_func(self.min_bounds[1],self.max_bounds[1],samples)
-        rs,sigmas = np.meshgrid(possible_r,possible_sigma)
-        rs = rs.flatten()
-        sigmas = sigmas.flatten()
-        possibleCosts = [self.cost(np.stack((rs[i],sigmas[i])).reshape((2,1))) for i in range(len(rs))]
-        clip_value = 2*np.median(possibleCosts)
-        possibleCosts = np.array(possibleCosts)
-        possibleCosts[possibleCosts>clip_value] = clip_value
+    def visualize_optimization(self, iterates, samples=50, func=np.abs, show_costs=False):
         fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
-        ax.scatter(rs,sigmas,func(possibleCosts),'r')
-        foundCosts = [self.cost(iterate) for iterate in iterates[:]]
-        ax.plot(iterates[:,0,0],iterates[:,1,0],func(foundCosts),'r',linewidth=10)
-        print('best brute force ',rs[np.argmin(possibleCosts)],sigmas[np.argmin(possibleCosts)],np.min(possibleCosts))
-        return rs,sigmas,possibleCosts
+        if show_costs:
+            ax = fig.add_subplot(projection="3d")
+        else:
+            ax = fig.add_subplot()
+
+        possible_xs = np.linspace(self.min_bounds[0], self.max_bounds[0], samples)
+        possible_ys = np.linspace(self.min_bounds[1], self.max_bounds[1], samples)
+        xs, ys = np.meshgrid(possible_xs, possible_ys)
+        xs = xs.flatten()
+        ys = ys.flatten()
+        possibleCosts = [
+            func(self.cost(np.stack((xs[i], ys[i])).reshape((2, 1)))) for i in range(len(xs))
+        ]
+        clip_value = 2 * np.median(possibleCosts)
+        possibleCosts = np.array(possibleCosts)
+        possibleCosts[possibleCosts > clip_value] = clip_value
+
+        best_index = np.argmin(possibleCosts)
+        print(
+            "best brute force cost ",
+            possibleCosts[best_index],
+            " at ",
+            xs[best_index],
+            ys[best_index],
+        )
+
+        ax.set_xlim(self.min_bounds[0], self.max_bounds[0])
+        ax.set_ylim(self.min_bounds[1], self.max_bounds[1])
+
+        points = iterates[0].reshape((-1, 2))
+        costs = [[func(min(self.cost(point.reshape((-1,1))),clip_value))] for point in points]
+        print(np.min(costs))
+
+        if show_costs:
+            ax.scatter(xs, ys, func(possibleCosts), color=(0, 0, 1, 0.5))
+            ax.set_zlim(0, clip_value)
+            points_3d = np.concatenate((points, np.array(costs)), 1)
+            # silly hack to get filled circle
+            scat = ax.scatter(points_3d[:, 0], points_3d[:, 1], points_3d[:, 2], linewidths=10, c="orange")
+            scat2 = ax.scatter(points_3d[:, 0], points_3d[:, 1], points_3d[:, 2], linewidths=10, c="orange")
+
+            #scat._offsets3d = (points_3d[:, 0], points_3d[:, 1], points_3d[:, 2])
+        else:
+            scat = plt.scatter(points[:, 0], points[:, 1], linewidths=10, c="orange")
+            scat.set_offsets(points)
+            scat2 = None
+
+        def update(num, scat, scat2, iterates, show_costs):
+            points = iterates[num].reshape((-1, 2))
+            costs = [[func(min(self.cost(point.reshape((-1,1))),clip_value))] for point in points]
+            points_3d = np.concatenate((points, np.array(costs)), 1)
+            #print(points_3d.shape)
+            if show_costs:
+                scat._offsets3d = (points_3d[:, 0], points_3d[:, 1], points_3d[:, 2])
+                scat2._offsets3d = (points_3d[:, 0], points_3d[:, 1], points_3d[:, 2])
+
+            else:
+                scat.set_offsets(points)
+
+        anim = FuncAnimation(
+            fig,
+            update,
+            fargs=(scat, scat2, iterates, show_costs),
+            frames=len(iterates),
+            interval=100,
+            repeat=True,
+        )
+        return anim
 
 class SeperateRadiusSysid(radiusSysid):
     def __init__(self,weights,object_properties,boat = None): 
