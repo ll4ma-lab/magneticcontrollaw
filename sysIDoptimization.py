@@ -48,7 +48,7 @@ class radiusSysid(Problem):
             self.boat = boat
 
         
-    def updateVals(self,controls,magnets,positions,linearVelocity,rotationalVelocity):
+    def updateVals(self,controls,magnets,positions,linearVelocity,rotationalVelocity,drag_terms = (0,0)):
         #remove first control and position as we dont know its acceleration
         
         magNums = [control.mag_num for control in controls[1:]]
@@ -72,9 +72,12 @@ class radiusSysid(Problem):
         self.zero =  self.make_tensor(zero)
 
         
-        deltaV = np.hstack((linearVelocity[1:,:]-linearVelocity[:-1,:],rotationalVelocity[1:,:]-rotationalVelocity[:-1,:]))    
+        deltaV = np.hstack((linearVelocity[1:,:]-linearVelocity[:-1,:],rotationalVelocity[1:,:]-rotationalVelocity[:-1,:]))
         npA = deltaV /timesteps
         
+        drag_force = drag_terms[0] * linearVelocity[:-1,:] + np.sign(linearVelocity[:-1,:]) * drag_terms[1] * linearVelocity[:-1,:]**2 
+        
+        self.drag_wrenches = self.make_tensor(np.hstack((-drag_force,np.zeros_like(drag_force))))
         self.accelerations = self.make_tensor(npA.T)
         
         self.materialDensity = self.make_tensor([8940.0])[0]
@@ -83,7 +86,14 @@ class radiusSysid(Problem):
         mass_matrix = self.construct_mass_matrix(object_properties,torch)
         modelVals = self.singleModel.modelCall(dists,1,radii=object_properties.radius,sigma=object_properties.sigma)
         modelVals = [modelVal.squeeze() for modelVal in modelVals]
-        wrenches = modelCallRotatedWrench(dipoleStrengths,angles,modelVals,rhos,library=torch,zero = zero).squeeze()     
+        modeled_wrenches = modelCallRotatedWrench(dipoleStrengths,angles,modelVals,rhos,library=torch,zero = zero).squeeze() 
+        
+        #print(modeled_wrenches)
+        #print(self.drag_wrenches)
+        wrenches = modeled_wrenches + self.drag_wrenches
+        
+        
+        
         return torch.linalg.inv(mass_matrix)@ wrenches.T
     
     def get_object_properties(self, x, library=np):

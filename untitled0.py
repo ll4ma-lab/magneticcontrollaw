@@ -31,7 +31,7 @@ controls = env = adaptive = mass = MOI = radius = sigma_copper = numSteps = None
 
 
 #dataloader.load('/home/tabor/Downloads/real_2022-10-10 15 54 23.074092',globals())
-dataloader.load('/home/tabor/Downloads/real_2022-04-27 17_35_24.878509',globals())
+dataloader.load('C:/Users/tabor/Downloads/real_2022-04-27 17_35_24.878509',globals())
 if type(adaptive.controls[0]) == list:
     adaptive.controls = [SphereControlCommand(mag_num = control[0],
                                      dipole_strength = control[1],
@@ -39,12 +39,12 @@ if type(adaptive.controls[0]) == list:
                                      xi = control[3]) for control in adaptive.controls]
     boat_properties = ObjectProperties(mass=adaptive.problem.boat_mass, MOI=adaptive.problem.boat_MOI)
     mass,MOI = mass
-boat = None#boat_properties
+boat = None# boat_properties
 
 magnets = env.magnets
-sysID_type = MassSysID
+sysID_type = radiusSysid
 optimizer_type = NewtonMethod
-reset = False
+reset = True
 max_iterations = 100 if reset else 2
 
 
@@ -67,7 +67,7 @@ prob = sysID_type(build_acceleration_Q(env.trajectoryDimensions),object_properti
 optimizer = optimizer_type(problem=prob,**optimizerParams)
 
 
-batch_size = 25
+batch_size = 1500
 start_index = -batch_size
 end_index = -1
 
@@ -84,7 +84,7 @@ for i in tqdm(range(1,numSteps-batch_size,1)):
     selected_linear_velocities = np.array(adaptive.linear_velocities[start_index:end_index])
     selected_rotation_velocities = np.array(adaptive.rotational_velocities[start_index:end_index])
     
-    prob.updateVals(selected_controls,adaptive.magnets,selected_positions,selected_linear_velocities,selected_rotation_velocities)
+    prob.updateVals(selected_controls,adaptive.magnets,selected_positions,selected_linear_velocities,selected_rotation_velocities,(0.61,5.4))
     
     
     
@@ -98,6 +98,7 @@ for i in tqdm(range(1,numSteps-batch_size,1)):
         
     
     print(result.display())
+    break
 
 shared_name = str(optimizer_type) + 'reset ' + str(reset) + ' multiplier ' + str(prob.sigma_multiplier) + '\n'
 
