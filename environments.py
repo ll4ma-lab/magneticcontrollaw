@@ -507,15 +507,45 @@ class SpaceProblem:
             self.magnets[0][1] += 1e-15
             self.magnets[1][1] += 1e-15
 
-            self.TrueDesiredState = np.zeros((12,4))
+            self.TrueDesiredState = np.zeros((12,8))
 
-            self.TrueDesiredState[0,0] = 0.001
-            self.TrueDesiredState[0,1] = -0.001
-            self.TrueDesiredState[0,2] = 0.005
-            self.TrueDesiredState[0,3] = -0.005
+            self.TrueDesiredState[0,0] = 0.025
+            self.TrueDesiredState[1,0] = 0.025
+            self.TrueDesiredState[2,0] = 0.025
+            
+            self.TrueDesiredState[0,1] = 0.025
+            self.TrueDesiredState[1,1] = 0.025
+            self.TrueDesiredState[2,1] = -0.025
+            
+            self.TrueDesiredState[0,2] = 0.025
+            self.TrueDesiredState[1,2] = -0.025
+            self.TrueDesiredState[2,2] = -0.025
+            
+            self.TrueDesiredState[0,3] = 0.025
+            self.TrueDesiredState[1,3] = -0.025
+            self.TrueDesiredState[2,3] = 0.025
+            
+            self.TrueDesiredState[0,4] = -0.025
+            self.TrueDesiredState[1,4] = -0.025
+            self.TrueDesiredState[2,4] = 0.025
+            
+            self.TrueDesiredState[0,5] = -0.025
+            self.TrueDesiredState[1,5] = -0.025
+            self.TrueDesiredState[2,5] = -0.025
+            
+            self.TrueDesiredState[0,6] = -0.025
+            self.TrueDesiredState[1,6] = 0.025
+            self.TrueDesiredState[2,6] = -0.025
+            
+            self.TrueDesiredState[0,7] = -0.025
+            self.TrueDesiredState[1,7] = 0.025
+            self.TrueDesiredState[2,7] = 0.025
+            
+
+
 
             self.desiredState= self.TrueDesiredState
-            self.times = [1000]* self.desiredState.shape[1]   
+            self.times = [100]* self.desiredState.shape[1]   
             self.startState[1] = 1e-15
         
         

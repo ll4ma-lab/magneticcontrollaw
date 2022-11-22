@@ -22,6 +22,7 @@ from models import multiMagModel
 from modelOptimization import multiMagSolver
 from axisAlignedSolver import axisAlignedSolver
 from devinSolver import devinSolver
+from devinSolver2 import devinSolver2
 
 from ObjectProperties import ObjectProperties,boatProperties,sphereProperties
 from sysIDoptimization import radiusSysid,SeperateRadiusSysid,MassSysID
@@ -45,7 +46,7 @@ if __name__ == '__main__':
     env.magnets = env.magnets[:]
     #env.trajectoryDimensions = 'xyz'
 
-    sim_time = 10#np.sum(env.times)
+    sim_time = 800#np.sum(env.times)
 
     
     sigma_copper = 5.87E+07
