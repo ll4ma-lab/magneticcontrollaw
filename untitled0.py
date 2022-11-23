@@ -31,8 +31,7 @@ controls = env = adaptive = mass = MOI = radius = sigma_copper = numSteps = None
 
 
 #dataloader.load('/home/tabor/Downloads/real_2022-10-10 15 54 23.074092',globals())
-dataloader.load('C:/Users/tabor/Downloads/real_2022-04-27 17_35_24.878509',globals())
-
+dataloader.load('/home/tabor/Downloads/real_2022-04-26 18_05_06.499346',globals())
 if type(adaptive.controls[0]) == list:
     adaptive.controls = [SphereControlCommand(mag_num = control[0],
                                      dipole_strength = control[1],
@@ -93,7 +92,7 @@ for i in tqdm(range(1,numSteps-batch_size,1)):
     selected_linear_velocities = np.array(adaptive.linear_velocities[start_index:end_index])
     selected_rotation_velocities = np.array(adaptive.rotational_velocities[start_index:end_index])
     
-    prob.updateVals(selected_controls,adaptive.magnets,selected_positions,selected_linear_velocities,selected_rotation_velocities,(0.61,5.4))
+    prob.updateVals(selected_controls,adaptive.magnets,selected_positions,selected_linear_velocities,selected_rotation_velocities,(0.0,5.4))
     
     
     
