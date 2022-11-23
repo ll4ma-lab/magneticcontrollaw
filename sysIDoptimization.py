@@ -25,9 +25,9 @@ class radiusSysid(Problem):
         
         
         self.singleModel = sphereModel(1)
-        self.sigma_multiplier = 1e7
+        self.sigma_multiplier = 1e0
         
-        self.error_multiplier = 1e1
+        self.error_multiplier = 1e6
         
         if object_properties:
             self.initial_solution = np.array([object_properties.radius,
@@ -38,7 +38,7 @@ class radiusSysid(Problem):
             
         
         self.min_bounds[0] = 1e-3
-        self.max_bounds[0] = 5e-1
+        self.max_bounds[0] = 5e-2
 
         self.min_bounds[1] = 2e5/self.sigma_multiplier
         self.max_bounds[1] = 2e8/self.sigma_multiplier
