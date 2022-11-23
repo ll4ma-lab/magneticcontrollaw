@@ -172,12 +172,12 @@ class radiusSysid(Problem):
         ax.set_ylim(self.min_bounds[1], self.max_bounds[1])
 
         points = iterates[0].reshape((-1, 2))
-        costs = [[func(min(self.cost(point.reshape((-1,1))),clip_value))] for point in points]
+        costs = [[min(func(self.cost(point.reshape((-1,1)))),clip_value)] for point in points]
         print(np.min(costs))
 
         if show_costs:
-            ax.scatter(xs, ys, func(possibleCosts), color=(0, 0, 1, 0.5))
-            ax.set_zlim(0, clip_value)
+            ax.scatter(xs, ys, possibleCosts, color=(0, 0, 1, 0.5))
+            #ax.set_zlim(0, clip_value)
             points_3d = np.concatenate((points, np.array(costs)), 1)
             # silly hack to get filled circle
             scat = ax.scatter(points_3d[:, 0], points_3d[:, 1], points_3d[:, 2], linewidths=10, c="orange")
@@ -191,7 +191,7 @@ class radiusSysid(Problem):
 
         def update(num, scat, scat2, iterates, show_costs):
             points = iterates[num].reshape((-1, 2))
-            costs = [[func(min(self.cost(point.reshape((-1,1))),clip_value))] for point in points]
+            costs = [[min(func(self.cost(point.reshape((-1,1)))),clip_value)] for point in points]
             points_3d = np.concatenate((points, np.array(costs)), 1)
             #print(points_3d.shape)
             if show_costs:
