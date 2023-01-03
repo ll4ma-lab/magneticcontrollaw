@@ -15,11 +15,13 @@ import numpy as np
 import time 
 
 
-from sysIDoptimization import radiusSysid
-from ll4ma_opt.solvers.line_search import NewtonMethod,GradientDescent
+from sysIDoptimization import radiusSysid,SeperateRadiusSysid,MassSysID
+from ll4ma_opt.solvers import NewtonMethod,GradientDescent,GeneralizedGaussNewton,BFGSMethod,Momentum
 from models import SphereControlCommand
 from modelOptimization import build_acceleration_Q
 from ObjectProperties import ObjectProperties,boatProperties
+
+from tqdm import tqdm 
 #dataloader.load("/home/tabor/catkin_ws/src/magnetic_system/MagneticControlLaw/data/real_2022-01-15 15:42:21.459275",globals())
 #dataloader.load("/home/tabor/catkin_ws/src/magnetic_system/MagneticControlLaw/data/real_2022-01-17 17:30:14.948530",globals())
 
@@ -89,8 +91,14 @@ from ObjectProperties import ObjectProperties,boatProperties
 #dataloader.load('/media/tabor/Storage/new_experiments/square/real_2022-04-26 16:06:02.773579',globals())
 #dataloader.load('/media/tabor/Storage/new_experiments/square/real_2022-04-26 17:03:51.259098',globals())
 #dataloader.load('/media/tabor/Storage/new_experiments/square/real_2022-04-26 18:05:06.499346',globals())
+
+#sphere
 dataloader.load('/home/tabor/Downloads/real_2022-04-26 18_05_06.499346',globals())
 
+
+
+#cuboid
+#dataloader.load('/home/tabor/Downloads/real_2022-03-31 15_01_35.949906',globals())
 
 #physical = True
 import matplotlib.pyplot as plt
@@ -104,29 +112,30 @@ if type(controls[0]) == list:
     boat_mass, boat_MOI = boatProperties(0.059,0.075,0.07,0.031)
     boat_properties = ObjectProperties(mass=boat_mass, MOI=boat_MOI) #+ ObjectProperties(0.15,np.zeros(3))
     mass,MOI = mass
-    initial_object_properties = ObjectProperties(mass,MOI,radius,58000000.0)
+    initial_object_properties = ObjectProperties(mass,MOI,radius*5,58000000.0*5)
 
-
-
+boat = boat_properties
+velocity_shift = 3
 start = -numSteps + 5
 end = -5
 
+# FIX incorrect velocity in real data
+linearVelocity = np.array([np.linalg.inv(state[0][:3,:3])@state[2][:,0] for state in states[1+start+velocity_shift:end-1 + velocity_shift]])
+rotationalVelocity =np.array([np.linalg.inv(state[0][:3,:3])@state[1][:,0] for state in states[1+start+velocity_shift:end-1 + velocity_shift]])
 
-
-
-linearVelocity = np.array([np.dot(state[0][:3,:3],state[2][:,0]) for state in states[1+start:end-1]])
-rotationalVelocity = np.array([np.dot(state[0][:3,:3],state[1][:,0]) for state in states[1+start:end-1]])
+from scipy.spatial.transform import Rotation as R
+angles = np.array([R.from_matrix(state[0][:3,:3]).as_euler('xyz') for state in states[1+start :end ]])
+rotational_velocity = []
+for current,future in zip(angles[:-1,2],angles[1:,2]):
+    if np.abs(current-future) > np.pi:
+        current -= np.sign(current) * 2 * np.pi    
+    vel = future - current
+    rotational_velocity.append([0,0,vel])
+rotational_velocity = np.array(rotational_velocity)
 
 positions = np.array([state[0][:3,3] for state in states[1+start:end-1]])
-
-#linearVelocity =  (np.array([state[0][:3,3] for state in states[2+start:]])-  np.array([state[0][:3,3] for state in states[start+1:-1]]))/2
-boat = boat_properties
-
-
 some_controls = controls[start:end-2]
 
-
-solutions = []
 
 add_noise = False
 magnets = env.magnets
@@ -139,41 +148,64 @@ if add_noise:
     noisyrotationalVelocity = rotationalVelocity + np.random.normal(0,1e-3,rotationalVelocity.shape)
 else:
     noisylinearVelocity = linearVelocity
-    noisyrotationalVelocity = rotationalVelocity
+    noisyrotationalVelocity = rotational_velocity
 
 
+if optimizer_type is NewtonMethod:
+    optimizerParams = {'alpha':1,'rho':0.9,'c1':1e-3,'FP_PRECISION': 1e-16,'min_alpha': 1e-20}
+elif optimizer_type is GradientDescent or optimizer_type is Momentum:
+    step = 1e-11
+    optimizerParams = {'alpha':step,'rho':0.9,'c1':1e-11,'FP_PRECISION': 1e-16,'min_alpha': step*1e-20}
+elif optimizer_type is BFGSMethod:
+    optimizerParams = {'alpha':1e-2,'rho':0.9,'c1':1e-9,'FP_PRECISION': 1e-10,'min_alpha': 1e-2}
+if optimizer_type is Momentum:
+    optimizerParams['momentum'] = 0.9
 
 
-
-optimizerParams = {'alpha':1,'rho':0.9,'c1':1e-3,'FP_PRECISION': 1e-10,'min_alpha': 1e-20}
 
 prob = sysID_type(build_acceleration_Q(env.trajectoryDimensions),object_properties=initial_object_properties, boat = boat) # built with M(0.04) Q M(0.04)
 
-optimizer = NewtonMethod(problem=prob,**optimizerParams)
+optimizer = optimizer_type(problem=prob,**optimizerParams)
 s = time.time()
-prob.updateVals(some_controls,env.magnets,positions,noisylinearVelocity,noisyrotationalVelocity,(0.0,54))
-result = optimizer.optimize(prob.initial_solution,max_iterations=500)
-solutions.append(result.solution[0,0])
+prob.updateVals(some_controls,env.magnets,positions,noisylinearVelocity,noisyrotationalVelocity,(0.0,5.4))
+
+results = []
+for i in tqdm(range(1)):
+    initial_solution = np.random.uniform(prob.min_bounds,prob.max_bounds,(2,1))
+    result = optimizer.optimize(initial_solution,max_iterations=100)
+    results.append(result)
 print('opt time ', time.time()-s)
 
-possible_r = np.linspace(prob.min_bounds[0],prob.max_bounds[0],100)[:,0]
 
-possibleCosts = [prob.cost(np.stack((possible_r[i],prob.initial_solution[1,0])).reshape((2,1))) for i in range(len(possible_r))]
-fig = plt.figure()
-plt.plot(possible_r,np.abs(possibleCosts),'r')
+if sysID_type is radiusSysid:
+    possible_r = np.linspace(prob.min_bounds[0],prob.max_bounds[0],1000)[:,0]
+    
+    possibleCosts = [prob.cost(np.stack((possible_r[i],prob.initial_solution[1,0])).reshape((2,1))) for i in range(len(possible_r))]
+    fig = plt.figure()
+    plt.plot(possible_r,np.log(possibleCosts),'r')
+
+    s = time.time()
+
+    iterates = []
+    for i in range(20):
+        iterate = np.stack([result.iterates[i] if result.iterates.shape[0]>i else result.solution for result in results]).reshape((-1,1))
+        iterates.append(iterate)
+    _ = prob.visualize_optimization(iterates,func=np.log,show_costs=True)
+
+    print('brute time ', time.time()-s)
+else:
+    _ = prob.visualize_optimization(result.iterates,func=np.log)
 
 
-print('opt time ', time.time()-s)
-s = time.time()
-_ = prob.visualize_optimization(result.iterates,np.abs)
-print('brute time ', time.time()-s)
+
+
 print('solution ',result.solution)
 
-a=b
+prob.visualize_predicted_acceleration(result.solution)
 
 import torch
-x = torch.tensor(solution)
-modelAccelFunc=lambda x: prob.forwardAcceleration(x, prob.dists, prob.dipoleStrength, prob.angles, prob.rhos, prob.zero)
+x = torch.tensor(result.solution)
+modelAccelFunc=lambda x: prob.forward_acceleration(prob.get_object_properties(x,torch), prob.dists, prob.dipoleStrength, prob.angles, prob.rhos, prob.zero)
 
 modelAccel = modelAccelFunc(x)
 
@@ -185,8 +217,8 @@ deltaAccel=  measuredAcelAverage.unsqueeze(1) - prob.accelerations
 
 deltaDifference = deltaAccel - deltaModeled
 N = int(modelAccel.shape[1])
-M = 6
-P = 1
+M = 3
+P = prob.size()
 left = (deltaDifference.T @ prob.weights).unsqueeze(1)
 right = deltaDifference.T.unsqueeze(2)
 summedSquaredDelta = torch.sum(torch.bmm(left,right))

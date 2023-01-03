@@ -25,7 +25,7 @@ class radiusSysid(Problem):
         
         
         self.singleModel = sphereModel(1)
-        self.sigma_multiplier = 1e0
+        self.sigma_multiplier = 1e7
         
         self.error_multiplier = 1e6
         
@@ -141,9 +141,11 @@ class radiusSysid(Problem):
     
     
     def visualize_optimization(self, iterates, samples=50, func=np.abs, show_costs=False):
-        fig = plt.figure()
+        fig = plt.figure(figsize=(10,10))
         if show_costs:
             ax = fig.add_subplot(projection="3d")
+            start_angle = -100
+            ax.view_init(elev=17., azim=start_angle)
         else:
             ax = fig.add_subplot()
 
@@ -155,26 +157,36 @@ class radiusSysid(Problem):
         possibleCosts = [
             func(self.cost(np.stack((xs[i], ys[i])).reshape((2, 1)))) for i in range(len(xs))
         ]
-        clip_value = 2 * np.median(possibleCosts)
+        if func is np.log:
+            clip_value = np.median(possibleCosts)
+        else:
+            clip_value = 2 * np.median(possibleCosts)
         possibleCosts = np.array(possibleCosts)
         possibleCosts[possibleCosts > clip_value] = clip_value
 
         best_index = np.argmin(possibleCosts)
         print(
-            "best brute force cost ",
+            "best brute force  func cost ",
             possibleCosts[best_index],
             " at ",
             xs[best_index],
             ys[best_index],
         )
+        print(
+            "result func cost ",
+            min([min(func(self.cost(point.reshape((-1,1)))),clip_value) for point in iterates[-1].reshape((-1, 2))])
+        )
+        
+        
 
         ax.set_xlim(self.min_bounds[0], self.max_bounds[0])
         ax.set_ylim(self.min_bounds[1], self.max_bounds[1])
+        
+        
+
 
         points = iterates[0].reshape((-1, 2))
         costs = [[min(func(self.cost(point.reshape((-1,1)))),clip_value)] for point in points]
-        print(np.min(costs))
-
         if show_costs:
             ax.scatter(xs, ys, possibleCosts, color=(0, 0, 1, 0.5))
             #ax.set_zlim(0, clip_value)
@@ -189,7 +201,11 @@ class radiusSysid(Problem):
             scat.set_offsets(points)
             scat2 = None
 
-        def update(num, scat, scat2, iterates, show_costs):
+        def update(num, scat, scat2, iterates, show_costs,ax):
+            
+            ax.set_title(num)
+            if show_costs:
+                ax.view_init(elev=17., azim=start_angle+num/3)
             points = iterates[num].reshape((-1, 2))
             costs = [[min(func(self.cost(point.reshape((-1,1)))),clip_value)] for point in points]
             points_3d = np.concatenate((points, np.array(costs)), 1)
@@ -204,12 +220,32 @@ class radiusSysid(Problem):
         anim = FuncAnimation(
             fig,
             update,
-            fargs=(scat, scat2, iterates, show_costs),
+            fargs=(scat, scat2, iterates, show_costs,ax),
             frames=len(iterates),
             interval=100,
             repeat=True,
         )
         return anim
+    
+    def visualize_predicted_acceleration(self,iterate):
+        fig, ax = plt.subplots(3)
+        object_properties = self.get_object_properties(self.make_tensor(iterate),torch)
+        modeledAccelerations = self.forward_acceleration(object_properties,self.dists,self.dipoleStrength,self.angles,self.rhos,self.zero)
+        fig.suptitle("Modeled vs Measured Accelerations")
+        
+        titles = ['x','y','θ']
+        
+        for fig_index,acceleration_index in enumerate([0,1,5]):
+            ax[fig_index].set_title(titles[fig_index])
+            ax[fig_index].plot(self.accelerations[acceleration_index],label='measured')
+            ax[fig_index].plot(modeledAccelerations[acceleration_index],label='predicted')
+            ax[fig_index].legend()
+            
+        
+
+        
+        
+        
 
 class SeperateRadiusSysid(radiusSysid):
     def __init__(self,weights,object_properties,boat = None): 
