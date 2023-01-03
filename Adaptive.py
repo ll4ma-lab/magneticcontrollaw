@@ -19,7 +19,7 @@ class Adaptive:
         print('adaptive weights ',Q)
         self.problem = internal_sysID(Q,object_properties,boat=boat)
         self.current_solution = self.problem.initial_solution
-        step = 1e-8/ batch_size
+        step = 1e-8#/ batch_size
         optimizerParams = {'alpha':step,'rho':0.9,'min_alpha': step/2} 
         
         optimizerParams = {'alpha':step,'rho':0.9,'c1':1e-9,'FP_PRECISION': 1e-15,'min_alpha': 1e-20, 'momentum':0.8}

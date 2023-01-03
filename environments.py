@@ -132,17 +132,17 @@ class PlanarProblem:
             self.TrueDesiredState = np.zeros((12,5))
             #self.TrueDesiredState[1,:] = -0.075
 
-            self.TrueDesiredState[5,0] = -np.pi /4
+            self.TrueDesiredState[5,0] = -np.pi/2
             self.TrueDesiredState[5,1] = 0 
-            self.TrueDesiredState[5,2] = np.pi/4
-            self.TrueDesiredState[5,3] = np.pi/2
+            self.TrueDesiredState[5,2] = np.pi/2
+            self.TrueDesiredState[5,3] = np.pi
             self.TrueDesiredState[5,4] = 0
 
             #self.TrueDesiredState[4,:] = np.pi/2
         
             self.desiredState= self.TrueDesiredState
-            self.times = [180]* self.desiredState.shape[1]
-            self.times[0] = 360
+            self.times = [360]* self.desiredState.shape[1]
+            self.times[0] = 480
 
         if(challengeID==PlanarEnvironments.SQUARE_ROTATE): # rotate while square
             self.startState[5] = -np.pi/4 
