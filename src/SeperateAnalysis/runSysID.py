@@ -18,7 +18,7 @@ import time
 from sysIDoptimization import radiusSysid,SeperateRadiusSysid,MassSysID
 from ll4ma_opt.solvers import NewtonMethod,GradientDescent,GeneralizedGaussNewton,BFGSMethod,Momentum
 from models import SphereControlCommand
-from modelOptimization import build_acceleration_Q
+from solvers.modelOptimization import build_acceleration_Q
 from ObjectProperties import ObjectProperties,boatProperties
 
 from tqdm import tqdm 

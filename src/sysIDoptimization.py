@@ -12,7 +12,7 @@ import torch
 from models import modelCallRotatedWrench,sphereModel
 from ObjectProperties import ObjectProperties,buildMassMatrix,sphereProperties
 
-from modelOptimization import buildQ,build_acceleration_Q
+from solvers.modelOptimization import buildQ,build_acceleration_Q
 from ll4ma_opt.problems import Problem 
 import matplotlib.pyplot as plt 
 from matplotlib.animation import FuncAnimation

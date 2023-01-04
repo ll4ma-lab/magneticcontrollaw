@@ -19,10 +19,10 @@ from Adaptive import Adaptive
 
 
 from models import multiMagModel
-from modelOptimization import multiMagSolver
-from axisAlignedSolver import axisAlignedSolver
-from devinSolver import devinSolver
-from devinSolver2 import devinSolver2
+from solvers.modelOptimization import multiMagSolver
+from solvers.axisAlignedSolver import axisAlignedSolver
+from solvers.devinSolver import devinSolver
+from solvers.devinSolver2 import devinSolver2
 
 from ObjectProperties import ObjectProperties,boatProperties,sphereProperties
 from sysIDoptimization import radiusSysid,SeperateRadiusSysid,MassSysID
@@ -157,4 +157,6 @@ if __name__ == '__main__':
     print(np.amax(diff))
     
 
-
+    import dataloader
+    from datetime import datetime
+    dataloader.save("../data/sim_" + str(sim_time) + 's_' +  str(datetime.now()).replace(":","."),globals(),dir())

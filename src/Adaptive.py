@@ -7,7 +7,7 @@ Created on Tue Dec 14 13:02:06 2021
 """
 import sysIDoptimization
 from ll4ma_opt.solvers import Momentum
-from modelOptimization import build_acceleration_Q
+from solvers.modelOptimization import build_acceleration_Q
 import numpy as np
 import matplotlib.pyplot as plt
 class Adaptive:

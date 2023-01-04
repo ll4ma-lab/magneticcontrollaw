@@ -15,7 +15,7 @@ import torch
 from models import modelCallRotatedWrench,sphereModel,SphereControlCommand
 from ObjectProperties import ObjectProperties,buildMassMatrix,sphereProperties,boatProperties
 
-from modelOptimization import buildQ,build_acceleration_Q
+from solvers.modelOptimization import buildQ,build_acceleration_Q
 from ll4ma_opt.problems import Problem,SteinWrapper
 import matplotlib.pyplot as plt 
 

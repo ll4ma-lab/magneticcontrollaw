@@ -8,7 +8,7 @@ import numpy as np
 import time
 from se3Utils import buildSkew,repairRotMatrix
 from tqdm import tqdm
-from modelOptimization import SphereControlCommand
+from solvers.modelOptimization import SphereControlCommand
 from ObjectProperties import buildMassMatrix
 from se3Utils import buildTF
 

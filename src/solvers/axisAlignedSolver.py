@@ -8,7 +8,7 @@ Created on Mon Aug 29 12:32:40 2022
 from ll4ma_opt.solvers.line_search import NewtonMethod,GaussNewtonMethod,GradientDescent
 
 from models import rotZ,modelCallRotatedWrench,getOmniFrame,CylinderControlCommand
-from modelOptimization import buildQ
+from solvers.modelOptimization import buildQ
 from ll4ma_opt.problems import Problem
 import torch
 import numpy as np

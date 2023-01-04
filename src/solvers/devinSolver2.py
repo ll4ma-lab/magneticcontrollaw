@@ -7,7 +7,7 @@ Created on Tue Sep 27 19:35:46 2022
 import numpy as np
 import time
 from models import SphereControlCommand,deconstruct_omega,modelCallRotatedWrench
-from ForceFinder import ForceFinder
+from solvers.DevinHelper import ForceFinder
 import math
 
 
