@@ -7,10 +7,9 @@ Created on Sun Jul  5 16:41:44 2020
 import shelve
 
 
-    
-def save(filename,globals_in,dir_in):
-    
-    my_shelf = shelve.open(filename,'n') # 'n' for new
+def save(filename, globals_in, dir_in):
+
+    my_shelf = shelve.open(filename, "n")  # 'n' for new
     for key in dir_in:
         try:
             my_shelf[key] = globals_in[key]
@@ -18,16 +17,18 @@ def save(filename,globals_in,dir_in):
             #
             # __builtins__, my_shelf, and imported modules can not be shelved.
             #
-            print('ERROR shelving: {0}'.format(key))
+            print("ERROR shelving: {0}".format(key))
     my_shelf.close()
-def load(filename,globals_in):
-    my_shelf = shelve.open(filename,protocol=2)
+
+
+def load(filename, globals_in):
+    my_shelf = shelve.open(filename, protocol=2)
     for key in my_shelf:
         try:
-            globals_in[key]=my_shelf[key]
+            globals_in[key] = my_shelf[key]
         except:
             #
             # __builtins__, my_shelf, and imported modules can not be shelved.
             #
-            print('ERROR unshelving: {0}'.format(key))
+            print("ERROR unshelving: {0}".format(key))
     my_shelf.close()

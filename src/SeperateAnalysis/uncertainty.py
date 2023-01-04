@@ -16,7 +16,7 @@ jac = prob.jacobian(result.solution)
 NM = error.shape[0]
 P = prob.size()
 
-unscaled_covariance = compute_inverse_cholesky(jac.T@jac * (1/(NM-P)))
+unscaled_covariance = compute_inverse_cholesky(jac.T @ jac * (1 / (NM - P)))
 
-sigma_2 = (1/(NM-P))*np.sum((error-average_error)**2)
+sigma_2 = (1 / (NM - P)) * np.sum((error - average_error) ** 2)
 covariance = unscaled_covariance * sigma_2

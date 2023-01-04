@@ -6,7 +6,7 @@ Created on Mon Feb 22 12:40:03 2021
 """
 import numpy as np
 import time
-from se3Utils import buildSkew,repairRotMatrix
+from se3Utils import buildSkew, repairRotMatrix
 from tqdm import tqdm
 from solvers.modelOptimization import SphereControlCommand
 from ObjectProperties import buildMassMatrix
@@ -14,28 +14,44 @@ from se3Utils import buildTF
 
 
 def state_noise(state):
-    
+
     transform = np.copy(state[0])
- 
-    current_linear_velocity = transform[:3,:3] @ state[2]
-    current_rotational_velocity = transform[:3,:3] @ state[1]
-    
-    
-    position_noise = 0#np.random.normal(0,3e-4,(3)) 
-    linear_velocity_noise = 0#np.random.normal(0,3e-5,(3,1))
-    rotational_velocity_noise = 0#np.random.normal(0,1e-5,(3,1))
-    
-    transform[:3,3] += position_noise
+
+    current_linear_velocity = transform[:3, :3] @ state[2]
+    current_rotational_velocity = transform[:3, :3] @ state[1]
+
+    position_noise = 0  # np.random.normal(0,3e-4,(3))
+    linear_velocity_noise = 0  # np.random.normal(0,3e-5,(3,1))
+    rotational_velocity_noise = 0  # np.random.normal(0,1e-5,(3,1))
+
+    transform[:3, 3] += position_noise
     current_linear_velocity += linear_velocity_noise
     current_rotational_velocity += rotational_velocity_noise
 
-    tf_inverse = np.linalg.inv(transform)[:3,:3]
-    
-    state = [transform,tf_inverse @ current_rotational_velocity, tf_inverse @ current_linear_velocity]
-    return state
-    
+    tf_inverse = np.linalg.inv(transform)[:3, :3]
 
-def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,sim_time=10,cheat=False,debugPrints = True,runAdaptive= False, inverse_dynamics=False):
+    state = [
+        transform,
+        tf_inverse @ current_rotational_velocity,
+        tf_inverse @ current_linear_velocity,
+    ]
+    return state
+
+
+def simulateExperiment(
+    simulator,
+    controller,
+    env,
+    velocityProfile,
+    model,
+    solver,
+    adaptive,
+    sim_time=10,
+    cheat=False,
+    debugPrints=True,
+    runAdaptive=False,
+    inverse_dynamics=False,
+):
     state = simulator.state
     states = []
     wrenches = []
@@ -46,28 +62,27 @@ def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,ada
     minimizationCosts = []
     times = []
 
-
-    iterates = range(1,sim_time+1)
-    if(debugPrints):
+    iterates = range(1, sim_time + 1)
+    if debugPrints:
         iterates = tqdm(iterates)
-    
+
     for i in iterates:
-        #if i == 300 and runAdaptive:
+        # if i == 300 and runAdaptive:
         #    model.cylinderModel.object_properties.radius *=1.5
-            #arbitrarily change radius without updating mass
-        desiredState = velocityProfile.getDesiredState(simulator.simulator_time,state)
-        desired_wrench,p,d = controller.getDesiredWrench(state,desiredState)
-       
+        # arbitrarily change radius without updating mass
+        desiredState = velocityProfile.getDesiredState(simulator.simulator_time, state)
+        desired_wrench, p, d = controller.getDesiredWrench(state, desiredState)
+
         desiredStates.append(desiredState)
         desiredWrenchs.append(desired_wrench)
-        if(cheat):
+        if cheat:
 
             if inverse_dynamics:
                 inverted_accel = np.zeros(desired_wrench.shape)
                 inverted_accel[:3] = desired_wrench[3:]
                 inverted_accel[3:] = desired_wrench[:3]
                 inverted_wrench = simulator.Isc @ inverted_accel
-                
+
                 trueWrench = np.zeros(inverted_wrench.shape)
                 trueWrench[:3] = inverted_wrench[3:]
                 trueWrench[3:] = inverted_wrench[:3]
@@ -76,110 +91,125 @@ def simulateExperiment(simulator,controller,env,velocityProfile,model,solver,ada
                 control = SphereControlCommand()
 
         else:
-            control =  solver.solveWrench(state[0][:3,3],desired_wrench)
-            trueWrench = model.forwardPass(state[0][:3,3],control)
-            trueWrench[3:]*=0
-            wrenchError = trueWrench-desired_wrench
-            cost = np.sum((wrenchError[:3,:]**2)) + 200*np.sum((wrenchError[3:,:]**2))
+            control = solver.solveWrench(state[0][:3, 3], desired_wrench)
+            trueWrench = model.forwardPass(state[0][:3, 3], control)
+            trueWrench[3:] *= 0
+            wrenchError = trueWrench - desired_wrench
+            cost = np.sum((wrenchError[:3, :] ** 2)) + 200 * np.sum(
+                (wrenchError[3:, :] ** 2)
+            )
             minimizationCosts.append(cost)
         wrenches.append(trueWrench)
         controls.append(control)
         times.append(simulator.simulator_time)
 
-        env.problem_specific_modification(state,trueWrench)
+        env.problem_specific_modification(state, trueWrench)
         if runAdaptive:
-            adaptive.step(state_noise(state),control)
+            adaptive.step(state_noise(state), control)
         states.append(state)
-        state = simulator.simulate(trueWrench,control.seconds)
+        state = simulator.simulate(trueWrench, control.seconds)
 
-    
-    
     if debugPrints:
         runTime = time.time() - start
         print(runTime)
 
-    return states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts
+    return states, wrenches, desiredWrenchs, desiredStates, controls, minimizationCosts
 
 
 class discreteTimeSimulator:
-    def __init__(self,state,object_properties):
+    def __init__(self, state, object_properties):
         self.dt = 0.002
-            
-        
-        bodyToWorld = buildTF(state[:3,0],state[3:6,0])
-        
-        worldToBodyR = bodyToWorld[:3,:3].T
-        
-        
-        
 
-        Ωsc = worldToBodyR @ state[9:12,:]
-        Vsc = worldToBodyR @ state[6:9,:]
-        self.state = (bodyToWorld,Ωsc,Vsc)
+        bodyToWorld = buildTF(state[:3, 0], state[3:6, 0])
+
+        worldToBodyR = bodyToWorld[:3, :3].T
+
+        Ωsc = worldToBodyR @ state[9:12, :]
+        Vsc = worldToBodyR @ state[6:9, :]
+        self.state = (bodyToWorld, Ωsc, Vsc)
 
         self.Isc = buildMassMatrix(object_properties)
-        
+
         self.simulator_time = 1e-1
         self.time = 0
 
-    def simulate(self,control,seconds):
-        self.state = self.forwardPass(self.state,control,seconds)
+    def simulate(self, control, seconds):
+        self.state = self.forwardPass(self.state, control, seconds)
         return self.state
-    
-    def simulator_step(self,bodyToWorld,Ωsc,Vsc,FT,dt):
-        rotrot = np.concatenate((np.concatenate((np.transpose(bodyToWorld[:3,:3]),np.zeros((3,3))),1),np.concatenate((np.zeros((3,3)),np.transpose(bodyToWorld[:3,:3])),1)),0)
+
+    def simulator_step(self, bodyToWorld, Ωsc, Vsc, FT, dt):
+        rotrot = np.concatenate(
+            (
+                np.concatenate(
+                    (np.transpose(bodyToWorld[:3, :3]), np.zeros((3, 3))), 1
+                ),
+                np.concatenate(
+                    (np.zeros((3, 3)), np.transpose(bodyToWorld[:3, :3])), 1
+                ),
+            ),
+            0,
+        )
         TF = np.zeros(FT.shape)
         TF[:3] = FT[3:]
         TF[3:] = FT[:3]
-        bodyTF = np.dot(rotrot,TF)
-    
-        ξsc = np.concatenate([Ωsc,Vsc])
+        bodyTF = np.dot(rotrot, TF)
+
+        ξsc = np.concatenate([Ωsc, Vsc])
         ΩscX = buildSkew(Ωsc)
         VscX = buildSkew(Vsc)
-        ξscV = np.concatenate((np.concatenate((ΩscX,Vsc),1),np.zeros((1,4))),0)
-        
-        adξ = np.concatenate((np.concatenate((ΩscX,np.zeros((3,3))),1),np.concatenate((VscX,ΩscX),1)),0)
+        ξscV = np.concatenate((np.concatenate((ΩscX, Vsc), 1), np.zeros((1, 4))), 0)
+
+        adξ = np.concatenate(
+            (
+                np.concatenate((ΩscX, np.zeros((3, 3))), 1),
+                np.concatenate((VscX, ΩscX), 1),
+            ),
+            0,
+        )
         adξs = np.transpose(adξ)
-        
-        
-        rightSide = np.dot(adξs,np.dot(self.Isc,ξsc)) +  bodyTF
-        
+
+        rightSide = np.dot(adξs, np.dot(self.Isc, ξsc)) + bodyTF
+
         ξsc_dot = np.dot(np.linalg.inv(self.Isc), rightSide)
         bodyToStrange = np.eye(4)
-        bodyToStrange[:3,:3] = bodyToWorld[:3,:3]
-        bodyToWorld_dot = np.dot(bodyToStrange,ξscV) #gsc_dot = gsc * ξscV
-    
-        bodyToWorld+= bodyToWorld_dot*dt
+        bodyToStrange[:3, :3] = bodyToWorld[:3, :3]
+        bodyToWorld_dot = np.dot(bodyToStrange, ξscV)  # gsc_dot = gsc * ξscV
+
+        bodyToWorld += bodyToWorld_dot * dt
         bodyToWorld = repairRotMatrix(bodyToWorld)
 
+        Ωsc += ξsc_dot[:3, :] * dt
+        Vsc += ξsc_dot[3:, :] * dt
+        return bodyToWorld, Ωsc, Vsc
 
-        Ωsc += ξsc_dot[:3,:] * dt
-        Vsc += ξsc_dot[3:,:] * dt
-        return bodyToWorld,Ωsc,Vsc
-    
-    def forwardPass(self,state,FT,seconds):
-        steps = int(seconds/self.dt)
+    def forwardPass(self, state, FT, seconds):
+        steps = int(seconds / self.dt)
         start = time.time()
 
-        #Notation and math from https://downloads.hindawi.com/journals/ijae/2017/4034328.pdf
-        (bodyToWorld0,Ωsc0,Vsc0) = state
-        
+        # Notation and math from https://downloads.hindawi.com/journals/ijae/2017/4034328.pdf
+        (bodyToWorld0, Ωsc0, Vsc0) = state
+
         bodyToWorld = np.copy(bodyToWorld0)
         Ωsc = np.copy(Ωsc0)
         Vsc = np.copy(Vsc0)
-        
-        FT = np.reshape(FT,(6,1))
-        
+
+        FT = np.reshape(FT, (6, 1))
+
         for i in range(steps):
-            bodyToWorld,Ωsc,Vsc = self.simulator_step(bodyToWorld,Ωsc,Vsc,FT,self.dt)
-        
-        time_left = seconds - self.dt*steps
-        bodyToWorld,Ωsc,Vsc = self.simulator_step(bodyToWorld,Ωsc,Vsc,FT,time_left)
-        self.simulator_time+=seconds
-        
+            bodyToWorld, Ωsc, Vsc = self.simulator_step(
+                bodyToWorld, Ωsc, Vsc, FT, self.dt
+            )
+
+        time_left = seconds - self.dt * steps
+        bodyToWorld, Ωsc, Vsc = self.simulator_step(
+            bodyToWorld, Ωsc, Vsc, FT, time_left
+        )
+        self.simulator_time += seconds
+
         self.time += time.time() - start
-        
-        return (bodyToWorld,Ωsc,Vsc)
-   # def setState(self,state):
-   #     self.state = np.copy(state)
-    
+
+        return (bodyToWorld, Ωsc, Vsc)
+
+
+# def setState(self,state):
+#     self.state = np.copy(state)
