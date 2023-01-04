@@ -91,7 +91,7 @@ if __name__ == '__main__':
                                 numProcesses=10)
     
     if inverseDynamics:
-        controller = PDController(env.startState,1.2,0.004,1.2,0.004,0,0)
+        controller = PDController(env.startState,0.12,0.004,0.12,0.004,0,0)
     else:
         controller = PDController(env.startState,0.005,0.000001,0.005,0.000002,0.0,0.000)
     simulator = discreteTimeSimulator(env.startState,object_properties) 
