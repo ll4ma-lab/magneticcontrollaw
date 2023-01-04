@@ -21,6 +21,8 @@ from Adaptive import Adaptive
 from models import multiMagModel
 from modelOptimization import multiMagSolver
 from axisAlignedSolver import axisAlignedSolver
+from devinSolver import devinSolver
+from devinSolver2 import devinSolver2
 
 from ObjectProperties import ObjectProperties,boatProperties,sphereProperties
 from sysIDoptimization import radiusSysid,SeperateRadiusSysid,MassSysID
@@ -28,10 +30,10 @@ from sysIDoptimization import radiusSysid,SeperateRadiusSysid,MassSysID
 if __name__ == '__main__':
 
     useSpecialCaseSolver = False
-    useSphere = True and not useSpecialCaseSolver 
+    useSphere = True
     cheat = False
-    runAdaptive = False and useSphere
-    inverseDynamics = True and useSphere and not cheat
+    runAdaptive = False and useSphere 
+    inverseDynamics = True and useSphere and not cheat and not useSpecialCaseSolver
     
     simulate_boat = False
 
@@ -40,23 +42,23 @@ if __name__ == '__main__':
     velNoise = False
     controlNoise = False
     
-    env = SpaceProblem(SpaceEnvironments.AXIS)
+    env = SpaceProblem(SpaceEnvironments.BACKANDFORTH)
     env.magnets = env.magnets[:]
     #env.trajectoryDimensions = 'xyz'
 
-    sim_time = np.sum(env.times)
+    sim_time = 800#np.sum(env.times)
 
     
-    sigma_copper = 5.8E+07
+    sigma_copper = 5.87E+07
     sigma_al = 3.77E+07
     
     #simulator object
     radius = 0.02
     mass,MOI = sphereProperties(8940,radius)
-    object_properties = ObjectProperties(mass=mass, MOI=MOI, radius=radius, sigma=sigma_copper )
+    object_properties = ObjectProperties(mass=mass, MOI=MOI, radius=radius, sigma=sigma_copper)
     
     #controller object
-    initial_radius_guess = 0.015
+    initial_radius_guess = 0.02
     mass_initial,MOI_initial = sphereProperties(8940,radius)
     object_properties_approximate = ObjectProperties(mass=mass_initial, MOI=MOI_initial, radius=initial_radius_guess, sigma=sigma_copper )
     
@@ -81,6 +83,7 @@ if __name__ == '__main__':
     
     if useSpecialCaseSolver:
         solver = axisAlignedSolver(solverModel, env.trajectoryDimensions)
+        solver = devinSolver(solverModel)
     else:
         solver = multiMagSolver(model=solverModel,
                                 stateCostString=env.trajectoryDimensions,
@@ -92,8 +95,10 @@ if __name__ == '__main__':
     
     if inverseDynamics:
         controller = PDController(env.startState,0.12,0.004,0.12,0.004,0,0)
+    elif(useSpecialCaseSolver):
+        controller = PDController(env.startState,0.0005,0.0,0.1,0.0,0.0,0.000)
     else:
-        controller = PDController(env.startState,0.005,0.000001,0.005,0.000002,0.0,0.000)
+        controller = PDController(env.startState,0.0005,0.000001,0.0005,0.000002,0.0,0.000)
     simulator = discreteTimeSimulator(env.startState,object_properties) 
     velocityProfile = SplineProfile.SplineProfile(env,sim_time,env.times)
     adaptive = Adaptive(env.magnets,'all', object_properties_approximate, 25,adaptive_model, boat_properties)
@@ -101,17 +106,17 @@ if __name__ == '__main__':
     states,wrenches,desiredWrenchs,desiredStates,controls,minimizationCosts = simulateExperiment(simulator,controller,env,velocityProfile,model,solver,adaptive,sim_time = sim_time,cheat=cheat,runAdaptive=runAdaptive,inverse_dynamics=inverseDynamics)
     
     
-    print('Time spent doing forwad model ' + str(model.time))
-    print('Time spent doing solving model ' + str(solver.time))
-    print('Time spent doing velocity ' + str(velocityProfile.time))
-    print('Time spent doing simulation ' + str(simulator.time))
+    #print('Time spent doing forwad model ' + str(model.time))
+    #print('Time spent doing solving model ' + str(solver.time))
+    #print('Time spent doing velocity ' + str(velocityProfile.time))
+    #print('Time spent doing simulation ' + str(simulator.time))
     visStart = time.time()
     positions = np.array([state[0][:3,3] for state in states])
     linearVelocity = np.array([np.dot(state[0][:3,:3],state[2][:,0]) for state in states])
     rotationalVelocity = np.array([np.dot(state[0][:3,:3],state[1][:,0]) for state in states])
     transforms = np.array([state[0] for state in states])
     desiredFinalTF = buildTF(desiredStates[-1][:3,0],desiredStates[-1][3:6,0])
-    remainingError = np.array([controller.computeError(desiredFinalTF,state[0]) for state in states])
+    remainingError = np.array([controller.computeError(transforms[0],state[0]) for state in states])
     
     
     #visualization stuff
@@ -140,11 +145,16 @@ if __name__ == '__main__':
     
     visualization.plotStuff(Plots,'Desired Pose')
     
-    print('Time spent doing visualization ' + str(time.time()-visStart))
+    #print('Time spent doing visualization ' + str(time.time()-visStart))
     
     plt.figure()    
     plt.plot(minimizationCosts)
+    
+    diff = npdesiredStates[:,0,0] - positions[:,0]
+    plt.figure()
+    plt.plot(diff)
+    print(np.mean(np.square(diff)))
+    print(np.amax(diff))
+    
 
-    import dataloader
-    from datetime import datetime
-    dataloader.save("data/sim_" + str(sim_time) + 's_' +  str(datetime.now()).replace(":","."),globals(),dir())
+

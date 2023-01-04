@@ -66,6 +66,16 @@ def constructOmega(angles, library = np):
         library.cos(angles[0])]).reshape(3,-1)
     return omega
 
+def deconstruct_omega(omega):
+    omega = omega *(1-1e-15)
+    first_angle = np.arccos(omega[2])
+    if(1-omega[2]**2 < 1e-3):
+        second_angle=0
+    else:
+        sin_angle2 = omega[1]/np.sin(first_angle)
+        cos_angle2 = omega[0]/np.sin(first_angle)
+        second_angle = np.arctan2(sin_angle2,cos_angle2)
+    return np.array([first_angle,second_angle])/(np.pi/180.0)
 
 
 def vectorNorm(vector,library):
@@ -183,13 +193,13 @@ class sphereModel():
     def __init__(self,object_properties):
         self.cylinderModel = cylinderModel(object_properties)
         
-    def modelCall(self,dist,dipoleStrength,radii=None,sigma=None):
-        frho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['fzz'],dist,dipoleStrength,4,radii,sigma)
-        trho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['tzz'],dist,dipoleStrength,3,radii,sigma)
+    def modelCall(self,dist,dipole_strength,radii=None,sigma=None):
+        frho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['fzz'],dist,dipole_strength,4,radii,sigma)
+        trho0 = self.cylinderModel.modelEquation(self.cylinderModel.constants['tzz'],dist,dipole_strength,3,radii,sigma)
         
-        frho90 = self.cylinderModel.modelEquation(self.cylinderModel.constants['frhorho'],dist,dipoleStrength,4,radii,sigma)
-        fphi90 = self.cylinderModel.modelEquation(self.cylinderModel.constants['frhophi'],dist,dipoleStrength,4,radii,sigma)
-        ttheta90= self.cylinderModel.modelEquation(self.cylinderModel.constants['trhoz'],dist,dipoleStrength,3,radii,sigma)
+        frho90 = self.cylinderModel.modelEquation(self.cylinderModel.constants['frhorho'],dist,dipole_strength,4,radii,sigma)
+        fphi90 = self.cylinderModel.modelEquation(self.cylinderModel.constants['frhophi'],dist,dipole_strength,4,radii,sigma)
+        ttheta90= self.cylinderModel.modelEquation(self.cylinderModel.constants['trhoz'],dist,dipole_strength,3,radii,sigma)
         return frho0,trho0,frho90,fphi90,ttheta90
     
     

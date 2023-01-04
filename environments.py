@@ -28,6 +28,7 @@ class SpaceEnvironments(Enum):
     CUBE_ROTATE = 6
     SPIN = 7
     SPIN2 = 8
+    BACKANDFORTH = 9
     
 
 class PlanarProblem:
@@ -500,6 +501,53 @@ class SpaceProblem:
 
             self.desiredState= self.TrueDesiredState
             self.times = [360]* self.desiredState.shape[1]    
+        
+        if(challengeID==SpaceEnvironments.BACKANDFORTH): # individual axis
+            self.magnets = [self.magnets[i] for i in [0,1]] 
+            self.magnets[0][1] += 1e-15
+            self.magnets[1][1] += 1e-15
+
+            self.TrueDesiredState = np.zeros((12,8))
+
+            self.TrueDesiredState[0,0] = 0.025
+            self.TrueDesiredState[1,0] = 0.025
+            self.TrueDesiredState[2,0] = 0.025
+            
+            self.TrueDesiredState[0,1] = 0.025
+            self.TrueDesiredState[1,1] = 0.025
+            self.TrueDesiredState[2,1] = -0.025
+            
+            self.TrueDesiredState[0,2] = 0.025
+            self.TrueDesiredState[1,2] = -0.025
+            self.TrueDesiredState[2,2] = -0.025
+            
+            self.TrueDesiredState[0,3] = 0.025
+            self.TrueDesiredState[1,3] = -0.025
+            self.TrueDesiredState[2,3] = 0.025
+            
+            self.TrueDesiredState[0,4] = -0.025
+            self.TrueDesiredState[1,4] = -0.025
+            self.TrueDesiredState[2,4] = 0.025
+            
+            self.TrueDesiredState[0,5] = -0.025
+            self.TrueDesiredState[1,5] = -0.025
+            self.TrueDesiredState[2,5] = -0.025
+            
+            self.TrueDesiredState[0,6] = -0.025
+            self.TrueDesiredState[1,6] = 0.025
+            self.TrueDesiredState[2,6] = -0.025
+            
+            self.TrueDesiredState[0,7] = -0.025
+            self.TrueDesiredState[1,7] = 0.025
+            self.TrueDesiredState[2,7] = 0.025
+            
+
+
+
+            self.desiredState= self.TrueDesiredState
+            self.times = [100]* self.desiredState.shape[1]   
+            self.startState[1] = 1e-15
+        
         
     def spiralHelper(self, t):
         xyz = np.zeros((12))
