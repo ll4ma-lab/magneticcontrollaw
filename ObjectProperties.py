@@ -33,8 +33,8 @@ def buildMassMatrix(object_properties,library=np,torqueTop=True):
     mass = object_properties.mass
     MOI = object_properties.MOI
 
-    massComponent = library.eye(3) *mass
-    offDiagonal = library.zeros((3,3))
+    massComponent = library.diag(library.stack([mass,mass,mass]))
+    offDiagonal = library.zeros_like(MOI)
     
     if torqueTop:
         top = library.vstack((MOI,offDiagonal))    
