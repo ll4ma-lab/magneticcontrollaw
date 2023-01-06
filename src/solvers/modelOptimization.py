@@ -12,7 +12,6 @@ from ll4ma_opt.problems import Problem
 
 import matplotlib.pyplot as plt
 
-torch.set_default_tensor_type(torch.DoubleTensor)
 import torch.multiprocessing as multiprocessing
 
 from ll4ma_opt.solvers.line_search import (
@@ -29,6 +28,8 @@ from models import (
     SphereControlCommand,
 )
 from ObjectProperties import build_mass_matrix
+
+torch.set_default_tensor_type(torch.DoubleTensor)
 
 sphere_parameters = {
     "alpha": 1.0,

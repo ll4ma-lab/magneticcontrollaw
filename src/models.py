@@ -31,11 +31,11 @@ class SphereControlCommand:
 
 # cylinder model helper
 def get_omni_frame(pos):
-    Z = np.array([0, 0, 1])
+    z = np.array([0, 0, 1])
     dist = np.linalg.norm(pos)
 
     omni_z = -1 * (pos / dist)
-    omni_y = np.cross(omni_z, Z)
+    omni_y = np.cross(omni_z, z)
     omni_y = omni_y / np.sqrt(np.dot(omni_y, omni_y))  # unit vectorise
     omni_x = np.cross(omni_y, omni_z)
     # Combine to build rotation matrix
@@ -57,14 +57,14 @@ def rot_z(yaw, library=np):
         (1.0, 0.0) if library is np else (torch.tensor([1.0]), torch.tensor([0.0]))
     )
 
-    RZ = library.stack(
+    r_z = library.stack(
         [
             library.stack([library.cos(yaw), -library.sin(yaw), zero]),
             library.stack([library.sin(yaw), library.cos(yaw), zero]),
             library.stack([zero, zero, one]),
         ]
     ).reshape(3, 3)
-    return RZ
+    return r_z
 
 
 # sphere model helper

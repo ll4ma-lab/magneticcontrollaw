@@ -5,13 +5,6 @@ Created on Tue Nov 19 15:24:22 2019
 @author: tabor
 """
 
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Nov 18 15:57:35 2019
-
-@author: tabor
-"""
-
 import numpy as np
 from se3Utils import build_skew, build_tf, matrix_log, skew_to_vector
 

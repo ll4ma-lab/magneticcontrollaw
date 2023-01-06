@@ -294,12 +294,14 @@ class PlanarProblem:
 
         if len(self.trajectory_dimensions) < 3:
             warnings.warn(
-                "planar environment without yaw control can have numerical issues as yaw vel gets high"
+                "planar environment without yaw control can \
+                have numerical issues as yaw vel gets high"
             )
 
     def problem_specific_modification(self, state, wrench=None):
 
-        # note state has TF and body frame velocity, trying to modify vel means probably rotating to world frame
+        # note state has TF and body frame velocity, trying to modify vel
+        # means probably rotating to world frame
         body_to_world = state[0][:3, :3]
         linear_velocity = np.dot(body_to_world, state[2])
         rotational_velocity = np.dot(body_to_world, state[1])

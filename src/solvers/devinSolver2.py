@@ -129,21 +129,21 @@ class DevinSolver2:
                         ]
                     )
 
-                    ry = np.array(
-                        [
-                            [
-                                math.cos(math.pi / 2 - theta),
-                                0,
-                                math.sin(math.pi / 2 - theta),
-                            ],
-                            [0, 1, 0],
-                            [
-                                -math.sin(math.pi / 2 - theta),
-                                0,
-                                math.cos(math.pi / 2 - theta),
-                            ],
-                        ]
-                    )
+                    # ry = np.array(
+                    #     [
+                    #         [
+                    #             math.cos(math.pi / 2 - theta),
+                    #             0,
+                    #             math.sin(math.pi / 2 - theta),
+                    #         ],
+                    #         [0, 1, 0],
+                    #         [
+                    #             -math.sin(math.pi / 2 - theta),
+                    #             0,
+                    #             math.cos(math.pi / 2 - theta),
+                    #         ],
+                    #     ]
+                    # )
 
                     w1hatb = np.matmul(R, w1hat)
                     w1b = wmag * w1hatb

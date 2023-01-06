@@ -9,7 +9,6 @@ import numpy as np
 
 class DummyProfile:
     def __init__(self, env, total_time_steps, times):
-        start_state = env.startState
         points = env.desiredState
         self.points = points
         self.total_time_steps = total_time_steps

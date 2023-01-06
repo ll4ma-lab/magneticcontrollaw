@@ -122,7 +122,6 @@ def draw_sphere(center, radius, ax):
 
 
 def visualize_2d_path(environment, states, name="path"):
-    all_magnets = environment.magnets
     magnets = environment.magnets
     fig = plt.figure()
     fig.suptitle(name)
@@ -132,7 +131,7 @@ def visualize_2d_path(environment, states, name="path"):
     ax.set_zlim(*environment.visualization_boundary_y)
     # ax.set_aspect('equal')
 
-    draw_cubes(all_magnets, [], ax, environment.radius)
+    draw_cubes(magnets, [], ax, environment.radius)
     plt.plot(states[0, :], states[1, :], states[2, :], linewidth=4, color="g")
     add_rect(
         (0, 0, environment.lims[2][0] / 2),
@@ -256,7 +255,6 @@ def animate_2d_path(
         )[0],
     ]
 
-    fixedlines = draw_origin
     scatter = ax.scatter(
         positions[0:1, 0],
         positions[0:1, 1],

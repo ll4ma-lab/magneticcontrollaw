@@ -60,7 +60,7 @@ class DevinSolver:
 
         # Determine the direction for omega 1 and 2 based on fyzd
         ix = np.array([1, 0, 0])
-        fdes_parallel = np.array([fxd, 0, 0])
+        # fdes_parallel = np.array([fxd, 0, 0])
         fdes_perp = np.array([0, fdes[1], fdes[2]])
         fhat_des_perp = fdes_perp / np.linalg.norm(fdes_perp)
 
@@ -110,63 +110,6 @@ class DevinSolver:
         itheta2 = np.cross(iphi2, ip2)
         itheta3 = np.cross(iphi3, ip3)
         itheta3b = np.cross(iphi3b, ip3)
-
-        # print('constnats')
-        # r = self.model.object_properties.radius
-        # sigma = self.model.object_properties.sigma
-
-        # print(r,sigma)
-
-        # c0p90,c1p90,c2p90,c3p90,c4p90 = self.model.cylinderModel.constants['frhorho']
-        # print(c0p90,c1p90,c2p90,c3p90,c4p90)
-        # c0p0,c1p0,c2p0,c3p0,c4p0 = self.model.cylinderModel.constants['fzz']
-        # print(c0p0,c1p0,c2p0,c3p0,c4p0)
-        # c0phi,c1phi,c2phi,c3phi,c4phi = self.model.cylinderModel.constants['frhophi']
-        # print(c0phi,c1phi,c2phi,c3phi,c4phi)
-        # c0tp,c1tp,c2tp,c3tp,c4tp =  self.model.cylinderModel.constants['tzz']
-        # print(c0tp,c1tp,c2tp,c3tp,c4tp)
-        # c0ttheta,c1ttheta,c2ttheta,c3ttheta,c4ttheta =  self.model.cylinderModel.constants['trhoz']
-        # print(c0ttheta,c1ttheta,c2ttheta,c3ttheta,c4ttheta)
-
-        # # Calculate the non-dimensional terms
-        # Pi1_1 = sigma*self.mu0*np.linalg.norm(w1)*r**2
-        # Pi1_2 = sigma*self.mu0*np.linalg.norm(w2)*r**2
-        # Pi1_3 = sigma*self.mu0*np.linalg.norm(w3)*r**2
-        # Pi2_1 = np.linalg.norm(p1)/r
-        # Pi2_2 = np.linalg.norm(p2)/r
-        # Pi2_3 = np.linalg.norm(p3)/r
-        # Pi0_1p90 = ((c0p90*Pi1_1)**(c1p90*Pi1_1**c2p90)*10**c3p90)/Pi2_1**c4p90
-        # Pi0_2p90 = ((c0p90*Pi1_2)**(c1p90*Pi1_2**c2p90)*10**c3p90)/Pi2_2**c4p90
-        # Pi0_3p90 = ((c0p90*Pi1_3)**(c1p90*Pi1_3**c2p90)*10**c3p90)/Pi2_3**c4p90
-        # Pi0_1p0 = ((c0p0*Pi1_1)**(c1p0*Pi1_1**c2p0)*10**c3p0)/Pi2_1**c4p0
-        # Pi0_2p0 = ((c0p0*Pi1_2)**(c1p0*Pi1_2**c2p0)*10**c3p0)/Pi2_2**c4p0
-        # Pi0_3p0 = ((c0p0*Pi1_3)**(c1p0*Pi1_3**c2p0)*10**c3p0)/Pi2_3**c4p0
-        # Pi0_1phi90 = ((c0phi*Pi1_1)**(c1phi*Pi1_1**c2phi)*10**c3phi)/Pi2_1**c4phi
-        # Pi0_2phi90 = ((c0phi*Pi1_2)**(c1phi*Pi1_2**c2phi)*10**c3phi)/Pi2_2**c4phi
-        # Pi0_1tp = ((c0tp*Pi1_1)**(c1tp*Pi1_1**c2tp)*10**c3tp)/Pi2_1**c4tp
-        # Pi0_2tp = ((c0tp*Pi1_2)**(c1tp*Pi1_2**c2tp)*10**c3tp)/Pi2_2**c4tp
-        # Pi0_3tp = ((c0tp*Pi1_3)**(c1tp*Pi1_3**c2tp)*10**c3tp)/Pi2_3**c4tp
-        # Pi0_1ttheta = ((c0ttheta*Pi1_1)**(c1ttheta*Pi1_1**c2ttheta)*10**c3ttheta)/Pi2_1**c4ttheta
-        # Pi0_2ttheta = ((c0ttheta*Pi1_2)**(c1ttheta*Pi1_2**c2ttheta)*10**c3ttheta)/Pi2_2**c4ttheta
-        # Pi0_3ttheta = ((c0ttheta*Pi1_3)**(c1ttheta*Pi1_3**c2ttheta)*10**c3ttheta)/Pi2_3**c4ttheta
-
-        # # Calculate the p=0 p=90 rho and phi forces
-        # f1_p90 = Pi0_1p90*self.mu0/r**4
-        # f2_p90 = Pi0_2p90*self.mu0/r**4
-        # f3_p90 = Pi0_3p90*self.mu0/r**4
-        # f1_p0 = Pi0_1p0*self.mu0/r**4
-        # f2_p0 = Pi0_2p0*self.mu0/r**4
-        # f3_p0 = Pi0_3p0*self.mu0/r**4
-        # f1_phi90 = Pi0_1phi90*self.mu0/r**4
-        # f2_phi90 = Pi0_2phi90*self.mu0/r**4
-        # t1_p0 = Pi0_1tp*self.mu0/r**3
-        # t2_p0 = Pi0_2tp*self.mu0/r**3
-        # t3_p0 = Pi0_3tp*self.mu0/r**3
-        # t1_theta90 = Pi0_1ttheta*self.mu0/r**3
-        # t2_theta90 = Pi0_2ttheta*self.mu0/r**3
-        # t3_theta90 = Pi0_3ttheta*self.mu0/r**3
-
-        # print(f1_p0,t1_p0,t1_theta90,f1_phi90)
 
         # can just get these values from model
         f1_p0, t1_p0, f1_p90, f1_phi90, t1_theta90 = self.model.sphere_model.model_call(
@@ -237,11 +180,12 @@ class DevinSolver:
                 t3b_p * np.transpose(ip3) + t3b_theta * np.transpose(itheta3b)
             ) * self.max_dipole_strength**2
 
-        # this is identical for f1,f2,f3, not sure what f3b is supposed to be but you can figure that out and delete a lot of code
-        # print('wrenches')
-        # print(f1,f2,f3)
+        # this is identical for f1,f2,f3, not sure what f3b is supposed to be
+        # but you can figure that out and delete a lot of code
 
-        # this function expects a numpy array of dipole strengths, psi+xi angles, the model values and the rho vector
+        # this function expects a numpy array of dipole strengths, psi+xi angles,
+        # the model values and the rho vector
+
         mag1_wrench = model_call_rotated_wrench(
             np.array(self.max_dipole_strength).reshape(1),
             deconstruct_omega(w1hat),
