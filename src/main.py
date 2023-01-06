@@ -38,7 +38,6 @@ if __name__ == "__main__":
     use_sphere = True
     cheat = False
 
-    testCamelCase = None
     run_adaptive = False and use_sphere
     inverse_dynamics = True and use_sphere and not cheat and not use_special_case_solver
 
