@@ -2,7 +2,7 @@ import numpy as np
 import math
 
 
-def ForceFinder(w, m, material, FEA_Exp, r, lambda1):
+def force_finder(w, m, material, fea__exp, r, lambda1):
 
     mu0 = 4 * math.pi * 10**-7
     m_loc_start = np.array([[lambda1, 0, 0]])
@@ -17,7 +17,7 @@ def ForceFinder(w, m, material, FEA_Exp, r, lambda1):
         sigma = 2.4e6
 
     # Define Model Constants
-    if FEA_Exp == 1:
+    if fea__exp == 1:
         c0p90 = 266
         c1p90 = 2.6
         c2p90 = -0.101
@@ -43,7 +43,7 @@ def ForceFinder(w, m, material, FEA_Exp, r, lambda1):
         c2ttheta = -0.0985
         c3ttheta = -15.7
         c4ttheta = 6
-    elif FEA_Exp == 0:
+    elif fea__exp == 0:
         c0p90 = 282
         c1p90 = 3.2
         c2p90 = -0.098
@@ -95,22 +95,22 @@ def ForceFinder(w, m, material, FEA_Exp, r, lambda1):
         itheta = np.cross(iphi, ip)
 
     # Calculate the non-dimensional terms
-    Pi1 = sigma * mu0 * np.linalg.norm(w) * r**2
-    Pi2 = np.linalg.norm(p) / r
-    Pi0_p90 = ((c0p90 * Pi1) ** (c1p90 * Pi1**c2p90) * 10**c3p90) / Pi2**c4p90
-    Pi0_p0 = ((c0p0 * Pi1) ** (c1p0 * Pi1**c2p0) * 10**c3p0) / Pi2**c4p0
-    Pi0_phi900 = ((c0phi * Pi1) ** (c1phi * Pi1**c2phi) * 10**c3phi) / Pi2**c4phi
-    Pi0_tp = ((c0tp * Pi1) ** (c1tp * Pi1**c2tp) * 10**c3tp) / Pi2**c4tp
-    Pi0_ttheta = (
-        (c0ttheta * Pi1) ** (c1ttheta * Pi1**c2ttheta) * 10**c3ttheta
-    ) / Pi2**c4ttheta
+    pi1 = sigma * mu0 * np.linalg.norm(w) * r**2
+    pi2 = np.linalg.norm(p) / r
+    pi0_p90 = ((c0p90 * pi1) ** (c1p90 * pi1**c2p90) * 10**c3p90) / pi2**c4p90
+    pi0_p0 = ((c0p0 * pi1) ** (c1p0 * pi1**c2p0) * 10**c3p0) / pi2**c4p0
+    pi0_phi900 = ((c0phi * pi1) ** (c1phi * pi1**c2phi) * 10**c3phi) / pi2**c4phi
+    pi0_tp = ((c0tp * pi1) ** (c1tp * pi1**c2tp) * 10**c3tp) / pi2**c4tp
+    pi0_ttheta = (
+        (c0ttheta * pi1) ** (c1ttheta * pi1**c2ttheta) * 10**c3ttheta
+    ) / pi2**c4ttheta
 
     # Calculate the p=0 p=90 rho and phi forces
-    f_p90 = Pi0_p90 * mu0 / r**4
-    f_p0 = Pi0_p0 * mu0 / r**4
-    f_phi90 = Pi0_phi900 * mu0 / r**4
-    t_p0 = Pi0_tp * mu0 / r**3
-    t_theta90 = Pi0_ttheta * mu0 / r**3
+    f_p90 = pi0_p90 * mu0 / r**4
+    f_p0 = pi0_p0 * mu0 / r**4
+    f_phi90 = pi0_phi900 * mu0 / r**4
+    t_p0 = pi0_tp * mu0 / r**3
+    t_theta90 = pi0_ttheta * mu0 / r**3
 
     # Calculate the Forces at theta location
     f_p = -(f_p90 - f_p0) / 2 * math.cos(2 * theta) + (f_p90 + f_p0) / 2

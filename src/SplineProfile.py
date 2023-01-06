@@ -10,46 +10,45 @@ import time
 
 
 class SplineProfile:
-    def __init__(self, env, totalTimeSteps, times):
-        startState = env.startState
-        points = env.desiredState
-        self.points = np.concatenate((startState, points), 1)
-        self.totalTimeSteps = totalTimeSteps
+    def __init__(self, env, total_time_steps, times):
+        start_state = env.start_state
+        points = env.desired_state
+        self.points = np.concatenate((start_state, points), 1)
+        self.total_time_steps = total_time_steps
         self.time = 0.0
         self.times = times
-        self.switchingTimes = [
+        self.switching_times = [
             int(np.sum([times[i] for i in range(j)])) for j in range(len(times) + 1)
         ]
 
-    def getDesiredState(self, step, state):
+    def get_desired_state(self, step, state):
         start = time.time()
-        stateIndex = 0
+        state_index = 0
         # print(step)
-        while self.switchingTimes[stateIndex + 1] < step:
-            stateIndex += 1
-        if self.switchingTimes[stateIndex + 1] + 1 == step:
+        while self.switching_times[state_index + 1] < step:
+            state_index += 1
+        if self.switching_times[state_index + 1] + 1 == step:
             # self.points[:,stateIndex+1] = np.copy(state[:,0])
             print("updated")
         # print(self.switchingTimes[stateIndex])
-        lastPose = np.reshape(self.points[:, stateIndex], (-1, 1))
+        last_pose = np.reshape(self.points[:, state_index], (-1, 1))
         # print(lastPose)
-        nextPose = np.reshape(self.points[:, stateIndex + 1], (-1, 1))
-        x = lastPose[:6]
-        xd = lastPose[6:] * float(self.times[stateIndex])
-        y = nextPose[:6]
-        yd = nextPose[6:] * float(self.times[stateIndex])
+        next_pose = np.reshape(self.points[:, state_index + 1], (-1, 1))
+        x = last_pose[:6]
+        xd = last_pose[6:] * float(self.times[state_index])
+        y = next_pose[:6]
+        yd = next_pose[6:] * float(self.times[state_index])
 
-        As = x
-        Bs = xd
-        Cs = 3 * y - yd - 2 * xd - 3 * x
-        Ds = xd + 2 * x - yd - (y - yd) * 2
-        # print(As)
-        # print(Bs)
-        t = (step - self.switchingTimes[stateIndex]) / float(self.times[stateIndex])
+        constant_term = x
+        linear_term = xd
+        quadratic_term = 3 * y - yd - 2 * xd - 3 * x
+        cubic_term = xd + 2 * x - yd - (y - yd) * 2
+
+        t = (step - self.switching_times[state_index]) / float(self.times[state_index])
         spline = np.concatenate(
             (
-                Ds * (t**3) + Cs * (t**2) + Bs * t + As,
-                (3 * Ds * (t**2) + 2 * Cs * (t) + Bs) / float(self.times[stateIndex]),
+                cubic_term * (t**3) + quadratic_term * (t**2) + linear_term * t + constant_term,
+                (3 * cubic_term * (t**2) + 2 * quadratic_term * (t) + linear_term) / float(self.times[state_index]),
             )
         )
         self.time += time.time() - start

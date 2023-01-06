@@ -16,7 +16,7 @@ import numpy as np
 import time
 
 
-from sysIDoptimization import radiusSysid, SeperateRadiusSysid, MassSysID
+from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID
 from ll4ma_opt.solvers import (
     NewtonMethod,
     GradientDescent,
@@ -25,8 +25,8 @@ from ll4ma_opt.solvers import (
     Momentum,
 )
 from models import SphereControlCommand
-from solvers.modelOptimization import build_acceleration_Q
-from ObjectProperties import ObjectProperties, boatProperties
+from solvers.modelOptimization import build_acceleration_q
+from ObjectProperties import ObjectProperties, compute_boat_properties
 
 from tqdm import tqdm
 
@@ -119,7 +119,7 @@ if type(controls[0]) == list:
         )
         for control in controls
     ]
-    boat_mass, boat_MOI = boatProperties(0.059, 0.075, 0.07, 0.031)
+    boat_mass, boat_MOI = compute_boat_properties(0.059, 0.075, 0.07, 0.031)
     boat_properties = ObjectProperties(
         mass=boat_mass, MOI=boat_MOI
     )  # + ObjectProperties(0.15,np.zeros(3))
@@ -167,7 +167,7 @@ some_controls = controls[start : end - 2]
 
 add_noise = False
 magnets = env.magnets
-sysID_type = radiusSysid
+sysID_type = RadiusSysid
 optimizer_type = NewtonMethod
 
 
@@ -213,14 +213,14 @@ if optimizer_type is Momentum:
 
 
 prob = sysID_type(
-    build_acceleration_Q(env.trajectoryDimensions),
+    build_acceleration_q(env.trajectoryDimensions),
     object_properties=initial_object_properties,
     boat=boat,
 )  # built with M(0.04) Q M(0.04)
 
 optimizer = optimizer_type(problem=prob, **optimizerParams)
 s = time.time()
-prob.updateVals(
+prob.update_vals(
     some_controls,
     env.magnets,
     positions,
@@ -237,7 +237,7 @@ for i in tqdm(range(1)):
 print("opt time ", time.time() - s)
 
 
-if sysID_type is radiusSysid:
+if sysID_type is RadiusSysid:
     possible_r = np.linspace(prob.min_bounds[0], prob.max_bounds[0], 1000)[:, 0]
 
     possibleCosts = [
@@ -277,7 +277,7 @@ x = torch.tensor(result.solution)
 modelAccelFunc = lambda x: prob.forward_acceleration(
     prob.get_object_properties(x, torch),
     prob.dists,
-    prob.dipoleStrength,
+    prob.dipole_strength,
     prob.angles,
     prob.rhos,
     prob.zero,

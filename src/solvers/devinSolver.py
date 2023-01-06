@@ -6,10 +6,10 @@ Created on Tue Sep 27 19:35:46 2022
 """
 import numpy as np
 import time
-from models import SphereControlCommand, deconstruct_omega, modelCallRotatedWrench
+from models import SphereControlCommand, deconstruct_omega, model_call_rotated_wrench
 
 
-class devinSolver:
+class DevinSolver:
     def __init__(self, model):
         self.model = model
         self.count = 0
@@ -28,12 +28,12 @@ class devinSolver:
         # Determine the position vectors/unit vectors/normal unit vectors
         p1, p2 = -1 * (np.array(self.model.magnets) - np.transpose(position))
 
-        Fdes = np.copy(wrench[:3, 0])
+        fdes = np.copy(wrench[:3, 0])
 
         # seemed like different coordinate system
         # Fdes[1]*=-1
 
-        if Fdes[0] < 0:
+        if fdes[0] < 0:
             p3 = p1
             mag3 = 0
             mag4 = 0
@@ -55,13 +55,13 @@ class devinSolver:
 
         # Determine the parrallel and perpendicular forces and the rotation about
         # the x-axis
-        fxd = abs(Fdes[0])
-        fyzd = np.sqrt(Fdes[1] ** 2 + Fdes[2] ** 2)
+        fxd = abs(fdes[0])
+        fyzd = np.sqrt(fdes[1] ** 2 + fdes[2] ** 2)
 
         # Determine the direction for omega 1 and 2 based on fyzd
         ix = np.array([1, 0, 0])
         fdes_parallel = np.array([fxd, 0, 0])
-        fdes_perp = np.array([0, Fdes[1], Fdes[2]])
+        fdes_perp = np.array([0, fdes[1], fdes[2]])
         fhat_des_perp = fdes_perp / np.linalg.norm(fdes_perp)
 
         w1hat = np.cross(ix, fhat_des_perp)
@@ -97,7 +97,7 @@ class devinSolver:
         # Construct unit rho, theta, and phi vectors
         ip1 = p1 / np.linalg.norm(p1)
         ip2 = p2 / np.linalg.norm(p2)
-        if Fdes[0] < 0:
+        if fdes[0] < 0:
             ip3 = ip1
         else:
             ip3 = ip2
@@ -169,15 +169,15 @@ class devinSolver:
         # print(f1_p0,t1_p0,t1_theta90,f1_phi90)
 
         # can just get these values from model
-        f1_p0, t1_p0, f1_p90, f1_phi90, t1_theta90 = self.model.sphereModel.modelCall(
+        f1_p0, t1_p0, f1_p90, f1_phi90, t1_theta90 = self.model.sphere_model.model_call(
             dist=np.linalg.norm(p1), dipole_strength=1
         )
 
-        f2_p0, t2_p0, f2_p90, f2_phi90, t2_theta90 = self.model.sphereModel.modelCall(
+        f2_p0, t2_p0, f2_p90, f2_phi90, t2_theta90 = self.model.sphere_model.model_call(
             dist=np.linalg.norm(p2), dipole_strength=1
         )
 
-        f3_p0, t3_p0, f3_p90, f3_phi90, t3_theta90 = self.model.sphereModel.modelCall(
+        f3_p0, t3_p0, f3_p90, f3_phi90, t3_theta90 = self.model.sphere_model.model_call(
             dist=np.linalg.norm(p3), dipole_strength=1
         )
 
@@ -242,19 +242,19 @@ class devinSolver:
         # print(f1,f2,f3)
 
         # this function expects a numpy array of dipole strengths, psi+xi angles, the model values and the rho vector
-        mag1_wrench = modelCallRotatedWrench(
+        mag1_wrench = model_call_rotated_wrench(
             np.array(self.max_dipole_strength).reshape(1),
             deconstruct_omega(w1hat),
             (f1_p0, t1_p0, f1_p90, f1_phi90, t1_theta90),
             p1.reshape((3, 1)),
         )
-        mag2_wrench = modelCallRotatedWrench(
+        mag2_wrench = model_call_rotated_wrench(
             np.array(self.max_dipole_strength).reshape(1),
             deconstruct_omega(w2hat),
             (f2_p0, t2_p0, f2_p90, f2_phi90, t2_theta90),
             p2.reshape((3, 1)),
         )
-        mag3_wrench = modelCallRotatedWrench(
+        mag3_wrench = model_call_rotated_wrench(
             np.array(self.max_dipole_strength).reshape(1),
             deconstruct_omega(w3hat),
             (f3_p0, t3_p0, f3_p90, f3_phi90, t3_theta90),
@@ -265,19 +265,19 @@ class devinSolver:
         f3 = mag3_wrench[0, :3, 0]
         # print(f1,f2,f3)
 
-        Fyz = np.linalg.norm(f1 + f2)
-        Fx = np.linalg.norm(f3)
-        d_x = (fxd * Fyz) / (fyzd * Fx + fxd * Fyz)
+        fyz = np.linalg.norm(f1 + f2)
+        fx = np.linalg.norm(f3)
+        d_x = (fxd * fyz) / (fyzd * fx + fxd * fyz)
         d_yz = 1 - d_x
-        Fmax = f3 * d_x / 2 + f3b * d_x / 2 + (f1 + f2) * d_yz
-        Tmax = t3 * d_x / 2 + t3b * d_x / 2 + (t1 + t2) * d_yz
+        fmax = f3 * d_x / 2 + f3b * d_x / 2 + (f1 + f2) * d_yz
+        tmax = t3 * d_x / 2 + t3b * d_x / 2 + (t1 + t2) * d_yz
 
         # Manipulate mx and myz to get force magnitude correct if desired force
         # magnitude is possible else give max force values
-        if np.linalg.norm(Fdes) > np.linalg.norm(Fmax):
+        if np.linalg.norm(fdes) > np.linalg.norm(fmax):
             return (
-                Fmax,
-                Tmax,
+                fmax,
+                tmax,
                 w1,
                 w2,
                 w3,
@@ -296,8 +296,8 @@ class devinSolver:
                 d_x / 2,
             )
         else:
-            Fratio = np.linalg.norm(Fdes) / np.linalg.norm(Fmax)
-            m2ratio = np.sqrt(Fratio)
+            fratio = np.linalg.norm(fdes) / np.linalg.norm(fmax)
+            m2ratio = np.sqrt(fratio)
             m1_set = self.max_dipole_strength * m2ratio
             m2_set = self.max_dipole_strength * m2ratio
             m3_set = self.max_dipole_strength * m2ratio
@@ -363,7 +363,7 @@ class devinSolver:
                 d_x / 2,
             )
 
-    def solveWrench(self, position, desired_wrench):
+    def solve_wrench(self, position, desired_wrench):
         start = time.time()
         model_id = self.count % (2 * len(self.model.magnets))
         self.count += 1
@@ -398,20 +398,20 @@ class devinSolver:
             if np.isnan(d_x) or np.isnan(d_yz) or d_x == 0.0 or d_yz == 0.0:
                 d_x = 0 if np.isnan(d_x) else d_x
                 d_yz = 0 if np.isnan(d_yz) else d_yz
-                self.T1 = d_yz
-                self.T2 = d_x
+                self.t1 = d_yz
+                self.t2 = d_x
             else:
                 # rescale smaller one down, then adjust accordingly
                 if d_yz < d_x:
-                    self.T1 = self.duty_percent * int(d_yz / self.duty_percent)
-                    self.T2 = 1 / 2 - self.T1
-                    if self.T2 < 0.5:
-                        scale_factor_t2 = np.sqrt((d_x * self.T1) / (d_yz * self.T2))
+                    self.t1 = self.duty_percent * int(d_yz / self.duty_percent)
+                    self.t2 = 1 / 2 - self.t1
+                    if self.t2 < 0.5:
+                        scale_factor_t2 = np.sqrt((d_x * self.t1) / (d_yz * self.t2))
                 else:
-                    self.T2 = self.duty_percent * int(d_x / self.duty_percent)
-                    self.T1 = 1 / 2 - self.T2
-                    if self.T1 < 0.5:
-                        scale_factor_t1 = np.sqrt((d_yz * self.T2) / (d_x * self.T1))
+                    self.t2 = self.duty_percent * int(d_x / self.duty_percent)
+                    self.t1 = 1 / 2 - self.t2
+                    if self.t1 < 0.5:
+                        scale_factor_t1 = np.sqrt((d_yz * self.t2) / (d_x * self.t1))
 
             dipole_1 = m1_set * scale_factor_t1
             dipole_2 = m2_set * scale_factor_t1
@@ -432,8 +432,8 @@ class devinSolver:
             print("")
             print("")
             print("Times")
-            print(self.T1)
-            print(self.T2)
+            print(self.t1)
+            print(self.t2)
             print("")
             print("")
 
@@ -447,12 +447,12 @@ class devinSolver:
                     xi=angles[1],
                 )
                 if i <= 1:
-                    control.seconds = self.T1 * self.duty_time
+                    control.seconds = self.t1 * self.duty_time
                 else:
-                    control.seconds = self.T2 * self.duty_time
+                    control.seconds = self.t2 * self.duty_time
 
                 actual_wrench += (
-                    self.model.forwardSphere(position, control) * control.seconds
+                    self.model.forward_sphere(position, control) * control.seconds
                 )
                 # print(F*self.duty_time,T*self.duty_time)
                 self.controls.append(control)

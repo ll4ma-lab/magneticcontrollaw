@@ -106,13 +106,13 @@ for n in n_devices:
         results.append(error)
     totalTime = time.clock() - start
     gurobi_time.append(timeMath(totalTime, experiments))
-    visualization.visualizeEverything(
+    visualization.visualize_everything(
         All_magnets, magnets, Ys, results, easy_threshold, "Force low bar"
     )
-    visualization.visualizeEverything(
+    visualization.visualize_everything(
         All_magnets, magnets, Ys, results, easy_threshold, "Torque low bar", True
     )
-    visualization.visualizeEverything(
+    visualization.visualize_everything(
         All_magnets,
         magnets,
         Ys,
@@ -120,7 +120,7 @@ for n in n_devices:
         hard_threshold,
         "Force " + str(n) + " magnets",
     )
-    visualization.visualizeEverything(
+    visualization.visualize_everything(
         All_magnets,
         magnets,
         Ys,
@@ -142,7 +142,7 @@ for n in n_devices:
             # print('GPU ', error )
         totalTime = time.time() - start
         GPU_time.append(timeMath(totalTime, experiments))
-        visualization.visualizeEverything(
+        visualization.visualize_everything(
             All_magnets, magnets, Ys, results, easy_threshold, "GPU low bar"
         )
         # visualization.visualizeEverything(All_magnets,magnets,Ys,results,hard_threshold,'GPU high bar')

@@ -38,7 +38,7 @@ ax.scatter(samplePoints[:, 0], samplePoints[:, 1], samplePoints[:, 2], c=colors)
 ax.set_xlim(*env.visualizationBoundaryY)
 ax.set_ylim(*env.visualizationBoundaryY)
 ax.set_zlim(*env.visualizationBoundaryY)
-visualization.drawCubes(env.magnets, [], ax, env.radius)
+visualization.draw_cubes(env.magnets, [], ax, env.radius)
 
 
 ax.view_init(elev=90, azim=-90)

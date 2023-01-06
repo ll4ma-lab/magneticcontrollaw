@@ -8,7 +8,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 
-def buildSkew(vector):
+def build_skew(vector):
     vector = np.reshape(vector, (3))
     skew = np.array(
         [
@@ -20,7 +20,7 @@ def buildSkew(vector):
     return skew
 
 
-def matrixLog(Ae):
+def matrix_log(Ae):
     if np.abs(np.trace(Ae) - 1) > 2.0:
         Ae = np.copy(Ae)
         Ae[:, 0] /= np.linalg.norm(Ae[:, 0])  # unit vectorize because numerical issues
@@ -31,29 +31,29 @@ def matrixLog(Ae):
     return skew, phi
 
 
-def matrixExponential(w_hat_skew, theta):
-    Rot = (
+def matrix_exponential(w_hat_skew, theta):
+    rot = (
         np.eye(3)
         + np.sin(theta) * w_hat_skew
         + (1 - np.cos(theta)) * np.dot(w_hat_skew, w_hat_skew)
     )
-    return Rot
+    return rot
 
 
-def repairRotMatrix(transform):
-    skew, phi = matrixLog(transform[:3, :3])
-    vec = skewToVector(skew)
+def repair_rot_matrix(transform):
+    skew, phi = matrix_log(transform[:3, :3])
+    vec = skew_to_vector(skew)
     skew /= np.linalg.norm(vec)
-    rot = matrixExponential(skew, phi)
-    newTransform = np.copy(transform)
-    newTransform[:3, :3] = rot[:3, :3]
-    if np.any(np.isnan(newTransform)):
+    rot = matrix_exponential(skew, phi)
+    new_transform = np.copy(transform)
+    new_transform[:3, :3] = rot[:3, :3]
+    if np.any(np.isnan(new_transform)):
         # usually means no reasonable twist
         return transform
-    return newTransform
+    return new_transform
 
 
-def skewToVector(skew):
+def skew_to_vector(skew):
     w = np.zeros((3, 1))
     w[0, 0] = skew[2, 1]
     w[1, 0] = skew[0, 2]
@@ -61,12 +61,12 @@ def skewToVector(skew):
     return w
 
 
-def buildTF(position, angles):
-    worldToBodyRotation = R.from_euler("xyz", angles)
-    worldToBodyR = worldToBodyRotation.as_matrix()
+def build_tf(position, angles):
+    world_to_body_rotation = R.from_euler("xyz", angles)
+    world_to_body_r = world_to_body_rotation.as_matrix()
 
     transform = np.eye(4)
-    transform[:3, :3] = worldToBodyR
+    transform[:3, :3] = world_to_body_r
     transform[:3, 3] = position
 
     return transform

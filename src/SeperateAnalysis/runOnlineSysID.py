@@ -13,20 +13,20 @@ import dataloader
 import numpy as np
 import time
 import torch
-from models import modelCallRotatedWrench, sphereModel, SphereControlCommand
+from models import modelCallRotatedWrench, SphereModel, SphereControlCommand
 from ObjectProperties import (
     ObjectProperties,
     buildMassMatrix,
-    sphereProperties,
+    sphere_properties,
     boatProperties,
 )
 
-from solvers.modelOptimization import buildQ, build_acceleration_Q
+from solvers.modelOptimization import build_q, build_acceleration_q
 from ll4ma_opt.problems import Problem, SteinWrapper
 import matplotlib.pyplot as plt
 
 from ll4ma_opt.solvers import NewtonMethod, GradientDescent, Momentum, BFGSMethod
-from sysIDoptimization import radiusSysid, SeperateRadiusSysid, MassSysID
+from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID
 
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -68,7 +68,7 @@ if type(controls[0]) == list:
 boat = boat_properties
 
 magnets = env.magnets
-sysID_type = radiusSysid
+sysID_type = RadiusSysid
 optimizer_type = NewtonMethod
 reset = False
 use_stein = False
@@ -114,7 +114,7 @@ initial_object_properties = ObjectProperties(
 )
 
 prob = sysID_type(
-    build_acceleration_Q(env.trajectoryDimensions),
+    build_acceleration_q(env.trajectoryDimensions),
     object_properties=initial_object_properties,
     boat=boat,
 )  # built with M(0.04) Q M(0.04)

@@ -88,7 +88,7 @@ for fileName in onlyfiles:
 
         print(fileName)
         if "useSphere" in globals():
-            from se3Utils import buildSkew, buildTF, matrixLog, skewToVector
+            from se3Utils import build_skew, build_tf, matrixLog, skewToVector
 
             errors = []
             # numSteps = 2000
@@ -98,7 +98,7 @@ for fileName in onlyfiles:
                 current = states[k + (len(states) - numSteps)]
                 currentTF = current[0]
                 positions.append(currentTF[:3, 3])
-                desiredTF = buildTF(desired[:3, 0], desired[3:6, 0])
+                desiredTF = build_tf(desired[:3, 0], desired[3:6, 0])
                 positionError = controller.computeError(currentTF, desiredTF)
                 rotVelError = desired[6:9] - np.dot(currentTF[:3, :3], current[1])
                 linearVelError = desired[6:9] - np.dot(currentTF[:3, :3], current[2])

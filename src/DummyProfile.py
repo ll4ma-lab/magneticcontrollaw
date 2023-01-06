@@ -8,13 +8,13 @@ import numpy as np
 
 
 class DummyProfile:
-    def __init__(self, env, totalTimeSteps, times):
-        startState = env.startState
+    def __init__(self, env, total_time_steps, times):
+        start_state = env.startState
         points = env.desiredState
         self.points = points
-        self.totalTimeSteps = totalTimeSteps
+        self.total_time_steps = total_time_steps
         self.time = 0
 
-    def getDesiredState(self, step, state):
-        currIndex = (step - 1) // (self.totalTimeSteps)
-        return np.reshape(self.points[:, currIndex], (-1, 1))
+    def get_desired_state(self, step, state):
+        curr_index = (step - 1) // (self.total_time_steps)
+        return np.reshape(self.points[:, curr_index], (-1, 1))

@@ -30,28 +30,28 @@ class SphereControlCommand:
 
 
 # cylinder model helper
-def getOmniFrame(pos):
+def get_omni_frame(pos):
     Z = np.array([0, 0, 1])
     dist = np.linalg.norm(pos)
 
-    omni_Z = -1 * (pos / dist)
-    omni_Y = np.cross(omni_Z, Z)
-    omni_Y = omni_Y / np.sqrt(np.dot(omni_Y, omni_Y))  # unit vectorise
-    omni_X = np.cross(omni_Y, omni_Z)
+    omni_z = -1 * (pos / dist)
+    omni_y = np.cross(omni_z, Z)
+    omni_y = omni_y / np.sqrt(np.dot(omni_y, omni_y))  # unit vectorise
+    omni_x = np.cross(omni_y, omni_z)
     # Combine to build rotation matrix
-    omniFrame = np.transpose(np.array([omni_X, omni_Y, omni_Z]))
-    return omniFrame
+    omni_frame = np.transpose(np.array([omni_x, omni_y, omni_z]))
+    return omni_frame
 
 
-def averageDict(a, b):
-    newDict = {}
+def average_dict(a, b):
+    new_dict = {}
     for key in a.keys():
-        newDict[key] = ((np.array(a[key]) + np.array(b[key])) / 2).tolist()
-    return newDict
+        new_dict[key] = ((np.array(a[key]) + np.array(b[key])) / 2).tolist()
+    return new_dict
 
 
 # cylinder model helper
-def rotZ(yaw, library=np):
+def rot_z(yaw, library=np):
     yaw = yaw * np.pi / 180.0
     one, zero = (
         (1.0, 0.0) if library is np else (torch.tensor([1.0]), torch.tensor([0.0]))
@@ -68,7 +68,7 @@ def rotZ(yaw, library=np):
 
 
 # sphere model helper
-def constructOmega(angles, library=np):
+def construct_omega(angles, library=np):
     angles = angles * np.pi / 180.0
     omega = library.stack(
         [
@@ -92,7 +92,7 @@ def deconstruct_omega(omega):
     return np.array([first_angle, second_angle]) / (np.pi / 180.0)
 
 
-def vectorNorm(vector, library):
+def vector_norm(vector, library):
     if library is np:
         norm = library.linalg.norm(vector, axis=1)  # library agnostic L2 norm
     else:
@@ -101,41 +101,41 @@ def vectorNorm(vector, library):
 
 
 # sphere model helper
-def computeThetaAndFrame(omega, rho, library=np):
+def compute_theta_and_frame(omega, rho, library=np):
 
     omega = library.swapaxes(omega, 0, 1)
     rho = library.swapaxes(rho, 0, 1)  # libraries dont like 3,n and prefer n,3
 
     cross = library.cross(omega, rho)
 
-    l2Cross = vectorNorm(cross, library)
+    l2_cross = vector_norm(cross, library)
 
     dot = library.sum(omega * rho, 1)
     if library is np:
-        theta = library.arctan2(l2Cross, dot)
+        theta = library.arctan2(l2_cross, dot)
     else:
-        theta = library.atan2(l2Cross, dot)
-    omni_Z = (rho.T / vectorNorm(rho, library)).T
-    omni_Y = (cross.T / l2Cross).T
+        theta = library.atan2(l2_cross, dot)
+    omni_z = (rho.T / vector_norm(rho, library)).T
+    omni_y = (cross.T / l2_cross).T
 
-    omni_X = library.cross(omni_Y, omni_Z)
+    omni_x = library.cross(omni_y, omni_z)
     # Combine to build rotation matri
-    stacked = library.stack([omni_X, omni_Y, omni_Z])
+    stacked = library.stack([omni_x, omni_y, omni_z])
     # first move the batch dimension to the end, then tranpose the rotation matrix
-    omniFrame = library.swapaxes(stacked, 0, 1)
-    omniFrame = library.swapaxes(omniFrame, 1, 2)
+    omni_frame = library.swapaxes(stacked, 0, 1)
+    omni_frame = library.swapaxes(omni_frame, 1, 2)
 
-    return theta, omniFrame
+    return theta, omni_frame
 
 
 # sphere model helper
-def modelCallRotatedWrench(
-    dipoleStrength, angles, modelVals, rho, library=np, zero=np.array([0])
+def model_call_rotated_wrench(
+    dipole_strength, angles, model_vals, rho, library=np, zero=np.array([0])
 ):
-    frho0, trho0, frho90, fphi90, ttheta90 = modelVals
-    omega = constructOmega(angles, library)
-    theta, rotation = computeThetaAndFrame(omega, rho, library)
-    unitStrengthWrench = library.stack(
+    frho0, trho0, frho90, fphi90, ttheta90 = model_vals
+    omega = construct_omega(angles, library)
+    theta, rotation = compute_theta_and_frame(omega, rho, library)
+    unit_strength_wrench = library.stack(
         [
             zero,
             fphi90 * library.sin(theta),
@@ -146,94 +146,94 @@ def modelCallRotatedWrench(
         ]
     )
     # switch batch dim to 0
-    unitStrengthWrench = library.swapaxes(unitStrengthWrench, 0, 1)
+    unit_strength_wrench = library.swapaxes(unit_strength_wrench, 0, 1)
     if library is np:
-        unitStrengthWrench = np.expand_dims(unitStrengthWrench, 2)
-        selectedWrench = [
-            dipoleStrength[i] ** 2
+        unit_strength_wrench = np.expand_dims(unit_strength_wrench, 2)
+        selected_wrench = [
+            dipole_strength[i] ** 2
             * np.concatenate(
                 (
-                    rotation[i] @ unitStrengthWrench[i, :3],
-                    rotation[i] @ unitStrengthWrench[i, 3:],
+                    rotation[i] @ unit_strength_wrench[i, :3],
+                    rotation[i] @ unit_strength_wrench[i, 3:],
                 )
             )
-            for i in range(unitStrengthWrench.shape[0])
+            for i in range(unit_strength_wrench.shape[0])
         ]
-        selectedWrench = np.array(selectedWrench)
+        selected_wrench = np.array(selected_wrench)
     else:
-        unitStrengthWrench = torch.unsqueeze(unitStrengthWrench, 2)
+        unit_strength_wrench = torch.unsqueeze(unit_strength_wrench, 2)
 
-        if dipoleStrength.shape[0] == 1:
-            selectedWrench = torch.cat(
+        if dipole_strength.shape[0] == 1:
+            selected_wrench = torch.cat(
                 (
-                    rotation[0] @ unitStrengthWrench[0, :3],
-                    rotation[0] @ unitStrengthWrench[0, 3:],
+                    rotation[0] @ unit_strength_wrench[0, :3],
+                    rotation[0] @ unit_strength_wrench[0, 3:],
                 ),
                 0,
             ).T
-            selectedWrench = torch.unsqueeze(selectedWrench * dipoleStrength**2, 2)
+            selected_wrench = torch.unsqueeze(selected_wrench * dipole_strength**2, 2)
         else:
-            forces = torch.bmm(rotation, unitStrengthWrench[:, :3])
-            torques = torch.bmm(rotation, unitStrengthWrench[:, 3:])
-            selectedWrench = torch.bmm(
-                torch.cat((forces, torques), 1), dipoleStrength.reshape((-1, 1, 1)) ** 2
+            forces = torch.bmm(rotation, unit_strength_wrench[:, :3])
+            torques = torch.bmm(rotation, unit_strength_wrench[:, 3:])
+            selected_wrench = torch.bmm(
+                torch.cat((forces, torques), 1), dipole_strength.reshape((-1, 1, 1)) ** 2
             )
 
-    return selectedWrench
+    return selected_wrench
 
 
-class multiMagModel:
-    def __init__(self, magnets, object_properties, useSphere=False):
+class MultiMagModel:
+    def __init__(self, magnets, object_properties, use_sphere=False):
         self.time = 0
         self.magnets = magnets
         self.object_properties = object_properties
-        self.cylinderModel = cylinderModel(object_properties)
-        self.sphereModel = sphereModel(object_properties)
-        self.useSphere = useSphere
+        self.cylinder_model = CylinderModel(object_properties)
+        self.sphere_model = SphereModel(object_properties)
+        self.use_sphere = use_sphere
 
-    def forwardPass(self, position, control):
-        if self.useSphere:
-            return self.forwardSphere(position, control)
+    def forward_pass(self, position, control):
+        if self.use_sphere:
+            return self.forward_sphere(position, control)
         else:
-            return self.forwardCylinder(position, control)
+            return self.forward_cylinder(position, control)
 
-    def forwardCylinder(self, position, control):
+    def forward_cylinder(self, position, control):
         s = time.time()
-        chosenMagnetPose = (np.array(self.magnets) - np.transpose(position)).tolist()[
+        chosen_magnet_pose = (np.array(self.magnets) - np.transpose(position)).tolist()[
             control.mag_num
         ]
-        omniFrame = getOmniFrame(chosenMagnetPose)
+        omni_frame = get_omni_frame(chosen_magnet_pose)
 
         if control.model_num == 2:
-            rotation = np.dot(omniFrame, rotZ(control.theta))
+            rotation = np.dot(omni_frame, rot_z(control.theta))
         else:
-            rotation = omniFrame
+            rotation = omni_frame
 
-        doubleRotMatrix = np.zeros((6, 6))
-        doubleRotMatrix[:3, :3] = rotation
-        doubleRotMatrix[3:, 3:] = rotation
+        double_rot_matrix = np.zeros((6, 6))
+        double_rot_matrix[:3, :3] = rotation
+        double_rot_matrix[3:, 3:] = rotation
 
-        wrench = self.cylinderModel.modelCall(
-            np.linalg.norm(chosenMagnetPose), control.dipole_strength
+        wrench = self.cylinder_model.model_call(
+            np.linalg.norm(chosen_magnet_pose), control.dipole_strength
         )[control.model_num]
 
-        rotatedWrench = doubleRotMatrix @ wrench
+        rotated_wrench = double_rot_matrix @ wrench
         self.time += time.time() - s
-        return rotatedWrench
+        return rotated_wrench
 
-    def forwardSphere(self, position, control):
+    def forward_sphere(self, position, control):
         s = time.time()
-        chosenMagnetPose = (
+        chosen_magnet_pose = (
             np.array(self.magnets)[control.mag_num] - np.transpose(position)
         ).transpose()
-        dist = np.linalg.norm(chosenMagnetPose)
-        rho = (-1 * chosenMagnetPose).reshape((3, 1))
+        dist = np.linalg.norm(chosen_magnet_pose)
+        rho = (-1 * chosen_magnet_pose).reshape((3, 1))
 
-        modelVals = self.sphereModel.modelCall(dist, 1)
-        wrench = modelCallRotatedWrench(
+        model_vals = self.sphere_model.model_call(dist, 1)
+        wrench = model_call_rotated_wrench(
             np.array(control.dipole_strength).reshape(1),
             np.array((control.psi, control.xi)),
-            modelVals,
+            model_vals,
             rho,
         ).reshape((6, 1))
 
@@ -241,36 +241,36 @@ class multiMagModel:
         return wrench
 
 
-class sphereModel:
+class SphereModel:
     def __init__(self, object_properties):
-        self.cylinderModel = cylinderModel(object_properties)
+        self.cylinder_model = CylinderModel(object_properties)
 
-    def modelCall(self, dist, dipole_strength, radii=None, sigma=None):
-        frho0 = self.cylinderModel.modelEquation(
-            self.cylinderModel.constants["fzz"], dist, dipole_strength, 4, radii, sigma
+    def model_call(self, dist, dipole_strength, radii=None, sigma=None):
+        frho0 = self.cylinder_model.model_equation(
+            self.cylinder_model.constants["fzz"], dist, dipole_strength, 4, radii, sigma
         )
-        trho0 = self.cylinderModel.modelEquation(
-            self.cylinderModel.constants["tzz"], dist, dipole_strength, 3, radii, sigma
+        trho0 = self.cylinder_model.model_equation(
+            self.cylinder_model.constants["tzz"], dist, dipole_strength, 3, radii, sigma
         )
 
-        frho90 = self.cylinderModel.modelEquation(
-            self.cylinderModel.constants["frhorho"],
+        frho90 = self.cylinder_model.model_equation(
+            self.cylinder_model.constants["frhorho"],
             dist,
             dipole_strength,
             4,
             radii,
             sigma,
         )
-        fphi90 = self.cylinderModel.modelEquation(
-            self.cylinderModel.constants["frhophi"],
+        fphi90 = self.cylinder_model.model_equation(
+            self.cylinder_model.constants["frhophi"],
             dist,
             dipole_strength,
             4,
             radii,
             sigma,
         )
-        ttheta90 = self.cylinderModel.modelEquation(
-            self.cylinderModel.constants["trhoz"],
+        ttheta90 = self.cylinder_model.model_equation(
+            self.cylinder_model.constants["trhoz"],
             dist,
             dipole_strength,
             3,
@@ -280,7 +280,7 @@ class sphereModel:
         return frho0, trho0, frho90, fphi90, ttheta90
 
 
-class cylinderModel:
+class CylinderModel:
     def __init__(self, object_properties):
         self.time = 0.0
 
@@ -288,56 +288,56 @@ class cylinderModel:
         self.freq = 15
         self.mu = 4 * np.pi * 1e-7
 
-        self.feaConstants = {}
-        self.feaConstants["fzz"] = [430, 2.95, -0.101, -9.26, 7]
-        self.feaConstants["tzz"] = [6840, 3.00, -0.0986, -13.2, 6]
-        self.feaConstants["frhorho"] = [266, 2.60, -0.101, -7.65, 7]
-        self.feaConstants["frhophi"] = [6040, 3.45, -0.102, -14.3, 7]
-        self.feaConstants["trhoz"] = [8100, 3.60, -0.0985, -15.7, 6]
+        self.fea_constants = {}
+        self.fea_constants["fzz"] = [430, 2.95, -0.101, -9.26, 7]
+        self.fea_constants["tzz"] = [6840, 3.00, -0.0986, -13.2, 6]
+        self.fea_constants["frhorho"] = [266, 2.60, -0.101, -7.65, 7]
+        self.fea_constants["frhophi"] = [6040, 3.45, -0.102, -14.3, 7]
+        self.fea_constants["trhoz"] = [8100, 3.60, -0.0985, -15.7, 6]
 
-        self.expConstants = {}
-        self.expConstants["fzz"] = [467, 2.81, -0.0969, -9.75, 7]
-        self.expConstants["tzz"] = [6900, 3.35, -0.0990, -14.9, 6]
-        self.expConstants["frhorho"] = [282, 3.20, -0.0980, -9.41, 7]
-        self.expConstants["frhophi"] = [5870, 3.49, -0.0973, -14.6, 7]
-        self.expConstants["trhoz"] = [8000, 3.40, -0.0928, -15.0, 6]
+        self.exp_constants = {}
+        self.exp_constants["fzz"] = [467, 2.81, -0.0969, -9.75, 7]
+        self.exp_constants["tzz"] = [6900, 3.35, -0.0990, -14.9, 6]
+        self.exp_constants["frhorho"] = [282, 3.20, -0.0980, -9.41, 7]
+        self.exp_constants["frhophi"] = [5870, 3.49, -0.0973, -14.6, 7]
+        self.exp_constants["trhoz"] = [8000, 3.40, -0.0928, -15.0, 6]
 
-        self.constants = averageDict(self.feaConstants, self.expConstants)
+        self.constants = average_dict(self.fea_constants, self.exp_constants)
 
-    def modelEquation(
-        self, constants, distance, dipoleStrength, p0RPower, radii=None, sigma=None
+    def model_equation(
+        self, constants, distance, dipole_strength, p0_r_power, radii=None, sigma=None
     ):
         if radii is None:
             radii = self.object_properties.radius
         if sigma is None:
             sigma = self.object_properties.sigma
         # P0 has r^4 for forces and r^3 for torques
-        P1 = sigma * self.mu * self.freq * radii * radii
-        P2 = distance / radii
+        p1 = sigma * self.mu * self.freq * radii * radii
+        p2 = distance / radii
 
-        numeratorBase = constants[0] * P1
-        numeratorPower = constants[1] * (P1 ** constants[2])
-        numerator = (numeratorBase**numeratorPower) * (10 ** constants[3])
+        numerator_base = constants[0] * p1
+        numerator_power = constants[1] * (p1 ** constants[2])
+        numerator = (numerator_base**numerator_power) * (10 ** constants[3])
 
-        denominator = P2 ** constants[4]
-        P0 = numerator / denominator
+        denominator = p2 ** constants[4]
+        p0 = numerator / denominator
 
-        c = self.mu * (dipoleStrength**2) * (radii**-p0RPower)
+        c = self.mu * (dipole_strength**2) * (radii**-p0_r_power)
 
-        wrench = P0 * c
+        wrench = p0 * c
 
         return wrench
 
-    def modelCall(self, dist, dipoleStrength):
-        fzz = self.modelEquation(self.constants["fzz"], dist, dipoleStrength, 4)
-        tzz = self.modelEquation(self.constants["tzz"], dist, dipoleStrength, 3)
+    def model_call(self, dist, dipole_strength):
+        fzz = self.model_equation(self.constants["fzz"], dist, dipole_strength, 4)
+        tzz = self.model_equation(self.constants["tzz"], dist, dipole_strength, 3)
 
-        frhorho = self.modelEquation(self.constants["frhorho"], dist, dipoleStrength, 4)
-        frhophi = self.modelEquation(self.constants["frhophi"], dist, dipoleStrength, 4)
-        trhoz = self.modelEquation(self.constants["trhoz"], dist, dipoleStrength, 3)
+        frhorho = self.model_equation(self.constants["frhorho"], dist, dipole_strength, 4)
+        frhophi = self.model_equation(self.constants["frhophi"], dist, dipole_strength, 4)
+        trhoz = self.model_equation(self.constants["trhoz"], dist, dipole_strength, 3)
 
-        pointingModel = np.array([0, 0, fzz, 0, 0, tzz]).reshape((6, 1))
-        negPointingModel = np.array([0, 0, fzz, 0, 0, -tzz]).reshape((6, 1))
+        pointing_model = np.array([0, 0, fzz, 0, 0, tzz]).reshape((6, 1))
+        neg_pointing_model = np.array([0, 0, fzz, 0, 0, -tzz]).reshape((6, 1))
 
-        rhoModel = np.array([0, -frhophi, frhorho, -trhoz, 0, 0]).reshape((6, 1))
-        return pointingModel, negPointingModel, rhoModel
+        rho_model = np.array([0, -frhophi, frhorho, -trhoz, 0, 0]).reshape((6, 1))
+        return pointing_model, neg_pointing_model, rho_model

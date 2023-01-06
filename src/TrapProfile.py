@@ -10,14 +10,14 @@ import time
 
 
 class TrapProfile:
-    def __init__(self, env, totalTimeSteps, times):
-        startState = env.startState
+    def __init__(self, env, total_time_steps, times):
+        start_state = env.startState
         points = env.desiredState
-        self.points = np.concatenate((startState, points), 1)
-        self.totalTimeSteps = totalTimeSteps
+        self.points = np.concatenate((start_state, points), 1)
+        self.total_time_steps = total_time_steps
         self.time = 0.0
         self.times = times
-        self.switchingTimes = [
+        self.switching_times = [
             int(np.sum([times[i] for i in range(j)])) for j in range(len(times) + 1)
         ]
         print("init")
@@ -25,78 +25,78 @@ class TrapProfile:
         for i in range(len(times)):
             start = self.points[:6, i]
             end = self.points[:6, i + 1]
-            trajTime = self.times[i]
+            traj_time = self.times[i]
             self.maxVel = np.array([0.002] * 3 + [0.2] * 3)
             self.maxA = np.array([0.00003] * 3 + [0.0001] * 3)
             distance = end - start
 
-            maxAccelDistance = 2 * self.maxA * (self.maxVel / self.maxA) ** 2
-            maxStraightDistance = self.maxVel * (trajTime - 2 * self.maxVel / self.maxA)
+            max_accel_distance = 2 * self.maxA * (self.maxVel / self.maxA) ** 2
+            max_straight_distance = self.maxVel * (traj_time - 2 * self.maxVel / self.maxA)
 
             if np.any(
-                np.abs(maxAccelDistance + maxStraightDistance) < np.abs(distance)
+                np.abs(max_accel_distance + max_straight_distance) < np.abs(distance)
             ):
                 print(i, " not possible")
 
-    def getDesiredState(self, step, state):
-        startWallTime = time.time()
-        stateIndex = 0
+    def get_desired_state(self, step, state):
+        start_wall_time = time.time()
+        state_index = 0
         # print(step)
-        while self.switchingTimes[stateIndex + 1] < step:
-            stateIndex += 1
-        if self.switchingTimes[stateIndex + 1] == step:
+        while self.switching_times[state_index + 1] < step:
+            state_index += 1
+        if self.switching_times[state_index + 1] == step:
             # self.points[:,stateIndex+1] = np.copy(state[:,0])
             print("updated")
         # print(self.switchingTimes[stateIndex])
-        lastPose = np.reshape(self.points[:6, stateIndex], (1, -1))
-        nextPose = np.reshape(self.points[:6, stateIndex + 1], (1, -1))
+        last_pose = np.reshape(self.points[:6, state_index], (1, -1))
+        next_pose = np.reshape(self.points[:6, state_index + 1], (1, -1))
 
-        distance = nextPose - lastPose
-        trajTime = self.times[stateIndex]
-        accelTime = (
-            trajTime - np.sqrt(trajTime * trajTime - 4 * np.abs(distance) / self.maxA)
+        distance = next_pose - last_pose
+        traj_time = self.times[state_index]
+        accel_time = (
+            traj_time - np.sqrt(traj_time * traj_time - 4 * np.abs(distance) / self.maxA)
         ) / 2
-        start = lastPose
-        t = np.ones((1, 6)) * (step - self.switchingTimes[stateIndex])
+        start = last_pose
+        t = np.ones((1, 6)) * (step - self.switching_times[state_index])
 
         acceleration = self.maxA * np.sign(distance)
 
-        startVelEquation = acceleration * t
-        startPosEquation = start + acceleration * t * t / 2
+        start_vel_equation = acceleration * t
+        start_pos_equation = start + acceleration * t * t / 2
 
-        midVelEquation = accelTime * acceleration
-        midPosEquation = (
+        mid_vel_equation = accel_time * acceleration
+        mid_pos_equation = (
             start
-            + acceleration * accelTime * accelTime / 2
-            + (t - accelTime) * midVelEquation
+            + acceleration * accel_time * accel_time / 2
+            + (t - accel_time) * mid_vel_equation
         )
 
-        midEndPosition = (
+        mid_end_position = (
             start
-            + acceleration * accelTime * accelTime / 2
-            + (trajTime - 2 * accelTime) * midVelEquation
+            + acceleration * accel_time * accel_time / 2
+            + (traj_time - 2 * accel_time) * mid_vel_equation
         )
 
-        finalVelEquation = (
-            accelTime * acceleration - (accelTime - (trajTime - t)) * acceleration
+        final_vel_equation = (
+            accel_time * acceleration - (accel_time - (traj_time - t)) * acceleration
         )
-        finalPosEquation = (
-            midEndPosition
-            + (accelTime + (t - trajTime)) * midVelEquation
-            - (acceleration * (accelTime + (t - trajTime)) ** 2) / 2
+        final_pos_equation = (
+            mid_end_position
+            + (accel_time + (t - traj_time)) * mid_vel_equation
+            - (acceleration * (accel_time + (t - traj_time)) ** 2) / 2
         )
 
         state = np.zeros((12, 1))
         for i in range(6):
-            if t[0, i] < accelTime[0, i]:
-                state[i, 0] = startPosEquation[0, i]
-                state[i + 6, 0] = startVelEquation[0, i]
-            elif trajTime - t[0, i] < accelTime[0, i]:
-                state[i, 0] = finalPosEquation[0, i]
-                state[i + 6, 0] = finalVelEquation[0, i]
+            if t[0, i] < accel_time[0, i]:
+                state[i, 0] = start_pos_equation[0, i]
+                state[i + 6, 0] = start_vel_equation[0, i]
+            elif traj_time - t[0, i] < accel_time[0, i]:
+                state[i, 0] = final_pos_equation[0, i]
+                state[i + 6, 0] = final_vel_equation[0, i]
             else:
-                state[i, 0] = midPosEquation[0, i]
-                state[i + 6, 0] = midVelEquation[0, i]
+                state[i, 0] = mid_pos_equation[0, i]
+                state[i + 6, 0] = mid_vel_equation[0, i]
 
-        self.time += time.time() - startWallTime
+        self.time += time.time() - start_wall_time
         return state

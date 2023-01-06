@@ -22,13 +22,13 @@ from ll4ma_opt.solvers.line_search import (
 )
 
 from models import (
-    rotZ,
-    modelCallRotatedWrench,
-    getOmniFrame,
+    rot_z,
+    model_call_rotated_wrench,
+    get_omni_frame,
     CylinderControlCommand,
     SphereControlCommand,
 )
-from ObjectProperties import buildMassMatrix
+from ObjectProperties import build_mass_matrix
 
 sphere_parameters = {
     "alpha": 1.0,
@@ -58,21 +58,21 @@ def cylinder_optimize(prob):
     return result
 
 
-def build_acceleration_Q(stateCostString):
-    return buildQ(stateCostString, 2e5, 1)
+def build_acceleration_q(state_cost_string):
+    return build_q(state_cost_string, 2e5, 1)
 
 
-def build_force_Q(stateCostString):
-    return buildQ(stateCostString)
+def build_force_q(state_cost_string):
+    return build_q(state_cost_string)
 
 
-def buildQ(stateCostString, linear_cost=1.0, orientation_cost=200):
-    letterOptions = ["x", "y", "z", "r", "p", "t"]
+def build_q(state_cost_string, linear_cost=1.0, orientation_cost=200):
+    letter_options = ["x", "y", "z", "r", "p", "t"]
     activated = [0] * 6
-    if "all" in stateCostString:
-        stateCostString = letterOptions
-    for index in range(len(letterOptions)):
-        if letterOptions[index] in stateCostString:
+    if "all" in state_cost_string:
+        state_cost_string = letter_options
+    for index in range(len(letter_options)):
+        if letter_options[index] in state_cost_string:
             if index < 3:
                 activated[
                     index
@@ -86,7 +86,7 @@ def buildQ(stateCostString, linear_cost=1.0, orientation_cost=200):
     return Q
 
 
-class cylinderOptimization(Problem):
+class CylinderOptimization(Problem):
     def __init__(self, weights):
         super().__init__()
         self.initial_solution = np.array([20, 0]).reshape((2, 1))
@@ -94,37 +94,37 @@ class cylinderOptimization(Problem):
         self.min_bounds[0] = 0.1
 
         self.desired = torch.zeros((6, 1))
-        self.unitStrengthWrench = torch.zeros((6, 1))
+        self.unit_strength_wrench = torch.zeros((6, 1))
         self.frame = torch.eye(3)
-        self.rhoMode = False
+        self.rho_mode = False
         self.weights = torch.tensor(weights)
 
     def size(self):
         return 2
 
-    def pointingModelLoss(self, x, frame):
-        selectedWrench = x[0] ** 2 * torch.cat(
-            (frame @ self.unitStrengthWrench[:3], frame @ self.unitStrengthWrench[3:])
+    def pointing_model_loss(self, x, frame):
+        selected_wrench = x[0] ** 2 * torch.cat(
+            (frame @ self.unit_strength_wrench[:3], frame @ self.unit_strength_wrench[3:])
         )
-        error = 1e13 * (self.desired - selectedWrench)
+        error = 1e13 * (self.desired - selected_wrench)
         cost = error.t() @ self.weights @ error
         return cost
 
-    def rhoLoss(self, x):
-        frame = torch.mm(self.frame, rotZ(x[1], torch))
-        return self.pointingModelLoss(x, frame)
+    def rho_loss(self, x):
+        frame = torch.mm(self.frame, rot_z(x[1], torch))
+        return self.pointing_model_loss(x, frame)
 
     def tensor_cost(self, x):
-        if self.rhoMode:
-            return self.rhoLoss(x)
+        if self.rho_mode:
+            return self.rho_loss(x)
         else:
-            return self.pointingModelLoss(x, self.frame)
+            return self.pointing_model_loss(x, self.frame)
 
     def visualize_optimization(self, iterates):
         plt.plot(iterates[:, 0, 0], iterates[:, 1, 0])
 
 
-class sphericalOptimization(Problem):
+class SphericalOptimization(Problem):
     def __init__(self, weights):
         super().__init__()
         self.initial_solution = np.array([20, 0, 0]).reshape((3, 1))
@@ -149,7 +149,7 @@ class sphericalOptimization(Problem):
         return 3
 
     def get_wrench(self, x):
-        return modelCallRotatedWrench(
+        return model_call_rotated_wrench(
             x[0],
             x[1:],
             (self.frho0, self.trho0, self.frho90, self.fphi90, self.ttheta90),
@@ -159,14 +159,14 @@ class sphericalOptimization(Problem):
         )
 
     def tensor_cost(self, x):
-        selectedWrench = self.get_wrench(x)
-        error = 1e10 * (self.desired - selectedWrench)[0]
+        selected_wrench = self.get_wrench(x)
+        error = 1e10 * (self.desired - selected_wrench)[0]
         cost = error.t() @ self.weights @ error
         return cost
 
     def tensor_error(self, x):
-        selectedWrench = self.get_wrench(x)
-        error = 1e5 * (self.desired - selectedWrench)[0]
+        selected_wrench = self.get_wrench(x)
+        error = 1e5 * (self.desired - selected_wrench)[0]
         weighted_error = torch.sqrt(self.weights) @ error
         return weighted_error
 
@@ -174,43 +174,43 @@ class sphericalOptimization(Problem):
         plt.plot(iterates[:, 0, 0], iterates[:, 1, 0])
 
 
-class sphericalAccelOptimization(sphericalOptimization):
+class SphericalAccelOptimization(SphericalOptimization):
     def __init__(self, weights):
         super().__init__(weights)
         self.mass_matrix_inv = torch.eye(6)
 
     def tensor_cost(self, x):
-        selectedWrench = self.get_wrench(x)
-        error = 1e12 * (self.desired - self.mass_matrix_inv @ selectedWrench)[0]
+        selected_wrench = self.get_wrench(x)
+        error = 1e12 * (self.desired - self.mass_matrix_inv @ selected_wrench)[0]
         cost = error.t() @ self.weights @ error
         return cost
 
     def tensor_error(self, x):
-        selectedWrench = self.get_wrench(x)
-        error = 1e5 * (self.desired - self.mass_matrix_inv @ selectedWrench)[0]
+        selected_wrench = self.get_wrench(x)
+        error = 1e5 * (self.desired - self.mass_matrix_inv @ selected_wrench)[0]
         weighted_error = torch.sqrt(self.weights) @ error
         return weighted_error
 
 
-def getCost(iterate):
+def get_cost(iterate):
     return iterate["problem"].cost(iterate["variables"])
 
 
-class multiMagSolver:
+class MultiMagSolver:
     def __init__(
         self,
         model,
-        stateCostString,
+        state_cost_string,
         object_properties,
-        sphereModel=False,
+        sphere_model=False,
         inverse_dynamics=False,
         boat=None,
-        numProcesses=8,
+        num_processes=8,
     ):
         self.model = model
         self.problems = []
         self.time = 0
-        self.useSphereModel = sphereModel
+        self.use_sphere_model = sphere_model
         self.boat = boat
         self.inverse_dynamics = inverse_dynamics
         self.object_properties = object_properties
@@ -222,17 +222,17 @@ class multiMagSolver:
         self.hessian_time = 0
 
         if inverse_dynamics:
-            Qweights = build_acceleration_Q(stateCostString)
+            qweights = build_acceleration_q(state_cost_string)
         else:
-            Qweights = build_force_Q(stateCostString)
-        print("controller weights ", Qweights)
+            qweights = build_force_q(state_cost_string)
+        print("controller weights ", qweights)
 
-        if sphereModel:
+        if sphere_model:
             for i in range(2 * len(model.magnets)):
                 if inverse_dynamics:
-                    prob = sphericalAccelOptimization(Qweights)
+                    prob = SphericalAccelOptimization(qweights)
                 else:
-                    prob = sphericalOptimization(Qweights)
+                    prob = SphericalOptimization(qweights)
                 if i % 2 == 0:
                     prob.initial_solution = np.array([20, 0, 0]).reshape((3, 1))
                 if i % 2 == 1:
@@ -240,36 +240,36 @@ class multiMagSolver:
                 self.problems.append(prob)
         else:
             for i in range(3 * len(model.magnets)):
-                prob = cylinderOptimization(Qweights)
-                prob.rhoMode = (i % 3) == 2
+                prob = CylinderOptimization(qweights)
+                prob.rho_mode = (i % 3) == 2
                 self.problems.append(prob)
         ctx = multiprocessing.get_context("spawn")
-        self.pool = ctx.Pool(processes=numProcesses)
+        self.pool = ctx.Pool(processes=num_processes)
 
         self.iterations = []
         self.times = []
 
-    def modifyProblems(self, desiredWrench, position):
-        if self.useSphereModel:
-            self.modifySphereProblems(desiredWrench, position)
+    def modify_problems(self, desired_wrench, position):
+        if self.use_sphere_model:
+            self.modify_sphere_problems(desired_wrench, position)
         else:
-            self.modifyCylinderProblems(desiredWrench, position)
+            self.modify_cylinder_problems(desired_wrench, position)
 
-    def modifySphereProblems(self, desired, position):
-        relativePoses = np.array(self.model.magnets) - np.transpose(position)
+    def modify_sphere_problems(self, desired, position):
+        relative_poses = np.array(self.model.magnets) - np.transpose(position)
 
         if self.inverse_dynamics:
             object_properties = self.object_properties
             if self.boat:
                 object_properties = object_properties + self.boat
-            mass_matrix = torch.tensor(buildMassMatrix(object_properties, np, False))
+            mass_matrix = torch.tensor(build_mass_matrix(object_properties, np, False))
             mass_matrix_inv = torch.linalg.inv(mass_matrix)
 
         for i in range(len(self.model.magnets)):
-            chosenMagnetPose = relativePoses[i]
-            rho = (-1 * chosenMagnetPose).reshape((3, 1))
-            dist = np.linalg.norm(chosenMagnetPose)
-            frho0, trho0, frho90, fphi90, ttheta90 = self.model.sphereModel.modelCall(
+            chosen_magnet_pose = relative_poses[i]
+            rho = (-1 * chosen_magnet_pose).reshape((3, 1))
+            dist = np.linalg.norm(chosen_magnet_pose)
+            frho0, trho0, frho90, fphi90, ttheta90 = self.model.sphere_model.model_call(
                 dist, 1
             )
             for j in range(2):
@@ -285,38 +285,38 @@ class multiMagSolver:
                 if self.inverse_dynamics:
                     self.problems[i * 2 + j].mass_matrix_inv = mass_matrix_inv
 
-    def modifyCylinderProblems(self, desired, position):
-        relativePoses = (np.array(self.model.magnets) - np.transpose(position)).tolist()
+    def modify_cylinder_problems(self, desired, position):
+        relative_poses = (np.array(self.model.magnets) - np.transpose(position)).tolist()
 
         for i in range(len(self.model.magnets)):
-            chosenMagnetPose = relativePoses[i]
-            omniFrame = getOmniFrame(chosenMagnetPose)
-            dist = np.linalg.norm(chosenMagnetPose)
-            wrenches = self.model.cylinderModel.modelCall(dist, 1)  # 1 dipole strength
+            chosen_magnet_pose = relative_poses[i]
+            omni_frame = get_omni_frame(chosen_magnet_pose)
+            dist = np.linalg.norm(chosen_magnet_pose)
+            wrenches = self.model.cylinder_model.model_call(dist, 1)  # 1 dipole strength
             for j in range(3):
-                self.problems[i * 3 + j].frame = torch.Tensor(omniFrame)
+                self.problems[i * 3 + j].frame = torch.Tensor(omni_frame)
                 self.problems[i * 3 + j].desired = torch.Tensor(desired)
-                self.problems[i * 3 + j].unitStrengthWrench = torch.tensor(wrenches[j])
+                self.problems[i * 3 + j].unit_strength_wrench = torch.tensor(wrenches[j])
 
-    def solveWrenchCylinder(self, position, desiredWrench):
+    def solve_wrench_cylinder(self, position, desired_wrench):
         s = time.time()
-        self.modifyProblems(desiredWrench, position)
+        self.modify_problems(desired_wrench, position)
         results = self.pool.map(cylinder_optimize, self.problems)
         iterations = [result.iterates.shape[0] for result in results]
         self.iterations.append((iterations))
-        noActionCost = self.problems[0].cost(np.zeros((2, 1)))
+        no_action_cost = self.problems[0].cost(np.zeros((2, 1)))
         costs = [result.cost for result in results]
         self.costs.append(costs)
-        bestAction = np.argmin(costs)
+        best_action = np.argmin(costs)
 
-        if costs[bestAction] > noActionCost:
+        if costs[best_action] > no_action_cost:
             control = CylinderControlCommand()
             # print('shit')
         else:
-            mag_num = bestAction // 3
-            model_num = bestAction % 3
-            strength = results[bestAction].solution[0, 0]
-            theta = results[bestAction].solution[1, 0]
+            mag_num = best_action // 3
+            model_num = best_action % 3
+            strength = results[best_action].solution[0, 0]
+            theta = results[best_action].solution[1, 0]
             control = CylinderControlCommand(
                 mag_num=mag_num,
                 model_num=model_num,
@@ -329,16 +329,16 @@ class multiMagSolver:
         self.time += timestep
         return control
 
-    def solveWrench(self, position, desiredWrench):
-        if self.useSphereModel:
-            return self.solveWrenchSphere(position, desiredWrench)
+    def solve_wrench(self, position, desired_wrench):
+        if self.use_sphere_model:
+            return self.solve_wrench_sphere(position, desired_wrench)
         else:
-            return self.solveWrenchCylinder(position, desiredWrench)
+            return self.solve_wrench_cylinder(position, desired_wrench)
 
-    def solveWrenchSphere(self, position, desiredWrench):
+    def solve_wrench_sphere(self, position, desired_wrench):
 
         s = time.time()
-        self.modifyProblems(desiredWrench, position)
+        self.modify_problems(desired_wrench, position)
         # results = [sphere_optimize(prob) for prob in self.problems]
         results = self.pool.map(sphere_optimize, self.problems)
 
@@ -348,20 +348,20 @@ class multiMagSolver:
         # self.hessian_time += np.sum([result[6] for result in results])
 
         self.iterations.append((iterations))
-        noActionCost = self.problems[0].cost(np.zeros((3, 1)))
+        no_action_cost = self.problems[0].cost(np.zeros((3, 1)))
         costs = [result.cost for result in results]
         self.costs.append(costs)
 
-        bestAction = np.argmin(costs)
+        best_action = np.argmin(costs)
 
-        if costs[bestAction] > noActionCost:
+        if costs[best_action] > no_action_cost:
             control = SphereControlCommand()
             # print('shit')
         else:
-            mag_num = bestAction // 2
-            strength = results[bestAction].solution[0, 0]
-            psi = results[bestAction].solution[1, 0]
-            xi = results[bestAction].solution[2, 0]
+            mag_num = best_action // 2
+            strength = results[best_action].solution[0, 0]
+            psi = results[best_action].solution[1, 0]
+            xi = results[best_action].solution[2, 0]
             control = SphereControlCommand(
                 mag_num=mag_num, dipole_strength=strength, psi=psi, xi=xi
             )
@@ -371,8 +371,8 @@ class multiMagSolver:
         self.time += timestep
         return control
 
-    def bruteSphereSolver(self, position, desiredWrench):
-        self.modifyProblems(desiredWrench, position)
+    def brute_sphere_solver(self, position, desired_wrench):
+        self.modify_problems(desired_wrench, position)
 
         s = time.time()
         iterates = []
@@ -388,7 +388,7 @@ class multiMagSolver:
                         }
                         iterates.append(iterate)
 
-        results = self.pool.map(getCost, iterates)
+        results = self.pool.map(get_cost, iterates)
         index = np.argmin(results)
         print("brute time ", time.time() - s)
         selected = iterates[index]

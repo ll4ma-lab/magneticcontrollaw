@@ -9,10 +9,10 @@ Created on Wed Jul 28 20:30:42 2021
 import numpy as np
 import time
 import torch
-from models import modelCallRotatedWrench, sphereModel
-from ObjectProperties import ObjectProperties, buildMassMatrix, sphereProperties
+from models import model_call_rotated_wrench, SphereModel
+from ObjectProperties import ObjectProperties, build_mass_matrix, compute_sphere_properties
 
-from solvers.modelOptimization import buildQ, build_acceleration_Q
+from solvers.modelOptimization import build_q, build_acceleration_q
 from ll4ma_opt.problems import Problem
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -20,11 +20,11 @@ from matplotlib.animation import FuncAnimation
 from ll4ma_opt.solvers.line_search import NewtonMethod
 
 
-class radiusSysid(Problem):
+class RadiusSysid(Problem):
     def __init__(self, weights, object_properties=None, boat=None):
         super().__init__()
 
-        self.singleModel = sphereModel(1)
+        self.single_model = SphereModel(1)
         self.sigma_multiplier = 1e7
 
         self.error_multiplier = 1e6
@@ -52,20 +52,20 @@ class radiusSysid(Problem):
         else:
             self.boat = boat
 
-    def updateVals(
+    def update_vals(
         self,
         controls,
         magnets,
         positions,
-        linearVelocity,
-        rotationalVelocity,
+        linear_velocity,
+        rotational_velocity,
         drag_terms=(0, 0),
     ):
         # remove first control and position as we dont know its acceleration
 
-        magNums = [control.mag_num for control in controls[1:]]
-        chosenMagnetPose = np.array(magnets)[magNums] - positions[1:]
-        dipoleStrength = [control.dipole_strength for control in controls[1:]]
+        mag_nums = [control.mag_num for control in controls[1:]]
+        chosen_magnet_pose = np.array(magnets)[mag_nums] - positions[1:]
+        dipole_strength = [control.dipole_strength for control in controls[1:]]
         angles = np.array([(control.psi, control.xi) for control in controls[1:]]).T
         timesteps = np.array([control.seconds for control in controls[1:]]).reshape(
             (-1, 1)
@@ -73,50 +73,50 @@ class radiusSysid(Problem):
 
         self.n = len(controls[1:])
 
-        rhos = -chosenMagnetPose.T
-        dists = np.linalg.norm(chosenMagnetPose, axis=1)
+        rhos = -chosen_magnet_pose.T
+        dists = np.linalg.norm(chosen_magnet_pose, axis=1)
         zero = np.array([0] * self.n)
 
-        self.dipoleStrength = self.make_tensor(dipoleStrength)
+        self.dipole_strength = self.make_tensor(dipole_strength)
         self.angles = self.make_tensor(angles)
         self.rhos = self.make_tensor(rhos)
         self.dists = self.make_tensor(dists)
 
         self.zero = self.make_tensor(zero)
 
-        deltaV = np.hstack(
+        delta_v = np.hstack(
             (
-                linearVelocity[1:, :] - linearVelocity[:-1, :],
-                rotationalVelocity[1:, :] - rotationalVelocity[:-1, :],
+                linear_velocity[1:, :] - linear_velocity[:-1, :],
+                rotational_velocity[1:, :] - rotational_velocity[:-1, :],
             )
         )
-        npA = deltaV / timesteps
+        np_a = delta_v / timesteps
 
         drag_force = (
-            drag_terms[0] * linearVelocity[:-1, :]
-            + np.sign(linearVelocity[:-1, :])
+            drag_terms[0] * linear_velocity[:-1, :]
+            + np.sign(linear_velocity[:-1, :])
             * drag_terms[1]
-            * linearVelocity[:-1, :] ** 2
+            * linear_velocity[:-1, :] ** 2
         )
 
         self.drag_wrenches = self.make_tensor(
             np.hstack((-drag_force, np.zeros_like(drag_force)))
         )
-        self.accelerations = self.make_tensor(npA.T)
+        self.accelerations = self.make_tensor(np_a.T)
 
-        self.materialDensity = self.make_tensor([8940.0])[0]
+        self.material_density = self.make_tensor([8940.0])[0]
 
     def forward_acceleration(
-        self, object_properties, dists, dipoleStrengths, angles, rhos, zero
+        self, object_properties, dists, dipole_strengths, angles, rhos, zero
     ):
 
         mass_matrix = self.construct_mass_matrix(object_properties, torch)
-        modelVals = self.singleModel.modelCall(
+        model_vals = self.single_model.model_call(
             dists, 1, radii=object_properties.radius, sigma=object_properties.sigma
         )
-        modelVals = [modelVal.squeeze() for modelVal in modelVals]
-        modeled_wrenches = modelCallRotatedWrench(
-            dipoleStrengths, angles, modelVals, rhos, library=torch, zero=zero
+        model_vals = [model_val.squeeze() for model_val in model_vals]
+        modeled_wrenches = model_call_rotated_wrench(
+            dipole_strengths, angles, model_vals, rhos, library=torch, zero=zero
         ).squeeze()
 
         # print(modeled_wrenches)
@@ -128,7 +128,7 @@ class radiusSysid(Problem):
     def get_object_properties(self, x, library=np):
         radius = x[0, 0]
         sigma = x[1, 0]
-        mass, MOI = sphereProperties(self.materialDensity, radius, library)
+        mass, MOI = compute_sphere_properties(self.material_density, radius, library)
         object_properties = ObjectProperties(
             mass=mass, MOI=MOI, radius=radius, sigma=sigma * self.sigma_multiplier
         )
@@ -137,7 +137,7 @@ class radiusSysid(Problem):
     def construct_mass_matrix(self, object_properties, library=np):
         if self.boat:
             object_properties = object_properties + self.boat
-        M = buildMassMatrix(object_properties, library, False)
+        M = build_mass_matrix(object_properties, library, False)
         return M
 
     def size(self):
@@ -146,15 +146,15 @@ class radiusSysid(Problem):
     def tensor_cost(self, x):
         object_properties = self.get_object_properties(x, torch)
 
-        modeledAccelerations = self.forward_acceleration(
+        modeled_accelerations = self.forward_acceleration(
             object_properties,
             self.dists,
-            self.dipoleStrength,
+            self.dipole_strength,
             self.angles,
             self.rhos,
             self.zero,
         )
-        error = (self.accelerations - modeledAccelerations) * self.error_multiplier
+        error = (self.accelerations - modeled_accelerations) * self.error_multiplier
 
         left = (error.T @ self.weights).unsqueeze(1)
         right = error.T.unsqueeze(2)
@@ -167,15 +167,15 @@ class radiusSysid(Problem):
     def tensor_error(self, x):
         object_properties = self.get_object_properties(x, torch)
 
-        modeledAccelerations = self.forward_acceleration(
+        modeled_accelerations = self.forward_acceleration(
             object_properties,
             self.dists,
-            self.dipoleStrength,
+            self.dipole_strength,
             self.angles,
             self.rhos,
             self.zero,
         )
-        error = (self.accelerations - modeledAccelerations) * self.error_multiplier
+        error = (self.accelerations - modeled_accelerations) * self.error_multiplier
 
         weighted_error = error.T @ torch.sqrt(self.weights / self.rhos.shape[0])
         return weighted_error.reshape(((-1, 1)))
@@ -196,21 +196,21 @@ class radiusSysid(Problem):
         xs, ys = np.meshgrid(possible_xs, possible_ys)
         xs = xs.flatten()
         ys = ys.flatten()
-        possibleCosts = [
+        possible_costs = [
             func(self.cost(np.stack((xs[i], ys[i])).reshape((2, 1))))
             for i in range(len(xs))
         ]
         if func is np.log:
-            clip_value = np.median(possibleCosts)
+            clip_value = np.median(possible_costs)
         else:
-            clip_value = 2 * np.median(possibleCosts)
-        possibleCosts = np.array(possibleCosts)
-        possibleCosts[possibleCosts > clip_value] = clip_value
+            clip_value = 2 * np.median(possible_costs)
+        possible_costs = np.array(possible_costs)
+        possible_costs[possible_costs > clip_value] = clip_value
 
-        best_index = np.argmin(possibleCosts)
+        best_index = np.argmin(possible_costs)
         print(
             "best brute force  func cost ",
-            possibleCosts[best_index],
+            possible_costs[best_index],
             " at ",
             xs[best_index],
             ys[best_index],
@@ -234,7 +234,7 @@ class radiusSysid(Problem):
             for point in points
         ]
         if show_costs:
-            ax.scatter(xs, ys, possibleCosts, color=(0, 0, 1, 0.5))
+            ax.scatter(xs, ys, possible_costs, color=(0, 0, 1, 0.5))
             # ax.set_zlim(0, clip_value)
             points_3d = np.concatenate((points, np.array(costs)), 1)
             # silly hack to get filled circle
@@ -291,10 +291,10 @@ class radiusSysid(Problem):
     def visualize_predicted_acceleration(self, iterate):
         fig, ax = plt.subplots(3)
         object_properties = self.get_object_properties(self.make_tensor(iterate), torch)
-        modeledAccelerations = self.forward_acceleration(
+        modeled_accelerations = self.forward_acceleration(
             object_properties,
             self.dists,
-            self.dipoleStrength,
+            self.dipole_strength,
             self.angles,
             self.rhos,
             self.zero,
@@ -307,12 +307,12 @@ class radiusSysid(Problem):
             ax[fig_index].set_title(titles[fig_index])
             ax[fig_index].plot(self.accelerations[acceleration_index], label="measured")
             ax[fig_index].plot(
-                modeledAccelerations[acceleration_index], label="predicted"
+                modeled_accelerations[acceleration_index], label="predicted"
             )
             ax[fig_index].legend()
 
 
-class SeperateRadiusSysid(radiusSysid):
+class SeperateRadiusSysid(RadiusSysid):
     def __init__(self, weights, object_properties, boat=None):
         super().__init__(weights=weights, boat=boat)
 
@@ -340,7 +340,7 @@ class SeperateRadiusSysid(radiusSysid):
         radius = x[0, 0]
         sigma = x[1, 0]
         mass_radius = x[2, 0]
-        mass, MOI = sphereProperties(self.materialDensity, mass_radius, library)
+        mass, MOI = compute_sphere_properties(self.material_density, mass_radius, library)
         object_properties = ObjectProperties(
             mass=mass, MOI=MOI, radius=radius, sigma=sigma * self.sigma_multiplier
         )
@@ -431,26 +431,26 @@ class MassSysID(SeperateRadiusSysid):
         return object_properties
 
 
-def sysIDDemo(
+def sys_id_demo(
     controls,
     magnets,
     positions,
-    linearVelocity,
-    rotationalVelocity,
-    sysID_type=radiusSysid,
+    linear_velocity,
+    rotational_velocity,
+    sys_id_type=RadiusSysid,
     boat=None,
 ):
 
-    optimizerParams = {
+    optimizer_params = {
         "alpha": 1,
         "rho": 0.9,
         "c1": 1e-9,
         "FP_PRECISION": 1e-8,
         "min_alpha": 1e-20,
     }
-    prob = sysID_type(build_acceleration_Q("all"), boat)  # built with M(0.04) Q M(0.04)
-    optimizer = NewtonMethod(problem=prob, **optimizerParams)
-    prob.updateVals(controls, magnets, positions, linearVelocity, rotationalVelocity)
+    prob = sys_id_type(build_acceleration_q("all"), boat)  # built with M(0.04) Q M(0.04)
+    optimizer = NewtonMethod(problem=prob, **optimizer_params)
+    prob.updateVals(controls, magnets, positions, linear_velocity, rotational_velocity)
     result = optimizer.optimize(prob.initial_solution, max_iterations=50)
     prob.visualize_optimization(result.iterates)
     return result

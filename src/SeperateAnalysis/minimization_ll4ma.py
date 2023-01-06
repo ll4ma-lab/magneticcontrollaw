@@ -19,13 +19,13 @@ from torch.autograd import Variable
 
 from environments import PlanarProblem, SpaceProblem
 import SplineProfile
-from discreteTimeSimulator import discreteTimeSimulator, sphereProperties
+from discreteTimeSimulator import DiscreteTimeSimulator, sphereProperties
 
-from models import multiMagModel, multiMagSolver
+from models import MultiMagModel, multiMagSolver
 
 
 env = SpaceProblem(4)
-controller = PDController(env.startState, 0.005, 0.00001, 0.005, 0.00001, 0.0, 0.000)
+controller = PDController(env.start_state, 0.005, 0.00001, 0.005, 0.00001, 0.0, 0.000)
 velocityProfile = SplineProfile.SplineProfile(env, np.sum(env.times), env.times)
 
 
@@ -35,7 +35,7 @@ objectProperties = sphereProperties(8940, diameter)
 
 if __name__ == "__main__":
     position = np.zeros((3, 1))
-    newModel = multiMagModel(env.magnets, 0.04)
+    newModel = MultiMagModel(env.magnets, 0.04)
     solver = multiMagSolver(newModel, "all", True)
     # np.random.seed(473)
     for i in range(1000):

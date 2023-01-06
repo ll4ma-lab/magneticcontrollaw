@@ -11,7 +11,7 @@ import sys
 sys.path.append("..")  # Adds higher directory to python modules path.
 
 
-from visualization import drawCubes, addRect, drawSphere
+from visualization import draw_cubes, add_rect, draw_sphere
 from environments import SpaceProblem
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import mpl_toolkits.mplot3d.axes3d as p3
@@ -21,18 +21,18 @@ import numpy as np
 
 environment = SpaceProblem(4)
 environment.lims = [[np.min(environment.magnets), np.max(environment.magnets)]] * 3
-environment.visualizationBoundaryY = (-0.2, 0.2)
+environment.visualization_boundary_y = (-0.2, 0.2)
 
 # environment.magnets = (np.array(((np.sqrt(8/9),0,1/3),(-np.sqrt(2/9),np.sqrt(2/3),1/3),(-np.sqrt(2/9),-np.sqrt(2/3),1/3),(0,0,-1))) * np.max(environment.magnets)).tolist()
 
 fig = plt.figure()
 ax = p3.Axes3D(fig)
-ax.set_xlim(*environment.visualizationBoundaryY)
-ax.set_ylim(*environment.visualizationBoundaryY)
-ax.set_zlim(*environment.visualizationBoundaryY)
-cubes = drawCubes(environment.magnets, environment.magnets, ax, environment.radius / 3)
+ax.set_xlim(*environment.visualization_boundary_y)
+ax.set_ylim(*environment.visualization_boundary_y)
+ax.set_zlim(*environment.visualization_boundary_y)
+cubes = draw_cubes(environment.magnets, environment.magnets, ax, environment.radius / 3)
 
-addRect(
+add_rect(
     (0, 0, 0),
     w=environment.lims[0][1],
     l=environment.lims[1][1],
@@ -45,9 +45,9 @@ ax.view_init(elev=environment.el, azim=environment.az)
 
 fig = plt.figure()
 ax = p3.Axes3D(fig)
-ax.set_xlim(*environment.visualizationBoundaryY)
-ax.set_ylim(*environment.visualizationBoundaryY)
-ax.set_zlim(*environment.visualizationBoundaryY)
+ax.set_xlim(*environment.visualization_boundary_y)
+ax.set_ylim(*environment.visualization_boundary_y)
+ax.set_zlim(*environment.visualization_boundary_y)
 
 pts = np.array(environment.magnets)
 from scipy.spatial import ConvexHull
@@ -63,7 +63,7 @@ faces.set_facecolor(colorinfo)
 ax.add_collection3d(faces)
 # Make axis label
 ax.view_init(elev=-169, azim=-42)
-cubes = drawCubes(
+cubes = draw_cubes(
     environment.magnets, environment.magnets, ax, environment.radius * 0.4
 )
 

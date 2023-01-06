@@ -33,24 +33,24 @@ class ObjectProperties:
         )
 
 
-def buildMassMatrix(object_properties, library=np, torqueTop=True):
+def build_mass_matrix(object_properties, library=np, torque_top=True):
     mass = object_properties.mass
     MOI = object_properties.MOI
 
-    massComponent = library.diag(library.stack([mass, mass, mass]))
-    offDiagonal = library.zeros_like(MOI)
+    mass_component = library.diag(library.stack([mass, mass, mass]))
+    off_diagonal = library.zeros_like(MOI)
 
-    if torqueTop:
-        top = library.vstack((MOI, offDiagonal))
-        bottom = library.vstack((offDiagonal, massComponent))
+    if torque_top:
+        top = library.vstack((MOI, off_diagonal))
+        bottom = library.vstack((off_diagonal, mass_component))
     else:
-        top = library.vstack((massComponent, offDiagonal))
-        bottom = library.vstack((offDiagonal, MOI))
+        top = library.vstack((mass_component, off_diagonal))
+        bottom = library.vstack((off_diagonal, MOI))
     full = library.vstack((top.T, bottom.T)).T
     return full
 
 
-def sphereProperties(density, radius, library=np):
+def compute_sphere_properties(density, radius, library=np):
     if torch.is_tensor(density) and library == np:
         density = density.numpy()
     volume = 4.0 / 3 * np.pi * (radius**3)
@@ -59,7 +59,7 @@ def sphereProperties(density, radius, library=np):
     return mass, I
 
 
-def boatProperties(cylinder_mass, radius, cylinder_height, base_mass):
+def compute_boat_properties(cylinder_mass, radius, cylinder_height, base_mass):
     base_x = (1 / 4) * base_mass * radius * radius
     base_y = base_x
     base_z = (1 / 2) * base_mass * radius * radius

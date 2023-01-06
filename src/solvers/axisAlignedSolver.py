@@ -6,13 +6,11 @@ Created on Mon Aug 29 12:32:40 2022
 @author: tabor
 """
 from ll4ma_opt.solvers.line_search import (
-    NewtonMethod,
-    GaussNewtonMethod,
-    GradientDescent,
+    NewtonMethod
 )
 
-from models import rotZ, modelCallRotatedWrench, getOmniFrame, CylinderControlCommand
-from solvers.modelOptimization import buildQ
+from models import CylinderControlCommand
+from solvers.modelOptimization import build_q
 from ll4ma_opt.problems import Problem
 import torch
 import numpy as np
@@ -21,7 +19,7 @@ import time
 torch.set_default_tensor_type(torch.DoubleTensor)
 
 
-class axisAlignedProblem(Problem):
+class AxisAlignedProblem(Problem):
     def __init__(self, A, desired_wrench, weights):
         self.num_wrenches = A.shape[1]
         super().__init__()
@@ -47,14 +45,14 @@ class axisAlignedProblem(Problem):
         return cost
 
 
-class axisAlignedSolver:
-    def __init__(self, model, stateCostString):
-        self.Q = buildQ(stateCostString)
+class AxisAlignedSolver:
+    def __init__(self, model, state_cost_string):
+        self.Q = build_q(state_cost_string)
         self.model = model
         self.count = 0
         self.time = 0
 
-    def solveWrench(self, position, desired_wrench):
+    def solve_wrench(self, position, desired_wrench):
         start = time.time()
         model_id = self.count % (6 * len(self.model.magnets))
         self.count += 1
@@ -82,7 +80,7 @@ class axisAlignedSolver:
             ]
             A = np.array(wrenches_possible).squeeze(2).T
             self.A = A
-            problem = axisAlignedProblem(A, desired_wrench, self.Q)
+            problem = AxisAlignedProblem(A, desired_wrench, self.Q)
             solver = NewtonMethod(problem)
             result = solver.optimize(problem.initial_solution)
             print(result.iterates.shape, result.converged, result.cost)

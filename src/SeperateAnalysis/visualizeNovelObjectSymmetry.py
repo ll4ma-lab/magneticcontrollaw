@@ -101,7 +101,7 @@ ax = p3.Axes3D(fig)
 ax.set_xlim(-1, 1)
 ax.set_ylim(-1, 1)
 ax.set_zlim(-1, 1)
-addCube((0, 0, 0), 0.1, 0.3, ax)
+add_cube((0, 0, 0), 0.1, 0.3, ax)
 your_mesh = mesh.Mesh.from_file(
     "../../Downloads/USB-extension-cord_clip/files/usb-clamp.stl"
 )
@@ -111,17 +111,17 @@ your_mesh.points *= 0.003
 transform = simpleTFBuild(np.array([0.8, 0.3, 0.5]), np.array([0.5, 0.5, 0.5]))
 your_mesh.transform(transform)
 
-objectAxisLines = drawOrigin(ax, 0.3)
+objectAxisLines = draw_origin(ax, 0.3)
 
 
-omniAxisLines = drawOrigin(ax, 0.3)
+omniAxisLines = draw_origin(ax, 0.3)
 
 omniR = getOmniFrame(-transform[:3, 3])
 omniTF = np.eye(4)
 omniTF[:3, :3] = omniR
 
-updateAxesWithTF(omniTF, omniAxisLines, 0.3)
-updateAxesWithTF(transform, objectAxisLines, 0.3)
+update_axes_with_tf(omniTF, omniAxisLines, 0.3)
+update_axes_with_tf(transform, objectAxisLines, 0.3)
 
 positionLine = ax.plot(*[[0, transform[i, 3]] for i in range(3)], c="black")[0]
 
@@ -135,7 +135,7 @@ r = 0.5
 
 
 controlVec = np.dot(omniTF, buildControlVector(theta, phi))
-controlArrow = drawArrow(controlVec, "r", ax)
+controlArrow = draw_arrow(controlVec, "r", ax)
 
 # Auto scale to the mesh size
 scale = your_mesh.points.flatten()
@@ -143,10 +143,10 @@ scale = your_mesh.points.flatten()
 # Show the plot to the screen
 plt.show()
 
-test = drawOrigin(ax, 0.3)
+test = draw_origin(ax, 0.3)
 
 offsetRot, o_theta, o_phi = buildXAlignRot(transform, omniTF)
-updateAxesWithTF(np.dot(transform, offsetRot), test, 0.5)
+update_axes_with_tf(np.dot(transform, offsetRot), test, 0.5)
 
 print(transform)
 
@@ -162,7 +162,7 @@ def update_anim(
     else:
         # newRot = rotX(0.01)
         rotAxis = getOmniFrame(-transform[:3, 3])[:3, 0]  # get its X axis
-        newRot = se3Utils.matrixExponential(se3Utils.buildSkew(rotAxis), 0.01)
+        newRot = se3Utils.matrixExponential(se3Utils.build_skew(rotAxis), 0.01)
         goalTransform = np.copy(transform)  # spin in place
         goalTransform[:3, :3] = np.dot(
             newRot[:3, :3], transform[:3, :3]
@@ -178,14 +178,14 @@ def update_anim(
     omniTF = np.eye(4)
     omniTF[:3, :3] = omniR
 
-    updateAxesWithTF(omniTF, omniAxisLines, 0.3)
-    updateAxesWithTF(transform, objectAxisLines, 0.3)
+    update_axes_with_tf(omniTF, omniAxisLines, 0.3)
+    update_axes_with_tf(transform, objectAxisLines, 0.3)
 
     offsetRot, o_alpha, o_beta = buildXAlignRot(transform, omniTF)
     # print(num,o_alpha,o_beta)
 
     objectModelAlignedFrame = np.dot(transform, offsetRot)
-    updateAxesWithTF(objectModelAlignedFrame, test, 0.0)
+    update_axes_with_tf(objectModelAlignedFrame, test, 0.0)
 
     modelToModelAligned = np.dot(objectModelAlignedFrame, np.linalg.inv(omniTF))
     skew, theta_object = se3Utils.matrixLog(modelToModelAligned[:3, :3])
@@ -202,7 +202,7 @@ def update_anim(
 
     controlVec = np.dot(omniTF, buildControlVector(theta_control, phi))
     controlArrow.remove()
-    controlArrow = drawArrow(controlVec, "r", ax)
+    controlArrow = draw_arrow(controlVec, "r", ax)
 
 
 for i in range(360):

@@ -33,10 +33,10 @@ from PDController import PDController
 
 from environments import PlanarProblem, SpaceProblem
 import SplineProfile
-from discreteTimeSimulator import discreteTimeSimulator, sphereProperties
+from discreteTimeSimulator import DiscreteTimeSimulator, sphereProperties
 
 
-from models import multiMagModel
+from models import MultiMagModel
 from modelOptimization import multiMagSolver
 
 
@@ -54,7 +54,7 @@ def getCost(decisionVariable):
 
 
 env = SpaceProblem(4)
-controller = PDController(env.startState, 0.005, 0.00001, 0.005, 0.00001, 0.0, 0.000)
+controller = PDController(env.start_state, 0.005, 0.00001, 0.005, 0.00001, 0.0, 0.000)
 velocityProfile = SplineProfile.SplineProfile(env, np.sum(env.times), env.times)
 
 
@@ -79,10 +79,10 @@ optimizerParams = {
 }
 
 
-newModel = multiMagModel(env.magnets, objectProperties, True)
+newModel = MultiMagModel(env.magnets, objectProperties, True)
 # control = [1,2,np.random.random()*40,np.random.random()*360-180]
 control = [5, 2, 38, 173]
-print(newModel.forwardPass(np.zeros((3, 1)), control))
+print(newModel.forward_pass(np.zeros((3, 1)), control))
 # np.random.seed(473)
 
 # desired_wrench = (np.random.random((6,1))-0.5)*1e-4
@@ -263,11 +263,11 @@ if __name__ == "__main__":
         # print('elapsed time ',time.time()-s)
 
         producedControl = [0, solution[0, 0], solution[1, 0], solution[2, 0]]
-        bestWrench = newModel.forwardPass(np.zeros((3, 1)), producedControl)
+        bestWrench = newModel.forward_pass(np.zeros((3, 1)), producedControl)
         # print(bestWrench)
         # print(desired_wrench)
 
         producedControl2 = [0, solution2[0, 0], solution2[1, 0], solution2[2, 0]]
-        bestWrench2 = newModel.forwardPass(np.zeros((3, 1)), producedControl2)
+        bestWrench2 = newModel.forward_pass(np.zeros((3, 1)), producedControl2)
         # print(bestWrench2)
         break

@@ -5,7 +5,7 @@ Created on Tue Oct 26 12:31:38 2021
 
 @author: tabor
 """
-from models import multiMagModel
+from models import MultiMagModel
 from modelOptimization import multiMagSolver
 from environments import PlanarProblem, SpaceProblem
 from tqdm import tqdm
@@ -38,10 +38,10 @@ if __name__ == "__main__":
     mass = sphereProperties(8940, radius)
     object_properties = {"mass": mass[0], "MOI": mass[1], "radius": radius}
 
-    sphereModel = multiMagModel(env.magnets, object_properties, True)
+    sphereModel = MultiMagModel(env.magnets, object_properties, True)
     sphereSolver = multiMagSolver(sphereModel, env.trajectoryDimensions, True, 10)
 
-    cylinderModel = multiMagModel(env.magnets, object_properties, False)
+    cylinderModel = MultiMagModel(env.magnets, object_properties, False)
     cylinderSolver = multiMagSolver(cylinderModel, env.trajectoryDimensions, False, 10)
 
     sphereTime = []
@@ -54,7 +54,7 @@ if __name__ == "__main__":
         s = time.time()
         control1 = sphereSolver.solveWrench(state[0][:3, 3], desired_wrench)
         sphereTime.append(time.time() - s)
-        trueWrench1 = sphereModel.forwardPass(state[0][:3, 3], control1)
+        trueWrench1 = sphereModel.forward_pass(state[0][:3, 3], control1)
         wrenchError1 = trueWrench1 - desired_wrench
         cost = np.sum((wrenchError1[:3, :] ** 2)) + 200 * np.sum(
             (wrenchError1[3:, :] ** 2)
@@ -64,7 +64,7 @@ if __name__ == "__main__":
         s = time.time()
         control2 = cylinderSolver.solveWrench(state[0][:3, 3], desired_wrench)
         cylinderTime.append(time.time() - s)
-        trueWrench2 = cylinderModel.forwardPass(state[0][:3, 3], control2)
+        trueWrench2 = cylinderModel.forward_pass(state[0][:3, 3], control2)
         wrenchError2 = trueWrench2 - desired_wrench
         cost2 = np.sum((wrenchError2[:3, :] ** 2)) + 200 * np.sum(
             (wrenchError2[3:, :] ** 2)
@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
         if doBrute:
             control3 = sphereSolver.bruteSphereSolver(state[0][:3, 3], desired_wrench)
-            trueWrench3 = sphereModel.forwardPass(state[0][:3, 3], control3)
+            trueWrench3 = sphereModel.forward_pass(state[0][:3, 3], control3)
             wrenchError3 = trueWrench3 - desired_wrench
             cost3 = np.sum((wrenchError3[:3, :] ** 2)) + 200 * np.sum(
                 (wrenchError3[3:, :] ** 2)

@@ -6,12 +6,12 @@ Created on Tue Sep 27 19:35:46 2022
 """
 import numpy as np
 import time
-from models import SphereControlCommand, deconstruct_omega, modelCallRotatedWrench
-from solvers.DevinHelper import ForceFinder
+from models import SphereControlCommand, deconstruct_omega
+from solvers.DevinHelper import force_finder
 import math
 
 
-class devinSolver2:
+class DevinSolver2:
     def __init__(self, model):
         self.model = model
         self.count = 0
@@ -29,11 +29,11 @@ class devinSolver2:
     def calculate_duty_cycling_and_angles(self, position, wrench):
 
         # Grab the desired Force
-        Fdes = np.copy(wrench[:3, 0])
+        fdes = np.copy(wrench[:3, 0])
 
         # Get the positions from magnets to object
         p1, p2 = -1 * (np.array(self.model.magnets) - np.transpose(position))
-        if Fdes[0] < 0:
+        if fdes[0] < 0:
             mag = 0
             mag2 = 1
         else:
@@ -47,7 +47,7 @@ class devinSolver2:
         mmax = self.max_dipole_strength
         wmag = self.max_frequency
         r = self.model.object_properties.radius
-        FEA_Exp = 0
+        fea__exp = 0
         dtheta = math.pi / 20
         dtheta_precision = 1e-8
         dd = 0.1
@@ -56,47 +56,47 @@ class devinSolver2:
         # Handle the special case where thes desired force is entirely in the
         # x-direction
         ix = np.array([1, 0, 0])
-        fdes_perp = np.array([0, Fdes[1], Fdes[2]])
+        fdes_perp = np.array([0, fdes[1], fdes[2]])
         if np.linalg.norm(fdes_perp) == 0:
             w1hat = np.array([1, 0, 0])
             w1 = wmag * w1hat
-            if Fdes[0] < 0:
-                F, Fratio, T = ForceFinder(w1, mmax, material, FEA_Exp, r, lambda1)
+            if fdes[0] < 0:
+                F, fratio, T = force_finder(w1, mmax, material, fea__exp, r, lambda1)
             else:
-                F, Fratio, T = ForceFinder(w1, mmax, material, FEA_Exp, r, -lambda1)
-            if np.linalg.norm(Fdes) >= np.linalg.norm(F):
+                F, fratio, T = force_finder(w1, mmax, material, fea__exp, r, -lambda1)
+            if np.linalg.norm(fdes) >= np.linalg.norm(F):
                 return F, T, w1, -w1, mag, mag, mmax, mmax, 0.5, 0.5
             else:
-                Fmax_ratio = np.linalg.norm(Fdes) / np.linalg.norm(F)
-                mratio = math.sqrt(Fmax_ratio)
+                fmax_ratio = np.linalg.norm(fdes) / np.linalg.norm(F)
+                mratio = math.sqrt(fmax_ratio)
                 m1_set = mratio * mmax
-                if Fdes[0] < 0:
-                    F, Fratio, T = ForceFinder(
-                        w1, m1_set, material, FEA_Exp, r, lambda1
+                if fdes[0] < 0:
+                    F, fratio, T = force_finder(
+                        w1, m1_set, material, fea__exp, r, lambda1
                     )
                 else:
-                    F, Fratio, T = ForceFinder(
-                        w1, m1_set, material, FEA_Exp, r, -lambda1
+                    F, fratio, T = force_finder(
+                        w1, m1_set, material, fea__exp, r, -lambda1
                     )
                 return F, T, w1, -w1, mag, mag, m1_set, m1_set, 0.5, 0.5
 
         # Now handle all other cases
         else:
             fhat_des_perp = fdes_perp / np.linalg.norm(fdes_perp)
-            if Fdes[0] >= 0:
+            if fdes[0] >= 0:
                 w1hat = np.cross(ix, fhat_des_perp)
-            elif Fdes[0] < 0:
+            elif fdes[0] < 0:
                 w1hat = np.cross(fhat_des_perp, ix)
             w1 = wmag * w1hat
 
-            if Fdes[0] < 0:
-                F, Fratio, T = ForceFinder(w1, mmax, material, FEA_Exp, r, lambda1)
+            if fdes[0] < 0:
+                F, fratio, T = force_finder(w1, mmax, material, fea__exp, r, lambda1)
             else:
-                F, Fratio, T = ForceFinder(w1, mmax, material, FEA_Exp, r, -lambda1)
+                F, fratio, T = force_finder(w1, mmax, material, fea__exp, r, -lambda1)
 
             # Determine if desired force can be created using a single rotating dipole
-            Fdes_ratio = np.linalg.norm(fdes_perp) / abs(Fdes[0])
-            if Fdes_ratio <= Fratio:
+            fdes_ratio = np.linalg.norm(fdes_perp) / abs(fdes[0])
+            if fdes_ratio <= fratio:
                 theta = math.pi / 2
                 k1 = fhat_des_perp[0]
                 k2 = fhat_des_perp[1]
@@ -129,7 +129,7 @@ class devinSolver2:
                         ]
                     )
 
-                    Ry = np.array(
+                    ry = np.array(
                         [
                             [
                                 math.cos(math.pi / 2 - theta),
@@ -149,27 +149,27 @@ class devinSolver2:
                     w1b = wmag * w1hatb
                     w1b2 = np.array([-1, 1, 1]) * w1b
 
-                    if Fdes[0] < 0:
-                        F1, Fratio1, T1 = ForceFinder(
-                            w1b, mmax, material, FEA_Exp, r, lambda1
+                    if fdes[0] < 0:
+                        f1, fratio1, t1 = force_finder(
+                            w1b, mmax, material, fea__exp, r, lambda1
                         )
-                        F2, Fratio2, T2 = ForceFinder(
-                            w1b2, mmax, material, FEA_Exp, r, lambda1
+                        f2, fratio2, t2 = force_finder(
+                            w1b2, mmax, material, fea__exp, r, lambda1
                         )
                     else:
-                        F1, Fratio1, T1 = ForceFinder(
-                            w1b, mmax, material, FEA_Exp, r, -lambda1
+                        f1, fratio1, t1 = force_finder(
+                            w1b, mmax, material, fea__exp, r, -lambda1
                         )
-                        F2, Fratio2, T2 = ForceFinder(
-                            w1b2, mmax, material, FEA_Exp, r, -lambda1
+                        f2, fratio2, t2 = force_finder(
+                            w1b2, mmax, material, fea__exp, r, -lambda1
                         )
-                    F = (F1 + F2) / 2
-                    T = (T1 + T2) / 2
-                    Fratio = (Fratio1 + Fratio2) / 2
+                    F = (f1 + f2) / 2
+                    T = (t1 + t2) / 2
+                    fratio = (fratio1 + fratio2) / 2
 
-                    if Fdes_ratio == Fratio:
+                    if fdes_ratio == fratio:
                         dtheta = dtheta_precision
-                    elif Fratio > Fdes_ratio:
+                    elif fratio > fdes_ratio:
                         theta = theta - dtheta
                         if theta < 0:
                             theta = theta + dtheta * 1.5
@@ -178,29 +178,29 @@ class devinSolver2:
                         dtheta = dtheta / 2
                         theta = theta + dtheta
 
-                if np.linalg.norm(Fdes) >= np.linalg.norm(F):
+                if np.linalg.norm(fdes) >= np.linalg.norm(F):
                     return F, T, w1b, w1b2, mag, mag, mmax, mmax, 0.5, 0.5
                 else:
-                    Fmax_ratio = np.linalg.norm(Fdes) / np.linalg.norm(F)
-                    mratio = math.sqrt(Fmax_ratio)
+                    fmax_ratio = np.linalg.norm(fdes) / np.linalg.norm(F)
+                    mratio = math.sqrt(fmax_ratio)
                     m1_set = mratio * mmax
-                    if Fdes[0] < 0:
-                        F1, Fratio1, T2 = ForceFinder(
-                            w1b, m1_set, material, FEA_Exp, r, lambda1
+                    if fdes[0] < 0:
+                        f1, fratio1, t2 = force_finder(
+                            w1b, m1_set, material, fea__exp, r, lambda1
                         )
-                        F2, Fratio2, T2 = ForceFinder(
-                            w1b2, m1_set, material, FEA_Exp, r, lambda1
+                        f2, fratio2, t2 = force_finder(
+                            w1b2, m1_set, material, fea__exp, r, lambda1
                         )
                     else:
-                        F1, Fratio1, T2 = ForceFinder(
-                            w1b, m1_set, material, FEA_Exp, r, -lambda1
+                        f1, fratio1, t2 = force_finder(
+                            w1b, m1_set, material, fea__exp, r, -lambda1
                         )
-                        F2, Fratio2, T2 = ForceFinder(
-                            w1b2, m1_set, material, FEA_Exp, r, -lambda1
+                        f2, fratio2, t2 = force_finder(
+                            w1b2, m1_set, material, fea__exp, r, -lambda1
                         )
                     return (
-                        (F1 + F2) / 2,
-                        (T1 + T2) / 2,
+                        (f1 + f2) / 2,
+                        (t1 + t2) / 2,
                         w1b,
                         w1b2,
                         mag,
@@ -220,31 +220,31 @@ class devinSolver2:
                 w2 = wmag * w2hat
 
                 # Treat Fdes in perp direction as special case
-                if Fdes[0] == 0:
+                if fdes[0] == 0:
                     d1 = 0.5
                     d2 = 1 - d1
-                    F1, Fratio1, T1 = ForceFinder(
-                        w1, mmax, material, FEA_Exp, r, -lambda1
+                    f1, fratio1, t1 = force_finder(
+                        w1, mmax, material, fea__exp, r, -lambda1
                     )
-                    F2, Fratio2, T2 = ForceFinder(
-                        w2, mmax, material, FEA_Exp, r, lambda1
+                    f2, fratio2, t2 = force_finder(
+                        w2, mmax, material, fea__exp, r, lambda1
                     )
-                    F = d1 * F1 + d2 * F2
-                    T = d1 * T1 + d2 * T2
-                    if np.linalg.norm(Fdes) >= np.linalg.norm(F):
+                    F = d1 * f1 + d2 * f2
+                    T = d1 * t1 + d2 * t2
+                    if np.linalg.norm(fdes) >= np.linalg.norm(F):
                         return F, T, w1, w2, mag, mag2, mmax, mmax, 0.5, 0.5
                     else:
-                        Fmax_ratio = np.linalg.norm(Fdes) / np.linalg.norm(F)
-                        mratio = math.sqrt(Fmax_ratio)
+                        fmax_ratio = np.linalg.norm(fdes) / np.linalg.norm(F)
+                        mratio = math.sqrt(fmax_ratio)
                         m1_set = mratio * mmax
-                        F1, Fratio1, T1 = ForceFinder(
-                            w1, m1_set, material, FEA_Exp, r, -lambda1
+                        f1, fratio1, t1 = force_finder(
+                            w1, m1_set, material, fea__exp, r, -lambda1
                         )
-                        F2, Fratio2, T2 = ForceFinder(
-                            w2, m1_set, material, FEA_Exp, r, lambda1
+                        f2, fratio2, t2 = force_finder(
+                            w2, m1_set, material, fea__exp, r, lambda1
                         )
-                        F = F1 * d1 + F2 * d2
-                        T = T1 * d1 + T2 * d2
+                        F = f1 * d1 + f2 * d2
+                        T = t1 * d1 + t2 * d2
                         return F, T, w1, w2, mag, mag2, m1_set, m1_set, 0.5, 0.5
 
                 else:
@@ -253,27 +253,27 @@ class devinSolver2:
                     d2 = 1 - d1
 
                     while dd > dd_precision:
-                        if Fdes[0] < 0:
-                            F1, Fratio1, T1 = ForceFinder(
-                                w1, mmax, material, FEA_Exp, r, lambda1
+                        if fdes[0] < 0:
+                            f1, fratio1, t1 = force_finder(
+                                w1, mmax, material, fea__exp, r, lambda1
                             )
-                            F2, Fratio2, T2 = ForceFinder(
-                                w2, mmax, material, FEA_Exp, r, -lambda1
+                            f2, fratio2, t2 = force_finder(
+                                w2, mmax, material, fea__exp, r, -lambda1
                             )
                         else:
-                            F1, Fratio1, T1 = ForceFinder(
-                                w1, mmax, material, FEA_Exp, r, -lambda1
+                            f1, fratio1, t1 = force_finder(
+                                w1, mmax, material, fea__exp, r, -lambda1
                             )
-                            F2, Fratio2, T2 = ForceFinder(
-                                w2, mmax, material, FEA_Exp, r, lambda1
+                            f2, fratio2, t2 = force_finder(
+                                w2, mmax, material, fea__exp, r, lambda1
                             )
 
-                        F = d1 * F1 + d2 * F2
-                        Fratio = math.sqrt(F[2] ** 2 + F[1] ** 2) / abs(F[0])
+                        F = d1 * f1 + d2 * f2
+                        fratio = math.sqrt(F[2] ** 2 + F[1] ** 2) / abs(F[0])
 
-                        if Fdes_ratio == Fratio:
+                        if fdes_ratio == fratio:
                             dd = dd_precision
-                        elif Fratio > Fdes_ratio:
+                        elif fratio > fdes_ratio:
                             d1 = d1 + dd
                             d2 = d2 - dd
                         else:
@@ -281,32 +281,32 @@ class devinSolver2:
                             d1 = d1 - dd
                             d2 = d2 + dd
 
-                    if np.linalg.norm(Fdes) >= np.linalg.norm(F):
-                        T = d1 * T1 + d2 * T2
+                    if np.linalg.norm(fdes) >= np.linalg.norm(F):
+                        T = d1 * t1 + d2 * t2
                         return F, T, w1, w2, mag, mag2, mmax, mmax, d1, d2
                     else:
-                        Fmax_ratio = np.linalg.norm(Fdes) / np.linalg.norm(F)
-                        mratio = math.sqrt(Fmax_ratio)
+                        fmax_ratio = np.linalg.norm(fdes) / np.linalg.norm(F)
+                        mratio = math.sqrt(fmax_ratio)
                         m1_set = mratio * mmax
-                        if Fdes[0] < 0:
-                            F1, Fratio1, T1 = ForceFinder(
-                                w1, m1_set, material, FEA_Exp, r, lambda1
+                        if fdes[0] < 0:
+                            f1, fratio1, t1 = force_finder(
+                                w1, m1_set, material, fea__exp, r, lambda1
                             )
-                            F2, Fratio2, T2 = ForceFinder(
-                                w2, m1_set, material, FEA_Exp, r, -lambda1
+                            f2, fratio2, t2 = force_finder(
+                                w2, m1_set, material, fea__exp, r, -lambda1
                             )
                         else:
-                            F1, Fratio1, T1 = ForceFinder(
-                                w1, m1_set, material, FEA_Exp, r, -lambda1
+                            f1, fratio1, t1 = force_finder(
+                                w1, m1_set, material, fea__exp, r, -lambda1
                             )
-                            F2, Fratio2, T2 = ForceFinder(
-                                w2, m1_set, material, FEA_Exp, r, lambda1
+                            f2, fratio2, t2 = force_finder(
+                                w2, m1_set, material, fea__exp, r, lambda1
                             )
-                        F = d1 * F1 + d2 * F2
-                        T = d1 * T1 + d2 * T2
+                        F = d1 * f1 + d2 * f2
+                        T = d1 * t1 + d2 * t2
                         return F, T, w1, w2, mag, mag2, m1_set, m1_set, d1, d2
 
-    def solveWrench(self, position, desired_wrench):
+    def solve_wrench(self, position, desired_wrench):
         start = time.time()
         model_id = self.count % (len(self.model.magnets))
         self.count += 1
@@ -339,15 +339,15 @@ class devinSolver2:
                 #rescale smaller one down, then adjust accordingly
                 """
             if d1 < d2:
-                self.T1 = self.duty_percent * int(d1 / self.duty_percent)
-                self.T2 = 1 - self.T1
-                if self.T2 < 0.5:
-                    scale_factor_t2 = np.sqrt((d2 * self.T1) / (d1 * self.T2))
+                self.t1 = self.duty_percent * int(d1 / self.duty_percent)
+                self.t2 = 1 - self.t1
+                if self.t2 < 0.5:
+                    scale_factor_t2 = np.sqrt((d2 * self.t1) / (d1 * self.t2))
             else:
-                self.T2 = self.duty_percent * int(d2 / self.duty_percent)
-                self.T1 = 1 - self.T2
-                if self.T1 < 0.5:
-                    scale_factor_t1 = np.sqrt((d1 * self.T2) / (d2 * self.T1))
+                self.t2 = self.duty_percent * int(d2 / self.duty_percent)
+                self.t1 = 1 - self.t2
+                if self.t1 < 0.5:
+                    scale_factor_t1 = np.sqrt((d1 * self.t2) / (d2 * self.t1))
 
             dipole_1 = m1_set * scale_factor_t1
             dipole_2 = m2_set * scale_factor_t2
@@ -361,8 +361,8 @@ class devinSolver2:
             print("")
             print("")
             print("Times")
-            print(self.T1)
-            print(self.T2)
+            print(self.t1)
+            print(self.t2)
             print("")
             print("")
 
@@ -376,9 +376,9 @@ class devinSolver2:
                     xi=angles[1],
                 )
                 if i == 0:
-                    control.seconds = self.T1 * self.duty_time
+                    control.seconds = self.t1 * self.duty_time
                 else:
-                    control.seconds = self.T2 * self.duty_time
+                    control.seconds = self.t2 * self.duty_time
 
                 actual_wrench += (
                     self.model.forwardSphere(position, control) * control.seconds

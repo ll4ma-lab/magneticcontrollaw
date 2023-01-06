@@ -36,7 +36,7 @@ solver = cylinderSolver(env.magnets)
 diamter = 0.05
 freq = 10.0
 power = 40.0
-state = env.startState
+state = env.start_state
 
 state[1] = 0.16
 # state[2] = 0.12

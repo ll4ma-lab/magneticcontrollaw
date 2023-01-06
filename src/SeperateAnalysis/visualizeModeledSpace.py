@@ -8,7 +8,7 @@ Created on Sun Sep 20 18:27:19 2020
 import sys
 
 sys.path.append("..")  # Adds higher directory to python modules path.
-from models import multiMagModel
+from models import MultiMagModel
 
 from visualization import *
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
@@ -21,14 +21,14 @@ ax.set_ylim(-0.25, 0.75)
 ax.set_zlim(-0.5, 0.5)
 # ax.set_aspect('equal')
 
-addCube((0, 0, 0), 0.1, 1, ax)
-drawSphere((0, 0.5, 0), 0.1, ax)
+add_cube((0, 0, 0), 0.1, 1, ax)
+draw_sphere((0, 0.5, 0), 0.1, ax)
 
 vlen = 0.5
 
 
-drawArrow((0, vlen, 0), "g", ax)
-drawArrow((0, -vlen, 0), "b", ax)
+draw_arrow((0, vlen, 0), "g", ax)
+draw_arrow((0, -vlen, 0), "b", ax)
 
 lines = 60
 mags = [[0, -0.15, 0]]
@@ -38,15 +38,15 @@ objectProperties = {"radius": radius, "sigma": 5.8e7}
 for i in range(lines):
     angle = i * 2 * np.pi / lines
     vec = (vlen * np.cos(angle), 0, vlen * np.sin(angle))
-    drawArrow(vec, "r", ax)
+    draw_arrow(vec, "r", ax)
 
 
-model = multiMagModel(mags, objectProperties, False)
+model = MultiMagModel(mags, objectProperties, False)
 scaleFactor = 1e3
 position = np.zeros((3, 1))
 pointingForces = (
     np.stack(
-        [model.forwardPass(position, [0, 0, i, 0]) for i in range(40 + 1)]
+        [model.forward_pass(position, [0, 0, i, 0]) for i in range(40 + 1)]
     ).squeeze()
     * scaleFactor
 )
@@ -56,7 +56,7 @@ ax.scatter(
 
 negPointingForces = (
     np.stack(
-        [model.forwardPass(position, [0, 1, i + 0.5, 0]) for i in range(40 + 1)]
+        [model.forward_pass(position, [0, 1, i + 0.5, 0]) for i in range(40 + 1)]
     ).squeeze()
     * scaleFactor
 )
@@ -72,7 +72,7 @@ rhoForces = (
     np.concatenate(
         [
             np.stack(
-                [model.forwardPass(position, [0, 2, i, j]) for i in range(1, 40 + 1, 5)]
+                [model.forward_pass(position, [0, 2, i, j]) for i in range(1, 40 + 1, 5)]
             )
             for j in range(-180, 180, 6)
         ],
@@ -94,10 +94,10 @@ ax.set_ylim(-0.25, 0.75)
 ax.set_zlim(-0.5, 0.5)
 # ax.set_aspect('equal')
 
-addCube((0, 0, 0), 0.1, 1, ax)
+add_cube((0, 0, 0), 0.1, 1, ax)
 
-drawArrow((0, vlen, 0), arrow_color, ax)
-drawArrow((0, -vlen, 0), arrow_color, ax)
+draw_arrow((0, vlen, 0), arrow_color, ax)
+draw_arrow((0, -vlen, 0), arrow_color, ax)
 
 lines = 60
 mags = [[0, -0.15, 0]]
@@ -107,10 +107,10 @@ objectProperties = {"radius": radius, "sigma": 5.8e7}
 for i in range(lines):
     angle = i * 2 * np.pi / lines
     vec = (vlen * np.cos(angle), 0, vlen * np.sin(angle))
-    drawArrow(vec, arrow_color, ax)
+    draw_arrow(vec, arrow_color, ax)
 
 
-drawSphere((0, 0.5, 0), 0.1, ax)
+draw_sphere((0, 0.5, 0), 0.1, ax)
 ax.scatter(
     pointingForces[:, 0],
     pointingForces[:, 1] + 0.5,
@@ -132,7 +132,7 @@ ax.set_yticks([])
 ax.set_zticks([])
 
 
-sphereModel = multiMagModel(mags, objectProperties, True)
+sphereModel = MultiMagModel(mags, objectProperties, True)
 
 phiSet = [-90]  # range(-180,180,2)
 xiSet = range(-180, 180, 1)
@@ -145,7 +145,7 @@ sphereForces = (
             np.concatenate(
                 [
                     np.stack(
-                        [sphereModel.forwardPass(position, [0, i, j, k]) for i in [40]]
+                        [sphereModel.forward_pass(position, [0, i, j, k]) for i in [40]]
                     )
                     for j in phiSet
                 ],
@@ -162,7 +162,7 @@ sphereForces = (
 rhoForces = (
     np.concatenate(
         [
-            np.stack([model.forwardPass(position, [0, 2, i, j]) for i in powerSet])
+            np.stack([model.forward_pass(position, [0, 2, i, j]) for i in powerSet])
             for j in thetaSet
         ],
         0,
@@ -171,7 +171,7 @@ rhoForces = (
 )
 pointingForces = (
     np.stack(
-        [model.forwardPass(position, [0, 0, i, 0]) for i in range(40 + 1)]
+        [model.forward_pass(position, [0, 0, i, 0]) for i in range(40 + 1)]
     ).squeeze()
     * scaleFactor
 )
@@ -253,14 +253,14 @@ scaleFactor = 1e5
 position = np.zeros((3, 1))
 pointingForces = (
     np.stack(
-        [model.forwardPass(position, [0, 0, i, 0]) for i in range(40 + 1)]
+        [model.forward_pass(position, [0, 0, i, 0]) for i in range(40 + 1)]
     ).squeeze()
     * scaleFactor
 )
 
 negPointingForces = (
     np.stack(
-        [model.forwardPass(position, [0, 1, i + 0.5, 0]) for i in range(40 + 1)]
+        [model.forward_pass(position, [0, 1, i + 0.5, 0]) for i in range(40 + 1)]
     ).squeeze()
     * scaleFactor
 )
@@ -273,7 +273,7 @@ sphereForces = (
             np.concatenate(
                 [
                     np.stack(
-                        [sphereModel.forwardPass(position, [0, i, j, k]) for i in [40]]
+                        [sphereModel.forward_pass(position, [0, i, j, k]) for i in [40]]
                     )
                     for j in phiSet
                 ],
@@ -291,7 +291,7 @@ thetaSet = [90, -90]
 rhoForces = (
     np.concatenate(
         [
-            np.stack([model.forwardPass(position, [0, 2, i, j]) for i in powerSet])
+            np.stack([model.forward_pass(position, [0, 2, i, j]) for i in powerSet])
             for j in thetaSet
         ],
         0,
@@ -312,7 +312,7 @@ ax.set_ylim(-0.25, 0.75)
 ax.set_zlim(-0.5, 0.5)
 # ax.set_aspect('equal')
 
-addCube((0, 0, 0), 0.1, 1, ax)
+add_cube((0, 0, 0), 0.1, 1, ax)
 
 # drawArrow((0,vlen,0),arrow_color,ax)
 # drawArrow((0,-vlen,0),arrow_color,ax)
@@ -325,10 +325,10 @@ objectProperties = {"radius": radius, "sigma": 5.8e7}
 for i in range(lines):
     angle = i * 2 * np.pi / lines
     vec = (vlen * np.cos(angle), 0, vlen * np.sin(angle))
-    drawArrow(vec, arrow_color, ax)
+    draw_arrow(vec, arrow_color, ax)
 
 
-drawSphere((0, 0.5, 0), 0.1, ax)
+draw_sphere((0, 0.5, 0), 0.1, ax)
 ax.scatter(
     pointingForces[:, 3],
     pointingForces[:, 4] + 0.5,

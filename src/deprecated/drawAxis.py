@@ -28,9 +28,9 @@ ax.set_title("old Axis")
 (x_axis,) = ax.plot([-1, 0, 1], [0, 0, 0], [0, 0, 0], lw=2, color="red")
 (y_axis,) = ax.plot([0, 0, 0], [-1, 0, 1], [0, 0, 0], lw=2, color="green")
 (z_axis,) = ax.plot([0, 0, 0], [0, 0, 0], [-1, 0, 1], lw=2, color="blue")
-cube_definition = visualization.buildRectangularPrism([0, 0, 0], 0.1, 0.1, 0.1)
+cube_definition = visualization.build_rectangular_prism([0, 0, 0], 0.1, 0.1, 0.1)
 visualization.plot_cube(cube_definition, [1, 0, 0, 1], ax)
-visualization.drawSphere([1, 0, 0], 0.2, ax)
+visualization.draw_sphere([1, 0, 0], 0.2, ax)
 plt.show()
 
 
@@ -47,7 +47,7 @@ ax.set_title("new Axis")
 (x_axis,) = ax.plot([-1, 0, 1], [0, 0, 0], [0, 0, 0], lw=2, color="red")
 (line,) = ax.plot([], [], [], lw=2, color="green")
 visualization.plot_cube(cube_definition, [1, 0, 0, 1], ax)
-visualization.drawSphere([1, 0, 0], 0.2, ax)
+visualization.draw_sphere([1, 0, 0], 0.2, ax)
 
 
 def animate(i):

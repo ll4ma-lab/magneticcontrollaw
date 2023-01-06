@@ -13,12 +13,12 @@ sys.path.append("..")  # Adds higher directory to python modules path.
 import numpy as np
 from PDController import PDController
 from discreteTimeSimulator import (
-    discreteTimeSimulator,
+    DiscreteTimeSimulator,
     sphereProperties,
-    simulateExperiment,
+    simulate_experiment,
 )
 from environments import PlanarProblem, SpaceProblem
-from se3Utils import buildTF
+from se3Utils import build_tf
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as p3
 
@@ -31,14 +31,14 @@ from tqdm import tqdm
 
 useSphere = False
 
-from models import multiMagModel
+from models import MultiMagModel
 from modelOptimization import multiMagSolver
 
 if __name__ == "__main__":
 
     env = SpaceProblem(6)
     env.magnets = env.magnets[:-3]
-    env.trajectoryDimensions = "xyz"
+    env.trajectory_dimensions = "xyz"
 
     simTime = np.sum(env.times)
     dt = 1
@@ -47,13 +47,13 @@ if __name__ == "__main__":
     mass = sphereProperties(8940, radius)
     objectProperties = {"mass": mass[0], "MOI": mass[1], "radius": radius}
 
-    model = multiMagModel(env.magnets, objectProperties, useSphere)
-    solverModel = multiMagModel(env.magnets, objectProperties, useSphere)
-    solver = multiMagSolver(solverModel, env.trajectoryDimensions, useSphere, 10)
+    model = MultiMagModel(env.magnets, objectProperties, useSphere)
+    solverModel = MultiMagModel(env.magnets, objectProperties, useSphere)
+    solver = multiMagSolver(solverModel, env.trajectory_dimensions, useSphere, 10)
 
     modifier = 10
     controller = PDController(
-        env.startState,
+        env.start_state,
         0.005 * modifier,
         0.000002 * modifier,
         0.005 * modifier,
@@ -73,9 +73,9 @@ if __name__ == "__main__":
     velErrors = []
     s = time.time()
     for i in tqdm(range(samplePoints.shape[0])):
-        env.desiredState[:3, 0] = samplePoints[i, :]
-        simulator = discreteTimeSimulator(
-            env.startState, dt, objectProperties
+        env.desired_state[:3, 0] = samplePoints[i, :]
+        simulator = DiscreteTimeSimulator(
+            env.start_state, dt, objectProperties
         )  # density, diamter
         velocityProfile = SplineProfile.SplineProfile(env, simTime, env.times)
         (
@@ -85,7 +85,7 @@ if __name__ == "__main__":
             desiredStates,
             controls,
             minimizationCosts,
-        ) = simulateExperiment(
+        ) = simulate_experiment(
             simulator,
             controller,
             env,
@@ -95,16 +95,16 @@ if __name__ == "__main__":
             numSteps=numSteps,
             cheat=False,
             dt=dt,
-            debugPrints=False,
+            debug_prints=False,
         )
 
         velError = np.linalg.norm(np.dot(states[-1][0][:3, :3], states[-1][2][:, 0]))
         velErrors.append(velError)
 
-        desiredFinalTF = buildTF(desiredStates[-1][:3, 0], desiredStates[-1][3:6, 0])
-        remainingError = controller.computeError(desiredFinalTF, states[-1][0])
+        desiredFinalTF = build_tf(desiredStates[-1][:3, 0], desiredStates[-1][3:6, 0])
+        remainingError = controller.compute_error(desiredFinalTF, states[-1][0])
         posError = np.linalg.norm(remainingError[:3])
-        startingError = controller.computeError(desiredFinalTF, np.eye(4))
+        startingError = controller.compute_error(desiredFinalTF, np.eye(4))
         startingPosError = np.linalg.norm(startingError[:3])
         posErrorsPercent.append(posError / startingPosError)
 
@@ -117,10 +117,10 @@ if __name__ == "__main__":
     fig = plt.figure()
     ax = p3.Axes3D(fig)
     ax.scatter(samplePoints[:, 0], samplePoints[:, 1], samplePoints[:, 2], c=colors)
-    ax.set_xlim(*env.visualizationBoundaryY)
-    ax.set_ylim(*env.visualizationBoundaryY)
-    ax.set_zlim(*env.visualizationBoundaryY)
-    visualization.drawCubes(env.magnets, [], ax, env.radius)
+    ax.set_xlim(*env.visualization_boundary_y)
+    ax.set_ylim(*env.visualization_boundary_y)
+    ax.set_zlim(*env.visualization_boundary_y)
+    visualization.draw_cubes(env.magnets, [], ax, env.radius)
 
     name = "sphere_" if useSphere else "cylinder_"
     import dataloader

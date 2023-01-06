@@ -7,7 +7,7 @@ Created on Tue Dec 14 13:02:06 2021
 """
 import sysIDoptimization
 from ll4ma_opt.solvers import Momentum
-from solvers.modelOptimization import build_acceleration_Q
+from solvers.modelOptimization import build_acceleration_q
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -19,20 +19,20 @@ class Adaptive:
         dimensions,
         object_properties,
         batch_size=1,
-        internal_sysID=sysIDoptimization.radiusSysid,
+        internal_sys_id=sysIDoptimization.RadiusSysid,
         boat=False,
     ):
 
         self.magnets = magnets
         self.object_properties = object_properties
-        Q = build_acceleration_Q(dimensions)
+        Q = build_acceleration_q(dimensions)
         print("adaptive weights ", Q)
-        self.problem = internal_sysID(Q, object_properties, boat=boat)
+        self.problem = internal_sys_id(Q, object_properties, boat=boat)
         self.current_solution = self.problem.initial_solution
         step = 1e-8  # / batch_size
-        optimizerParams = {"alpha": step, "rho": 0.9, "min_alpha": step / 2}
+        optimizer_params = {"alpha": step, "rho": 0.9, "min_alpha": step / 2}
 
-        optimizerParams = {
+        optimizer_params = {
             "alpha": step,
             "rho": 0.9,
             "c1": 1e-9,
@@ -41,7 +41,7 @@ class Adaptive:
             "momentum": 0.8,
         }
 
-        self.optimizer = Momentum(problem=self.problem, **optimizerParams)
+        self.optimizer = Momentum(problem=self.problem, **optimizer_params)
         self.batch_size = batch_size
 
         self.linear_velocities = []
@@ -76,7 +76,7 @@ class Adaptive:
             self.rotational_velocities[-batch_size:]
         )
 
-        self.problem.updateVals(
+        self.problem.update_vals(
             selected_controls,
             self.magnets,
             selected_positions,
