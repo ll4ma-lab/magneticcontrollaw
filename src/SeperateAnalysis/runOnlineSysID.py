@@ -13,12 +13,12 @@ import dataloader
 import numpy as np
 import time
 import torch
-from models import modelCallRotatedWrench, SphereModel, SphereControlCommand
+from models import model_call_rotated_wrench, SphereModel, SphereControlCommand
 from ObjectProperties import (
     ObjectProperties,
-    buildMassMatrix,
-    sphere_properties,
-    boatProperties,
+    build_mass_matrix,
+    compute_sphere_properties,
+    compute_boat_properties,
 )
 
 from solvers.modelOptimization import build_q, build_acceleration_q
@@ -59,7 +59,7 @@ if type(controls[0]) == list:
         )
         for control in controls
     ]
-    boat_mass, boat_MOI = boatProperties(0.059, 0.075, 0.07, 0.031)
+    boat_mass, boat_MOI = compute_boat_properties(0.059, 0.075, 0.07, 0.031)
     boat_properties = ObjectProperties(
         mass=boat_mass, MOI=boat_MOI
     )  # + ObjectProperties(0.15,np.zeros(3))
@@ -198,7 +198,7 @@ for i in tqdm(range(1, numSteps - batch_size, 1)):
             start_index - 1 : end_index - 1
         ]
 
-    prob.updateVals(
+    prob.update_vals(
         selected_controls,
         env.magnets,
         selected_positions,
