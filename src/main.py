@@ -118,7 +118,7 @@ if __name__ == "__main__":
             env.start_state, 0.0005, 0.000001, 0.0005, 0.000002, 0.0, 0.000
         )
     simulator = DiscreteTimeSimulator(env.start_state, object_properties)
-    velocity_profile = SplineProfile.SplineProfile(env, sim_time, env.times)
+    velocity_profile = SplineProfile.SplineProfile(env, env.times)
     adaptive = Adaptive(
         env.magnets,
         "all",

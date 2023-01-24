@@ -10,11 +10,10 @@ import time
 
 
 class SplineProfile:
-    def __init__(self, env, total_time_steps, times):
+    def __init__(self, env, times):
         start_state = env.start_state
         points = env.desired_state
         self.points = np.concatenate((start_state, points), 1)
-        self.total_time_steps = total_time_steps
         self.time = 0.0
         self.times = times
         self.switching_times = [
