@@ -67,8 +67,8 @@ class PDController:
         position_error = self.compute_error(current_tf, desired_tf)
         # (bodyToWorld,Ωsc,Vsc)
 
-        rot_vel_error = desired[6:9] - np.dot(current_tf[:3, :3], current[1])
-        linear_vel_error = desired[6:9] - np.dot(current_tf[:3, :3], current[2])
+        rot_vel_error = desired[6:9] - current_tf[:3, :3] @ current[1]
+        linear_vel_error = desired[9:12] - current_tf[:3, :3] @ current[2]
         vel_error = np.concatenate((linear_vel_error, rot_vel_error), 0)
 
         pstuff = np.matmul(self.pgains, position_error)
