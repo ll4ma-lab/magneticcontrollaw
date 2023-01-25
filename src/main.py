@@ -222,6 +222,5 @@ if __name__ == "__main__":
 
     dataloader.save(
         "../data/sim_" + str(sim_time) + "s_" + str(datetime.now()).replace(":", "."),
-        globals(),
-        dir(),
+        [globals()]
     )
