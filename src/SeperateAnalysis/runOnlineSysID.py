@@ -36,7 +36,7 @@ from scipy.spatial.transform import Rotation as R
 # dataloader.load('/home/tabor/Documents/magneticcontrollaw/data/sim_5400s_2022-09-27 13.29.32.114902',globals())
 # dataloader.load('/home/tabor/Documents/magneticcontrollaw/data/sim_2160s_2022-09-27 15.42.16.145535',globals())
 
-controls = env = adaptive = mass = MOI = radius = sigma_copper = numSteps = None
+states = controls = env = adaptive = mass = MOI = radius = sigma_copper = numSteps = None
 
 
 # dataloader.load('/home/tabor/Downloads/real_2022-10-10 15 54 23.074092',globals())
@@ -69,12 +69,12 @@ boat = boat_properties
 
 magnets = env.magnets
 sysID_type = RadiusSysid
-optimizer_type = NewtonMethod
+optimizer_type = Momentum
 reset = False
 use_stein = False
 end_early = False
 print_result = False
-max_iterations = 100 if reset else 5
+max_iterations = 600 if reset else 2
 
 
 print("optimizer ", optimizer_type)
@@ -89,7 +89,7 @@ if optimizer_type is NewtonMethod:
         "min_alpha": 1e-20,
     }
 elif optimizer_type is GradientDescent or optimizer_type is Momentum:
-    step = 1e-11
+    step = 1e-12
     optimizerParams = {
         "alpha": step,
         "rho": 0.9,
@@ -119,7 +119,7 @@ prob = sysID_type(
     boat=boat,
 )  # built with M(0.04) Q M(0.04)
 
-stein_problem = SteinWrapper(prob, 20)
+stein_problem = SteinWrapper(prob, 25,5)
 
 if use_stein:
     optimizer = optimizer_type(problem=stein_problem, **optimizerParams)
@@ -154,7 +154,6 @@ rotationalVelocity = np.array(
     ]
 )
 
-from scipy.spatial.transform import Rotation as R
 
 angles = np.array(
     [
@@ -173,10 +172,9 @@ rotational_velocity = np.array(rotational_velocity)
 positions = np.array([state[0][:3, 3] for state in states[1 + start : end - 1]])
 alligned_controls = controls[start : end - 2]
 
+initial_costs = []
 
-for i in tqdm(range(1, numSteps - batch_size, 1)):
-    if i == 1000:
-        break
+for i in tqdm(range(1, numSteps - batch_size, 10)):
 
     start_index = i
     end_index = i + batch_size if numSteps > i + batch_size else numSteps
@@ -206,7 +204,9 @@ for i in tqdm(range(1, numSteps - batch_size, 1)):
         selected_rotation_velocities,
         (0.0, 5.4),
     )
-
+    #check cost with updated data but old parameters
+    initial_costs.append(prob.cost(prob.initial_solution))
+    
     result = optimizer.optimize(
         optimizer.problem.initial_solution, max_iterations=max_iterations
     )
@@ -262,7 +262,7 @@ for i in range(prob.size()):
     for j in range(stein_problem.num_particles if use_stein else 1):
         axs[i].plot(solutions[:, j, i])
 
-prob.updateVals(
+prob.update_vals(
     alligned_controls,
     env.magnets,
     positions,

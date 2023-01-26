@@ -9,8 +9,15 @@ Created on Wed Jul 28 20:30:42 2021
 import numpy as np
 import time
 import torch
+from tqdm import tqdm
 from models import model_call_rotated_wrench, SphereModel
-from ObjectProperties import ObjectProperties, build_mass_matrix, compute_sphere_properties
+from ObjectProperties import (
+    ObjectProperties,
+    build_mass_matrix,
+    compute_sphere_properties,
+)
+from matplotlib.patches import Ellipse
+from decimal import Decimal
 
 from solvers.modelOptimization import build_q, build_acceleration_q
 from ll4ma_opt.problems import Problem
@@ -25,7 +32,7 @@ class RadiusSysid(Problem):
         super().__init__()
 
         self.single_model = SphereModel(1)
-        self.sigma_multiplier = 1e7
+        self.sigma_multiplier = 1e9
 
         self.error_multiplier = 1e6
 
@@ -40,11 +47,11 @@ class RadiusSysid(Problem):
             self.initial_solution = np.ones((2, 1)) * 0.001
             self.initial_solution[1] = 5.8e7 / self.sigma_multiplier
 
-        self.min_bounds[0] = 1e-3
-        self.max_bounds[0] = 5e-2
+        self.min_bounds[0] = 1e-5
+        self.max_bounds[0] = 1e-1
 
         self.min_bounds[1] = 2e5 / self.sigma_multiplier
-        self.max_bounds[1] = 2e8 / self.sigma_multiplier
+        self.max_bounds[1] = 10e7 / self.sigma_multiplier
 
         self.weights = self.make_tensor(weights)
         if boat:
@@ -180,32 +187,54 @@ class RadiusSysid(Problem):
         weighted_error = error.T @ torch.sqrt(self.weights / self.rhos.shape[0])
         return weighted_error.reshape(((-1, 1)))
 
-    def visualize_optimization(
-        self, iterates, samples=50, func=np.abs, show_costs=False
-    ):
-        fig = plt.figure(figsize=(10, 10))
-        if show_costs:
-            ax = fig.add_subplot(projection="3d")
-            start_angle = -100
-            ax.view_init(elev=17.0, azim=start_angle)
-        else:
-            ax = fig.add_subplot()
+    def compute_uncertainty(self, x):
+        x = torch.tensor(x)
+        model_accel_func = lambda x: self.forward_acceleration(
+            self.get_object_properties(x, torch),
+            self.dists,
+            self.dipole_strength,
+            self.angles,
+            self.rhos,
+            self.zero,
+        )
 
+        model_accel = model_accel_func(x)
+
+        model_accel_average = torch.mean(model_accel, 1)
+        delta_modeled = model_accel_average.unsqueeze(1) - model_accel
+
+        measured_acel_average = torch.mean(self.accelerations, 1)
+        delta_accel = measured_acel_average.unsqueeze(1) - self.accelerations
+
+        delta_difference = delta_accel - delta_modeled
+        N = int(model_accel.shape[1])
+        M = 3
+        P = self.size()
+        left = (delta_difference.T @ self.weights).unsqueeze(1)
+        right = delta_difference.T.unsqueeze(2)
+        summed_squared_delta = torch.sum(torch.bmm(left, right))
+        sigma_squared = summed_squared_delta.numpy() / (N * M - P)
+
+        big_jacobian = torch.swapaxes(
+            torch.autograd.functional.jacobian(model_accel_func, x)[:, :, :, 0], 0, 1
+        )
+        batched_jtj = torch.bmm(torch.swapaxes(big_jacobian, 1, 2), big_jacobian)
+        remap = torch.linalg.inv(torch.mean(batched_jtj, 0)).numpy()
+
+        covariance = sigma_squared * remap / (N * M - P)
+        return covariance
+
+    def grid_sample(self, samples, scaling_function):
         possible_xs = np.linspace(self.min_bounds[0], self.max_bounds[0], samples)
         possible_ys = np.linspace(self.min_bounds[1], self.max_bounds[1], samples)
         xs, ys = np.meshgrid(possible_xs, possible_ys)
         xs = xs.flatten()
         ys = ys.flatten()
         possible_costs = [
-            func(self.cost(np.stack((xs[i], ys[i])).reshape((2, 1))))
+            scaling_function(self.cost(np.stack((xs[i], ys[i])).reshape((2, 1))))
             for i in range(len(xs))
         ]
-        if func is np.log:
-            clip_value = np.median(possible_costs)
-        else:
-            clip_value = 2 * np.median(possible_costs)
         possible_costs = np.array(possible_costs)
-        possible_costs[possible_costs > clip_value] = clip_value
 
         best_index = np.argmin(possible_costs)
         print(
@@ -215,24 +244,65 @@ class RadiusSysid(Problem):
             xs[best_index],
             ys[best_index],
         )
-        print(
-            "result func cost ",
-            min(
-                [
-                    min(func(self.cost(point.reshape((-1, 1)))), clip_value)
-                    for point in iterates[-1].reshape((-1, 2))
-                ]
-            ),
-        )
+
+        return xs, ys, possible_costs
+
+    def visualize_optimization(
+        self,
+        iterates,
+        samples=50,
+        func=np.abs,
+        show_costs=False,
+        save_snapshots=False,
+        make_heatmap=False,
+    ):
+        fig = plt.figure(figsize=(10, 10))
+        if show_costs:
+            ax = fig.add_subplot(projection="3d")
+            start_angle = -100
+            ax.view_init(elev=17.0, azim=start_angle)
+        else:
+            ax = fig.add_subplot()
+
+        xs, ys, possible_costs = self.grid_sample(samples, func)
+
+        if func is np.log:
+            clip_value = np.median(possible_costs)
+        else:
+            clip_value = 2 * np.median(possible_costs)
+
+        possible_costs[possible_costs > clip_value] = clip_value
 
         ax.set_xlim(self.min_bounds[0], self.max_bounds[0])
         ax.set_ylim(self.min_bounds[1], self.max_bounds[1])
-
+        ax.set_xlabel("Radius (m)")
+        ax.set_ylabel(
+            "Conductivity " + "%0.2E" % Decimal(self.sigma_multiplier) + " S/m"
+        )
         points = iterates[0].reshape((-1, 2))
         costs = [
             [min(func(self.cost(point.reshape((-1, 1)))), clip_value)]
             for point in points
         ]
+        if make_heatmap:
+            c = ax.contourf(
+                xs.reshape((samples, samples)),
+                ys.reshape((samples, samples)),
+                possible_costs.reshape((samples, samples)),
+                30,
+                cmap="RdBu",
+            )
+            # set the limits of the plot to the limits of the data
+            ax.axis(
+                [
+                    self.min_bounds[0],
+                    self.max_bounds[0],
+                    self.min_bounds[1],
+                    self.max_bounds[1],
+                ]
+            )
+            fig.colorbar(c, ax=ax)
+
         if show_costs:
             ax.scatter(xs, ys, possible_costs, color=(0, 0, 1, 0.5))
             # ax.set_zlim(0, clip_value)
@@ -258,12 +328,14 @@ class RadiusSysid(Problem):
             scat = plt.scatter(points[:, 0], points[:, 1], linewidths=10, c="orange")
             scat.set_offsets(points)
             scat2 = None
+        if save_snapshots:
+            fig.savefig("../../videos/initial.pdf")
 
-        def update(num, scat, scat2, iterates, show_costs, ax):
+        def update(num, scat, scat2, iterates, show_costs, ax, save_snapshots):
 
             ax.set_title(num)
             if show_costs:
-                ax.view_init(elev=17.0, azim=start_angle + num / 3)
+                ax.view_init(elev=ax.elev, azim=ax.azim + 1 / 3)
             points = iterates[num].reshape((-1, 2))
             costs = [
                 [min(func(self.cost(point.reshape((-1, 1)))), clip_value)]
@@ -278,10 +350,13 @@ class RadiusSysid(Problem):
             else:
                 scat.set_offsets(points)
 
+            if save_snapshots:
+                fig.savefig("../../videos/" + str(num) + ".pdf")
+
         anim = FuncAnimation(
             fig,
             update,
-            fargs=(scat, scat2, iterates, show_costs, ax),
+            fargs=(scat, scat2, iterates, show_costs, ax, save_snapshots),
             frames=len(iterates),
             interval=100,
             repeat=True,
@@ -305,11 +380,62 @@ class RadiusSysid(Problem):
 
         for fig_index, acceleration_index in enumerate([0, 1, 5]):
             ax[fig_index].set_title(titles[fig_index])
-            ax[fig_index].plot(self.accelerations[acceleration_index], label="measured")
+
+            measured_acceleration = self.accelerations[acceleration_index].numpy()
+
+            ax[fig_index].plot(measured_acceleration, label="measured")
+
+            smoothing_factor = 10
+            smoothed_acceleration = np.convolve(
+                measured_acceleration,
+                np.ones((smoothing_factor,)) / smoothing_factor,
+                mode="same",
+            )
+            ax[fig_index].plot(
+                smoothed_acceleration, label="smooth measured", linestyle="--"
+            )
+
             ax[fig_index].plot(
                 modeled_accelerations[acceleration_index], label="predicted"
             )
             ax[fig_index].legend()
+
+    def visualize_uncertainty(self, x, multiplier=1, circles=1):
+        fig = plt.figure(figsize=(10, 10))
+        ax = fig.add_subplot()
+        ax.set_xlim((self.min_bounds[0], self.max_bounds[0]))
+        ax.set_ylim((self.min_bounds[1], self.max_bounds[1]))
+        x = x.reshape((-1, self.size()))
+        for point in tqdm(x):
+            point = point.reshape((self.size(), 1))
+            covariance = self.compute_uncertainty(point)
+
+            eigval, eigvec = np.linalg.eig(covariance)
+
+            max_index = np.argmax(
+                abs(eigval)
+            )  # cant remember if eigvals are always positive
+            angle = np.rad2deg(np.arctan2(eigvec[1, max_index], eigvec[0, max_index]))
+            width = (
+                np.sqrt(multiplier * eigval[max_index]) * 2
+            )  # large axis   * numberSTDs * 2(radius to diamter)
+            height = (
+                np.sqrt(multiplier * eigval[max_index - 1]) * 2
+            )  # small axis   * numberSTDs * 2(radius to diamter)
+            # print(width,stdStates[i,0,0]*multiplier*2)
+            for i in range(1, circles + 1):
+                ells = Ellipse(
+                    xy=point,
+                    width=width * i,
+                    height=height * i,
+                    angle=angle,
+                )
+                ax.add_artist(ells)
+                ells.set_alpha(1)
+                ells.set_facecolor("none")
+                ells.set_edgecolor("r")
+                ells.set_clip_box(fig.axes[0].bbox)
+        ax.scatter(x[:, 0], x[:, 1], linewidths=10, c="orange")
 
 
 class SeperateRadiusSysid(RadiusSysid):
@@ -340,7 +466,9 @@ class SeperateRadiusSysid(RadiusSysid):
         radius = x[0, 0]
         sigma = x[1, 0]
         mass_radius = x[2, 0]
-        mass, MOI = compute_sphere_properties(self.material_density, mass_radius, library)
+        mass, MOI = compute_sphere_properties(
+            self.material_density, mass_radius, library
+        )
         object_properties = ObjectProperties(
             mass=mass, MOI=MOI, radius=radius, sigma=sigma * self.sigma_multiplier
         )
@@ -448,7 +576,9 @@ def sys_id_demo(
         "FP_PRECISION": 1e-8,
         "min_alpha": 1e-20,
     }
-    prob = sys_id_type(build_acceleration_q("all"), boat)  # built with M(0.04) Q M(0.04)
+    prob = sys_id_type(
+        build_acceleration_q("all"), boat
+    )  # built with M(0.04) Q M(0.04)
     optimizer = NewtonMethod(problem=prob, **optimizer_params)
     prob.updateVals(controls, magnets, positions, linear_velocity, rotational_velocity)
     result = optimizer.optimize(prob.initial_solution, max_iterations=50)
