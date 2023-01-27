@@ -8,13 +8,11 @@ Created on Sat Jul 24 17:12:21 2021
 import sys
 
 sys.path.append("..")  # Adds higher directory to python modules path.
-import numpy as np
 
 
 import dataloader
 import numpy as np
 import time
-from scipy.spatial.transform import Rotation as R
 
 
 from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID
@@ -25,11 +23,11 @@ from ll4ma_opt.solvers import (
     BFGSMethod,
     Momentum,
 )
-from models import SphereControlCommand
 from solvers.modelOptimization import build_acceleration_q
-from ObjectProperties import ObjectProperties, compute_boat_properties
 
 from tqdm import tqdm
+from extract_sys_id import extract_sys_id_data
+from ObjectProperties import ObjectProperties, compute_boat_properties, compute_sphere_properties
 
 # dataloader.load('/media/tabor/Storage/new_experiments/U/real_2022-04-01 17:06:41.504047',globals())
 # dataloader.load('/media/tabor/Storage/new_experiments/U/real_2022-04-04 17:10:16.939314',globals())
@@ -45,7 +43,6 @@ from tqdm import tqdm
 # dataloader.load('/media/tabor/Storage/new_experiments/square/real_2022-04-26 17:03:51.259098',globals())
 # dataloader.load('/media/tabor/Storage/new_experiments/square/real_2022-04-26 18:05:06.499346',globals())
 
-states = controls = env = i = None
 
 # sphere
 #dataloader.load("/home/tabor/Downloads/real_2022-04-26 18_05_06.499346", globals())
@@ -53,8 +50,20 @@ states = controls = env = i = None
 
 #new data
 #dataloader.load("/home/tabor/data/real_2023-01-24 16_39_19.923278",globals())
-dataloader.load("/media/tabor/ESD-ISO/data/75%/real_2023-01-25 17_55_58.639885",globals())
+#dataloader.load("/media/tabor/ESD-ISO/data/75%/real_2023-01-25 17_55_58.639885",globals())
+
+#dataloader.load("/media/tabor/ESD-ISO/data/updated/real_2023-01-25 19_53_52.438495",globals())
 #dataloader.load("/media/tabor/ESD-ISO/data/50%/real_2023-01-25 18_54_49.649503",globals())
+(linear_velocity,
+ rotational_velocity,
+ positions,
+ selected_controls,
+ initial_object_properties,
+ boat,
+ env) = extract_sys_id_data(
+                        '/media/tabor/ESD-ISO/data/updated/real_2023-01-25 23_45_58.252761',skip_end = 50)
+     
+     
 
 # cuboid
 # dataloader.load('/home/tabor/Downloads/real_2022-03-31 15_01_35.949906',globals())
@@ -62,75 +71,7 @@ dataloader.load("/media/tabor/ESD-ISO/data/75%/real_2023-01-25 17_55_58.639885",
 # physical = True
 import matplotlib.pyplot as plt
 
-transform_modify_function = lambda x: x
 
-
-if type(controls[0]) == list:
-    controls = [
-        SphereControlCommand(
-            mag_num=control[0],
-            dipole_strength=control[1],
-            psi=control[2],
-            xi=control[3],
-        )
-        for control in controls
-    ]
-    boat_mass, boat_MOI = compute_boat_properties(0.059, 0.075, 0.07, 0.031)
-    boat_properties = ObjectProperties(
-        mass=boat_mass, MOI=boat_MOI
-    )  # + ObjectProperties(0.15,np.zeros(3))
-    mass, MOI = mass
-    initial_object_properties = ObjectProperties(mass, MOI, radius * 5, 58000000.0 * 5)
-    
-    transform_modify_function = np.linalg.inv
-
-try:
-    num_steps = numSteps
-except:
-    num_steps = i
-
-try:
-    initial_object_properties
-except:
-    initial_object_properties = object_properties_approximate
-
-boat = boat_properties
-velocity_shift = 0
-start = -num_steps + 5
-end = -5
-alt_rotational_velocity = False
-
-# FIX incorrect velocity in real data
-linear_velocity = np.array(
-    [
-        transform_modify_function(state[0][:3, :3]) @ state[2][:, 0]
-        for state in states[1 + start + velocity_shift : end - 1 + velocity_shift]
-    ]
-)
-rotational_velocity = np.array(
-    [
-        transform_modify_function(state[0][:3, :3]) @ state[1][:, 0]
-        for state in states[1 + start + velocity_shift : end - 1 + velocity_shift]
-    ]
-)
-
-if alt_rotational_velocity:
-    angles = np.array(
-        [
-            R.from_matrix(state[0][:3, :3]).as_euler("xyz")
-            for state in states[1 + start : end]
-        ]
-    )
-    rotational_velocity = []
-    for current, future in zip(angles[:-1, 2], angles[1:, 2]):
-        if np.abs(current - future) > np.pi:
-            current -= np.sign(current) * 2 * np.pi
-        vel = future - current
-        rotational_velocity.append([0, 0, vel])
-    rotational_velocity = np.array(rotational_velocity)
-
-positions = np.array([state[0][:3, 3] for state in states[1 + start : end - 1]])
-some_controls = controls[start : end - 2]
 
 
 add_noise = False
@@ -189,7 +130,7 @@ prob = sysID_type(
 optimizer = optimizer_type(problem=prob, **optimizerParams)
 s = time.time()
 prob.update_vals(
-    some_controls,
+    selected_controls,
     env.magnets,
     positions,
     noisy_linear_velocity,

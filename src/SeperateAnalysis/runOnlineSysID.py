@@ -31,50 +31,29 @@ from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from scipy.spatial.transform import Rotation as R
+from extract_sys_id import extract_sys_id_data
 
 # dataloader.load('C:/Users/tabor/OneDrive/Documents/magneticcontrollaw/data/sim_2160s_2022-09-27 17.51.31.467776',globals())
 # dataloader.load('/home/tabor/Documents/magneticcontrollaw/data/sim_5400s_2022-09-27 13.29.32.114902',globals())
 # dataloader.load('/home/tabor/Documents/magneticcontrollaw/data/sim_2160s_2022-09-27 15.42.16.145535',globals())
 
-states = controls = env = adaptive = mass = MOI = radius = sigma_copper = numSteps = None
-
-
-# dataloader.load('/home/tabor/Downloads/real_2022-10-10 15 54 23.074092',globals())
-
-
-# sphere
-dataloader.load("/home/tabor/Downloads/real_2022-04-26 18_05_06.499346", globals())
-
-# cuboid
-# dataloader.load('/home/tabor/Downloads/real_2022-03-31 15_01_35.949906',globals())
-
-
-if type(controls[0]) == list:
-    controls = [
-        SphereControlCommand(
-            mag_num=control[0],
-            dipole_strength=control[1],
-            psi=control[2],
-            xi=control[3],
-        )
-        for control in controls
-    ]
-    boat_mass, boat_MOI = compute_boat_properties(0.059, 0.075, 0.07, 0.031)
-    boat_properties = ObjectProperties(
-        mass=boat_mass, MOI=boat_MOI
-    )  # + ObjectProperties(0.15,np.zeros(3))
-    mass, MOI = mass
-    initial_object_properties = ObjectProperties(mass, MOI, radius, 58000000.0)
-boat = boat_properties
+(linear_velocity,
+ rotational_velocity,
+ positions,
+ controls,
+ initial_object_properties,
+ boat,
+ env) = extract_sys_id_data(
+                        '/media/tabor/ESD-ISO/data/updated/real_2023-01-25 23_45_58.252761')
 
 magnets = env.magnets
 sysID_type = RadiusSysid
-optimizer_type = Momentum
+optimizer_type = NewtonMethod
 reset = False
 use_stein = False
 end_early = False
 print_result = False
-max_iterations = 600 if reset else 2
+max_iterations = 40 if reset else 2
 
 
 print("optimizer ", optimizer_type)
@@ -109,9 +88,6 @@ if optimizer_type is Momentum:
     optimizerParams["momentum"] = 0.9
 
 
-initial_object_properties = ObjectProperties(
-    mass=mass, MOI=MOI, radius=radius, sigma=sigma_copper
-)
 
 prob = sysID_type(
     build_acceleration_q(env.trajectoryDimensions),
@@ -132,69 +108,20 @@ start_index = -batch_size
 end_index = -1
 
 results = []
-velocity_shift = 3
-
-
-boat = boat_properties
-velocity_shift = 3
-start = -numSteps + 5
-end = -5
-
-
-linearVelocity = np.array(
-    [
-        np.linalg.inv(state[0][:3, :3]) @ state[2][:, 0]
-        for state in states[1 + start + velocity_shift : end - 1 + velocity_shift]
-    ]
-)
-rotationalVelocity = np.array(
-    [
-        np.linalg.inv(state[0][:3, :3]) @ state[1][:, 0]
-        for state in states[1 + start + velocity_shift : end - 1 + velocity_shift]
-    ]
-)
-
-
-angles = np.array(
-    [
-        R.from_matrix(state[0][:3, :3]).as_euler("xyz")
-        for state in states[1 + start : end]
-    ]
-)
-rotational_velocity = []
-for current, future in zip(angles[:-1, 2], angles[1:, 2]):
-    if np.abs(current - future) > np.pi:
-        current -= np.sign(current) * 2 * np.pi
-    vel = future - current
-    rotational_velocity.append([0, 0, vel])
-rotational_velocity = np.array(rotational_velocity)
-
-positions = np.array([state[0][:3, 3] for state in states[1 + start : end - 1]])
-alligned_controls = controls[start : end - 2]
-
 initial_costs = []
 
-for i in tqdm(range(1, numSteps - batch_size, 10)):
+for i in tqdm(range(1, len(controls) - batch_size)):
 
     start_index = i
-    end_index = i + batch_size if numSteps > i + batch_size else numSteps
+    end_index = i + batch_size if len(controls) > i + batch_size else len(controls)
 
-    if adaptive:
-        selected_controls = adaptive.controls[start_index - 1 : end_index - 1]
-        selected_positions = np.array(adaptive.positions[start_index:end_index])
-        selected_linear_velocities = np.array(
-            adaptive.linear_velocities[start_index:end_index]
-        )
-        selected_rotation_velocities = np.array(
-            adaptive.rotational_velocities[start_index:end_index]
-        )
-    else:
-        selected_controls = alligned_controls[start_index - 1 : end_index - 1]
-        selected_positions = positions[start_index - 1 : end_index - 1]
-        selected_linear_velocities = linearVelocity[start_index - 1 : end_index - 1]
-        selected_rotation_velocities = rotational_velocity[
-            start_index - 1 : end_index - 1
-        ]
+
+    selected_controls = controls[start_index - 1 : end_index - 1]
+    selected_positions = positions[start_index - 1 : end_index - 1]
+    selected_linear_velocities = linear_velocity[start_index - 1 : end_index - 1]
+    selected_rotation_velocities = rotational_velocity[
+        start_index - 1 : end_index - 1
+    ]
 
     prob.update_vals(
         selected_controls,
@@ -248,7 +175,7 @@ plt.title(shared_name + "costs")
 plt.plot(costs)
 
 
-fig, axs = plt.subplots(stein_problem.size(), 1)
+fig, axs = plt.subplots(stein_problem.size() if use_stein else prob.size(), 1)
 plt.title(shared_name + "iterates over time")
 
 for i in range(optimizer.problem.size()):
@@ -263,10 +190,10 @@ for i in range(prob.size()):
         axs[i].plot(solutions[:, j, i])
 
 prob.update_vals(
-    alligned_controls,
+    controls,
     env.magnets,
     positions,
-    linearVelocity,
+    linear_velocity,
     rotational_velocity,
     (0.0, 5.4),
 )
