@@ -44,9 +44,9 @@ if __name__ == '__main__':
     
     env = SpaceProblem(SpaceEnvironments.BACKANDFORTH)
     env.magnets = env.magnets[:]
-    #env.trajectoryDimensions = 'xyz'
+    env.trajectoryDimensions = 'xyz'
 
-    sim_time = 800#np.sum(env.times)
+    sim_time = np.sum(env.times)
 
     
     sigma_copper = 5.87E+07
@@ -96,9 +96,9 @@ if __name__ == '__main__':
     if inverseDynamics:
         controller = PDController(env.startState,1.2,0.004,1.2,0.004,0,0)
     elif(useSpecialCaseSolver):
-        controller = PDController(env.startState,0.0005,0.0,0.1,0.0,0.0,0.000)
+        controller = PDController(env.startState,0.004,0.0,0.04,0.0,0.0,0.000)
     else:
-        controller = PDController(env.startState,0.0005,0.000001,0.0005,0.000002,0.0,0.000)
+        controller = PDController(env.startState,0.0005,0.000001,0.005,0.00002,0.0,0.000)
     simulator = discreteTimeSimulator(env.startState,object_properties) 
     velocityProfile = SplineProfile.SplineProfile(env,sim_time,env.times)
     adaptive = Adaptive(env.magnets,'all', object_properties_approximate, 25,adaptive_model, boat_properties)
@@ -153,8 +153,10 @@ if __name__ == '__main__':
     diff = npdesiredStates[:,0,0] - positions[:,0]
     plt.figure()
     plt.plot(diff)
-    print(np.mean(np.square(diff)))
-    print(np.amax(diff))
+    rmserror = np.mean(np.square(diff))
+    maxerror = np.amax(diff)
+    print(rmserror)
+    print(maxerror)
     
 
 

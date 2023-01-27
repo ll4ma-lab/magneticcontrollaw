@@ -67,8 +67,8 @@ class devinSolver:
         fdes_perp = np.array([0,Fdes[1],Fdes[2]])
         fhat_des_perp = fdes_perp/np.linalg.norm(fdes_perp)
         
-        w1hat = np.cross(ix,fhat_des_perp)
-        w2hat = np.cross(fhat_des_perp,ix)
+        w1hat = np.cross(fhat_des_perp,ix)
+        w2hat = np.cross(ix,fhat_des_perp)
         w3hat = np.array([1, 0, 0])
         w3bhat = np.array([-1, 0, 0])
         w1 = self.max_frequency*w1hat
