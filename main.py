@@ -29,11 +29,11 @@ from sysIDoptimization import radiusSysid,SeperateRadiusSysid,MassSysID
 
 if __name__ == '__main__':
 
-    useSpecialCaseSolver = True
+    useSpecialCaseSolver = False
     useSphere = True
     cheat = False
-    runAdaptive = False and useSphere
-    inverseDynamics = False and useSphere and not cheat
+    runAdaptive = False and useSphere 
+    inverseDynamics = True and useSphere and not cheat and not useSpecialCaseSolver
     
     simulate_boat = False
 
@@ -94,7 +94,7 @@ if __name__ == '__main__':
                                 numProcesses=10)
     
     if inverseDynamics:
-        controller = PDController(env.startState,1.2,0.004,1.2,0.004,0,0)
+        controller = PDController(env.startState,0.12,0.004,0.12,0.004,0,0)
     elif(useSpecialCaseSolver):
         controller = PDController(env.startState,0.004,0.0,0.04,0.0,0.0,0.000)
     else:

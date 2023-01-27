@@ -15,6 +15,7 @@ from ObjectProperties import ObjectProperties,buildMassMatrix,sphereProperties
 from modelOptimization import buildQ,build_acceleration_Q
 from ll4ma_opt.problems import Problem 
 import matplotlib.pyplot as plt 
+from matplotlib.animation import FuncAnimation
 
 from ll4ma_opt.solvers.line_search import NewtonMethod
 
@@ -24,27 +25,33 @@ class radiusSysid(Problem):
         
         
         self.singleModel = sphereModel(1)
+        self.sigma_multiplier = 1e7
+        
+        self.error_multiplier = 1e6
+        
         if object_properties:
-            self.initial_solution = np.array([object_properties.radius,object_properties.sigma]).reshape((-1,1))
+            self.initial_solution = np.array([object_properties.radius,
+                                              object_properties.sigma/self.sigma_multiplier]).reshape((-1,1))
         else:
             self.initial_solution = np.ones((2,1)) * 0.001
-            self.initial_solution[1] = 5.8E+07
-        self.min_bounds[0] = 1e-2
-        self.max_bounds[0] = 1e-1
+            self.initial_solution[1] = 5.8e7/self.sigma_multiplier
+            
+        
+        self.min_bounds[0] = 1e-3
+        self.max_bounds[0] = 5e-2
 
-        self.min_bounds[1] = 2.5e6
-        self.max_bounds[1] = 2e8
+        self.min_bounds[1] = 2e5/self.sigma_multiplier
+        self.max_bounds[1] = 2e8/self.sigma_multiplier
         
 
-        self.weights = torch.tensor(weights)
+        self.weights =  self.make_tensor(weights)
         if boat:
             self.boat = boat.torch()
         else: 
             self.boat = boat
+
         
-        
-        
-    def updateVals(self,controls,magnets,positions,linearVelocity,rotationalVelocity):
+    def updateVals(self,controls,magnets,positions,linearVelocity,rotationalVelocity,drag_terms = (0,0)):
         #remove first control and position as we dont know its acceleration
         
         magNums = [control.mag_num for control in controls[1:]]
@@ -60,36 +67,45 @@ class radiusSysid(Problem):
         dists=np.linalg.norm(chosenMagnetPose,axis=1)
         zero = np.array([0]*self.n)
 
-        self.dipoleStrength = torch.tensor(dipoleStrength)
-        self.angles = torch.tensor(angles)
-        self.rhos = torch.tensor(rhos)
-        self.dists = torch.tensor(dists)
+        self.dipoleStrength = self.make_tensor(dipoleStrength)
+        self.angles = self.make_tensor(angles)
+        self.rhos =  self.make_tensor(rhos)
+        self.dists = self.make_tensor(dists)
         
-        self.zero = torch.tensor(zero)
+        self.zero =  self.make_tensor(zero)
 
         
-        deltaV = np.hstack((linearVelocity[1:,:]-linearVelocity[:-1,:],rotationalVelocity[1:,:]-rotationalVelocity[:-1,:]))    
+        deltaV = np.hstack((linearVelocity[1:,:]-linearVelocity[:-1,:],rotationalVelocity[1:,:]-rotationalVelocity[:-1,:]))
         npA = deltaV /timesteps
         
-        self.accelerations = torch.tensor(npA.T)
+        drag_force = drag_terms[0] * linearVelocity[:-1,:] + np.sign(linearVelocity[:-1,:]) * drag_terms[1] * linearVelocity[:-1,:]**2 
         
-        self.materialDensity = torch.tensor(8940.0)
+        self.drag_wrenches = self.make_tensor(np.hstack((-drag_force,np.zeros_like(drag_force))))
+        self.accelerations = self.make_tensor(npA.T)
+        
+        self.materialDensity = self.make_tensor([8940.0])[0]
     def forward_acceleration(self, object_properties,dists,dipoleStrengths,angles,rhos,zero):
         
         mass_matrix = self.construct_mass_matrix(object_properties,torch)
         modelVals = self.singleModel.modelCall(dists,1,radii=object_properties.radius,sigma=object_properties.sigma)
         modelVals = [modelVal.squeeze() for modelVal in modelVals]
-        wrenches = modelCallRotatedWrench(dipoleStrengths,angles,modelVals,rhos,library=torch,zero = zero).squeeze()     
+        modeled_wrenches = modelCallRotatedWrench(dipoleStrengths,angles,modelVals,rhos,library=torch,zero = zero).squeeze() 
+        
+        #print(modeled_wrenches)
+        #print(self.drag_wrenches)
+        wrenches = modeled_wrenches + self.drag_wrenches
+        
+        
+        
         return torch.linalg.inv(mass_matrix)@ wrenches.T
     
     def get_object_properties(self, x, library=np):
         radius = x[0,0]
         sigma = x[1,0]
         mass,MOI = sphereProperties(self.materialDensity,radius,library)
-        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma)
+        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma*self.sigma_multiplier)
         return object_properties
-    
-    
+
     def construct_mass_matrix(self, object_properties, library=np):
         if self.boat:
             object_properties = object_properties+self.boat
@@ -100,42 +116,145 @@ class radiusSysid(Problem):
         return 2
     
     def tensor_cost(self, x):
-
         object_properties = self.get_object_properties(x,torch)
 
         modeledAccelerations = self.forward_acceleration(object_properties,self.dists,self.dipoleStrength,self.angles,self.rhos,self.zero)
-        error = (self.accelerations - modeledAccelerations)*1e6 
+        error = (self.accelerations - modeledAccelerations)*self.error_multiplier
         
         
         left = (error.T @ self.weights).unsqueeze(1)
         right = error.T.unsqueeze(2)
-        cost = torch.sum(torch.bmm(left,right))#/ self.rhos.shape[0] #-  5e14* (x[0:1])**2
+        cost = torch.sum(torch.bmm(left,right))/ self.rhos.shape[0] #-  5e14* (x[0:1])**2
 
         return cost
-    def visualize_optimization(self,iterates,func = np.abs): 
-        possible_r = np.linspace(self.min_bounds[0],self.max_bounds[0],50)
-        possible_sigma = np.linspace(self.min_bounds[1],self.max_bounds[1],50)
-        rs,sigmas = np.meshgrid(possible_r,possible_sigma)
-        rs = rs.flatten()
-        sigmas = sigmas.flatten()
-        possibleCosts = [self.cost(np.stack((rs[i],sigmas[i])).reshape((2,1))) for i in range(len(rs))]
-        clip_value = 2*np.median(possibleCosts)
+    
+    def tensor_error(self,x):
+        object_properties = self.get_object_properties(x,torch)
+
+        modeledAccelerations = self.forward_acceleration(object_properties,self.dists,self.dipoleStrength,self.angles,self.rhos,self.zero)
+        error = (self.accelerations - modeledAccelerations)*self.error_multiplier
+        
+        
+        weighted_error = (error.T @ torch.sqrt(self.weights/ self.rhos.shape[0]))
+        return weighted_error.reshape(((-1,1)))
+         
+    
+    
+    def visualize_optimization(self, iterates, samples=50, func=np.abs, show_costs=False):
+        fig = plt.figure(figsize=(10,10))
+        if show_costs:
+            ax = fig.add_subplot(projection="3d")
+            start_angle = -100
+            ax.view_init(elev=17., azim=start_angle)
+        else:
+            ax = fig.add_subplot()
+
+        possible_xs = np.linspace(self.min_bounds[0], self.max_bounds[0], samples)
+        possible_ys = np.linspace(self.min_bounds[1], self.max_bounds[1], samples)
+        xs, ys = np.meshgrid(possible_xs, possible_ys)
+        xs = xs.flatten()
+        ys = ys.flatten()
+        possibleCosts = [
+            func(self.cost(np.stack((xs[i], ys[i])).reshape((2, 1)))) for i in range(len(xs))
+        ]
+        if func is np.log:
+            clip_value = np.median(possibleCosts)
+        else:
+            clip_value = 2 * np.median(possibleCosts)
         possibleCosts = np.array(possibleCosts)
-        possibleCosts[possibleCosts>clip_value] = clip_value
-        fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
-        ax.scatter(rs,sigmas,func(possibleCosts),'r')
-        foundCosts = [self.cost(iterate) for iterate in iterates[1:]]
-        ax.plot(iterates[1:,0,0],iterates[1:,1,0],func(foundCosts),'r',linewidth=10)
-        print('best brute force ',rs[np.argmin(possibleCosts)],sigmas[np.argmin(possibleCosts)],np.min(possibleCosts))
-        return rs,sigmas,possibleCosts
+        possibleCosts[possibleCosts > clip_value] = clip_value
+
+        best_index = np.argmin(possibleCosts)
+        print(
+            "best brute force  func cost ",
+            possibleCosts[best_index],
+            " at ",
+            xs[best_index],
+            ys[best_index],
+        )
+        print(
+            "result func cost ",
+            min([min(func(self.cost(point.reshape((-1,1)))),clip_value) for point in iterates[-1].reshape((-1, 2))])
+        )
+        
+        
+
+        ax.set_xlim(self.min_bounds[0], self.max_bounds[0])
+        ax.set_ylim(self.min_bounds[1], self.max_bounds[1])
+        
+        
+
+
+        points = iterates[0].reshape((-1, 2))
+        costs = [[min(func(self.cost(point.reshape((-1,1)))),clip_value)] for point in points]
+        if show_costs:
+            ax.scatter(xs, ys, possibleCosts, color=(0, 0, 1, 0.5))
+            #ax.set_zlim(0, clip_value)
+            points_3d = np.concatenate((points, np.array(costs)), 1)
+            # silly hack to get filled circle
+            scat = ax.scatter(points_3d[:, 0], points_3d[:, 1], points_3d[:, 2], linewidths=10, c="orange")
+            scat2 = ax.scatter(points_3d[:, 0], points_3d[:, 1], points_3d[:, 2], linewidths=10, c="orange")
+
+            #scat._offsets3d = (points_3d[:, 0], points_3d[:, 1], points_3d[:, 2])
+        else:
+            scat = plt.scatter(points[:, 0], points[:, 1], linewidths=10, c="orange")
+            scat.set_offsets(points)
+            scat2 = None
+
+        def update(num, scat, scat2, iterates, show_costs,ax):
+            
+            ax.set_title(num)
+            if show_costs:
+                ax.view_init(elev=17., azim=start_angle+num/3)
+            points = iterates[num].reshape((-1, 2))
+            costs = [[min(func(self.cost(point.reshape((-1,1)))),clip_value)] for point in points]
+            points_3d = np.concatenate((points, np.array(costs)), 1)
+            #print(points_3d.shape)
+            if show_costs:
+                scat._offsets3d = (points_3d[:, 0], points_3d[:, 1], points_3d[:, 2])
+                scat2._offsets3d = (points_3d[:, 0], points_3d[:, 1], points_3d[:, 2])
+
+            else:
+                scat.set_offsets(points)
+
+        anim = FuncAnimation(
+            fig,
+            update,
+            fargs=(scat, scat2, iterates, show_costs,ax),
+            frames=len(iterates),
+            interval=100,
+            repeat=True,
+        )
+        return anim
+    
+    def visualize_predicted_acceleration(self,iterate):
+        fig, ax = plt.subplots(3)
+        object_properties = self.get_object_properties(self.make_tensor(iterate),torch)
+        modeledAccelerations = self.forward_acceleration(object_properties,self.dists,self.dipoleStrength,self.angles,self.rhos,self.zero)
+        fig.suptitle("Modeled vs Measured Accelerations")
+        
+        titles = ['x','y','θ']
+        
+        for fig_index,acceleration_index in enumerate([0,1,5]):
+            ax[fig_index].set_title(titles[fig_index])
+            ax[fig_index].plot(self.accelerations[acceleration_index],label='measured')
+            ax[fig_index].plot(modeledAccelerations[acceleration_index],label='predicted')
+            ax[fig_index].legend()
+            
+        
+
+        
+        
+        
 
 class SeperateRadiusSysid(radiusSysid):
     def __init__(self,weights,object_properties,boat = None): 
         super().__init__(weights=weights,boat=boat)
         
         if object_properties:
-            self.initial_solution = np.array([object_properties.radius,object_properties.sigma,1]).reshape((-1,1))
+            self.initial_solution = np.array([object_properties.radius,
+                                              object_properties.sigma/self.sigma_multiplier,
+                                              object_properties.radius]).reshape((-1,1))
         else:
             self.initial_solution[2] = 0.1
 
@@ -143,7 +262,7 @@ class SeperateRadiusSysid(radiusSysid):
         
         #second radius for mass and MOI
         self.min_bounds[2] = 1e-5
-        self.max_bounds[2] = 1e-1
+        self.max_bounds[2] = 1e-0
     def size(self):
         return 3
     def get_object_properties(self, x, library=np):
@@ -151,7 +270,7 @@ class SeperateRadiusSysid(radiusSysid):
         sigma = x[1,0]
         mass_radius = x[2,0]
         mass,MOI = sphereProperties(self.materialDensity,mass_radius,library)
-        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma)
+        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma*self.sigma_multiplier)
         return object_properties
     def visualize_optimization(self,iterates,func = np.abs): 
         fig,axs = plt.subplots(self.size(),1)
@@ -185,7 +304,7 @@ class MassSysID(SeperateRadiusSysid):
         
         if object_properties:
             self.initial_solution = np.array([object_properties.radius,
-                                              object_properties.sigma,
+                                              object_properties.sigma/self.sigma_multiplier,
                                               object_properties.mass,
                                               object_properties.MOI[0,0],
                                               object_properties.MOI[1,1],
@@ -200,15 +319,19 @@ class MassSysID(SeperateRadiusSysid):
                                               1.0  #Izz
                                               ]).reshape((-1,1))
         
+        self.min_bounds[0] = 1e-3
+        
+        self.min_bounds[1] = 1e4/self.sigma_multiplier
+        
         #radius and sigma keep the same
-        self.min_bounds[2] = 1e-3
+        self.min_bounds[2] = 1e-10
         self.max_bounds[2] = 2
         
         self.min_bounds[3] = 1e-5 #mass
         self.min_bounds[3:] = 1e-10 #MOI
         
         self.max_bounds[3] = 2 #mass
-        self.max_bounds[3:] = 0.1 #MOI
+        self.max_bounds[3:] = 1e0 #MOI
         
         
     def size(self):
@@ -219,7 +342,7 @@ class MassSysID(SeperateRadiusSysid):
         sigma = x[1,0]
         mass = x[2,0]
         MOI = library.diag(x[3:,0])
-        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma)
+        object_properties = ObjectProperties(mass=mass,MOI=MOI,radius=radius,sigma=sigma*self.sigma_multiplier)
         
         return object_properties
 
