@@ -36,8 +36,7 @@ class RadiusSysid(Problem):
 
         self.error_multiplier = 1e6
 
-        self.regularization_multiplier = 1e13
-
+        self.regularization_multiplier = 1e14
 
         if object_properties:
             self.initial_solution = np.array(
@@ -54,11 +53,9 @@ class RadiusSysid(Problem):
         self.max_bounds[0] = 1e-1
 
         self.min_bounds[1] = 2e5 / self.sigma_multiplier
-        self.max_bounds[1] = 10e7 / self.sigma_multiplier
+        self.max_bounds[1] = 8e7 / self.sigma_multiplier
 
-        
-        self.prior = self.make_tensor((self.max_bounds-self.min_bounds)/2)
-
+        self.prior = self.make_tensor((self.max_bounds - self.min_bounds) / 2)
 
         self.weights = self.make_tensor(weights)
         if boat:
@@ -175,10 +172,10 @@ class RadiusSysid(Problem):
         cost = (
             torch.sum(torch.bmm(left, right)) / self.rhos.shape[0]
         )  # -  5e14* (x[0:1])**2
-        
+
         prior_error = x - self.prior
-        
-        cost = cost  + prior_error.T @ prior_error * self.regularization_multiplier
+
+        cost = cost + prior_error.T @ prior_error * self.regularization_multiplier
         return cost
 
     def tensor_error(self, x):
