@@ -29,7 +29,11 @@ from solvers.axisAlignedSolver import AxisAlignedSolver
 from solvers.devinSolver import DevinSolver
 from solvers.devinSolver2 import DevinSolver2
 
-from ObjectProperties import ObjectProperties, compute_boat_properties, compute_sphere_properties
+from ObjectProperties import (
+    ObjectProperties,
+    compute_boat_properties,
+    compute_sphere_properties,
+)
 from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID
 
 if __name__ == "__main__":
@@ -222,5 +226,5 @@ if __name__ == "__main__":
 
     dataloader.save(
         "../data/sim_" + str(sim_time) + "s_" + str(datetime.now()).replace(":", "."),
-        [globals()]
+        [globals()],
     )

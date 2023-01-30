@@ -130,7 +130,9 @@ class PlanarProblem:
             )
 
             for i in range(5):
-                self.true_desired_state[:2, i] = np.dot(R, self.true_desired_state[:2, i])
+                self.true_desired_state[:2, i] = np.dot(
+                    R, self.true_desired_state[:2, i]
+                )
 
             self.desired_state = self.true_desired_state
             self.times = [360] * self.desired_state.shape[1]

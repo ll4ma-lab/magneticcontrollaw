@@ -37,14 +37,17 @@ from extract_sys_id import extract_sys_id_data
 # dataloader.load('/home/tabor/Documents/magneticcontrollaw/data/sim_5400s_2022-09-27 13.29.32.114902',globals())
 # dataloader.load('/home/tabor/Documents/magneticcontrollaw/data/sim_2160s_2022-09-27 15.42.16.145535',globals())
 
-(linear_velocity,
- rotational_velocity,
- positions,
- controls,
- initial_object_properties,
- boat,
- env) = extract_sys_id_data(
-                        '/media/tabor/ESD-ISO/data/updated/real_2023-01-25 23_45_58.252761')
+(
+    linear_velocity,
+    rotational_velocity,
+    positions,
+    controls,
+    initial_object_properties,
+    boat,
+    env,
+) = extract_sys_id_data(
+    "/media/tabor/ESD-ISO/data/updated/real_2023-01-25 23_45_58.252761"
+)
 
 magnets = env.magnets
 sysID_type = RadiusSysid
@@ -88,14 +91,13 @@ if optimizer_type is Momentum:
     optimizerParams["momentum"] = 0.9
 
 
-
 prob = sysID_type(
     build_acceleration_q(env.trajectoryDimensions),
     object_properties=initial_object_properties,
     boat=boat,
 )  # built with M(0.04) Q M(0.04)
 
-stein_problem = SteinWrapper(prob, 25,5)
+stein_problem = SteinWrapper(prob, 25, 5)
 
 if use_stein:
     optimizer = optimizer_type(problem=stein_problem, **optimizerParams)
@@ -115,13 +117,10 @@ for i in tqdm(range(1, len(controls) - batch_size)):
     start_index = i
     end_index = i + batch_size if len(controls) > i + batch_size else len(controls)
 
-
     selected_controls = controls[start_index - 1 : end_index - 1]
     selected_positions = positions[start_index - 1 : end_index - 1]
     selected_linear_velocities = linear_velocity[start_index - 1 : end_index - 1]
-    selected_rotation_velocities = rotational_velocity[
-        start_index - 1 : end_index - 1
-    ]
+    selected_rotation_velocities = rotational_velocity[start_index - 1 : end_index - 1]
 
     prob.update_vals(
         selected_controls,
@@ -131,9 +130,9 @@ for i in tqdm(range(1, len(controls) - batch_size)):
         selected_rotation_velocities,
         (0.0, 5.4),
     )
-    #check cost with updated data but old parameters
+    # check cost with updated data but old parameters
     initial_costs.append(prob.cost(prob.initial_solution))
-    
+
     result = optimizer.optimize(
         optimizer.problem.initial_solution, max_iterations=max_iterations
     )

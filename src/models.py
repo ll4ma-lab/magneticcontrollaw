@@ -176,7 +176,8 @@ def model_call_rotated_wrench(
             forces = torch.bmm(rotation, unit_strength_wrench[:, :3])
             torques = torch.bmm(rotation, unit_strength_wrench[:, 3:])
             selected_wrench = torch.bmm(
-                torch.cat((forces, torques), 1), dipole_strength.reshape((-1, 1, 1)) ** 2
+                torch.cat((forces, torques), 1),
+                dipole_strength.reshape((-1, 1, 1)) ** 2,
             )
 
     return selected_wrench
@@ -332,8 +333,12 @@ class CylinderModel:
         fzz = self.model_equation(self.constants["fzz"], dist, dipole_strength, 4)
         tzz = self.model_equation(self.constants["tzz"], dist, dipole_strength, 3)
 
-        frhorho = self.model_equation(self.constants["frhorho"], dist, dipole_strength, 4)
-        frhophi = self.model_equation(self.constants["frhophi"], dist, dipole_strength, 4)
+        frhorho = self.model_equation(
+            self.constants["frhorho"], dist, dipole_strength, 4
+        )
+        frhophi = self.model_equation(
+            self.constants["frhophi"], dist, dipole_strength, 4
+        )
         trhoz = self.model_equation(self.constants["trhoz"], dist, dipole_strength, 3)
 
         pointing_model = np.array([0, 0, fzz, 0, 0, tzz]).reshape((6, 1))

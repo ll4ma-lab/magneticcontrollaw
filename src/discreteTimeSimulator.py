@@ -70,7 +70,9 @@ def simulate_experiment(
         # if i == 300 and runAdaptive:
         #    model.cylinderModel.object_properties.radius *=1.5
         # arbitrarily change radius without updating mass
-        desired_state = velocity_profile.get_desired_state(simulator.simulator_time, state)
+        desired_state = velocity_profile.get_desired_state(
+            simulator.simulator_time, state
+        )
         desired_wrench, p, d = controller.get_desired_wrench(state, desired_state)
 
         desired_states.append(desired_state)
@@ -113,7 +115,14 @@ def simulate_experiment(
         run_time = time.time() - start
         print(run_time)
 
-    return states, wrenches, desired_wrenchs, desired_states, controls, minimization_costs
+    return (
+        states,
+        wrenches,
+        desired_wrenchs,
+        desired_states,
+        controls,
+        minimization_costs,
+    )
 
 
 class DiscreteTimeSimulator:

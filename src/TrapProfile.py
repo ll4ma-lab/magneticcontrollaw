@@ -30,7 +30,9 @@ class TrapProfile:
             distance = end - start
 
             max_accel_distance = 2 * self.maxA * (self.maxVel / self.maxA) ** 2
-            max_straight_distance = self.maxVel * (traj_time - 2 * self.maxVel / self.maxA)
+            max_straight_distance = self.maxVel * (
+                traj_time - 2 * self.maxVel / self.maxA
+            )
 
             if np.any(
                 np.abs(max_accel_distance + max_straight_distance) < np.abs(distance)
@@ -53,7 +55,8 @@ class TrapProfile:
         distance = next_pose - last_pose
         traj_time = self.times[state_index]
         accel_time = (
-            traj_time - np.sqrt(traj_time * traj_time - 4 * np.abs(distance) / self.maxA)
+            traj_time
+            - np.sqrt(traj_time * traj_time - 4 * np.abs(distance) / self.maxA)
         ) / 2
         start = last_pose
         t = np.ones((1, 6)) * (step - self.switching_times[state_index])

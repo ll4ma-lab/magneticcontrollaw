@@ -46,7 +46,10 @@ class SplineProfile:
         t = (step - self.switching_times[state_index]) / float(self.times[state_index])
         spline = np.concatenate(
             (
-                cubic_term * (t**3) + quadratic_term * (t**2) + linear_term * t + constant_term,
+                cubic_term * (t**3)
+                + quadratic_term * (t**2)
+                + linear_term * t
+                + constant_term,
                 (3 * cubic_term * (t**2) + 2 * quadratic_term * (t) + linear_term)
                 / float(self.times[state_index]),
             )

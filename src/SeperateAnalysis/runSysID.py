@@ -19,15 +19,17 @@ from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID
 from ll4ma_opt.solvers import (
     NewtonMethod,
     GradientDescent,
-    GeneralizedGaussNewton,
-    BFGSMethod,
     Momentum,
 )
 from solvers.modelOptimization import build_acceleration_q
 
 from tqdm import tqdm
 from extract_sys_id import extract_sys_id_data
-from ObjectProperties import ObjectProperties, compute_boat_properties, compute_sphere_properties
+from ObjectProperties import (
+    ObjectProperties,
+    compute_boat_properties,
+    compute_sphere_properties,
+)
 
 # dataloader.load('/media/tabor/Storage/new_experiments/U/real_2022-04-01 17:06:41.504047',globals())
 # dataloader.load('/media/tabor/Storage/new_experiments/U/real_2022-04-04 17:10:16.939314',globals())
@@ -45,33 +47,34 @@ from ObjectProperties import ObjectProperties, compute_boat_properties, compute_
 
 
 # sphere
-#dataloader.load("/home/tabor/Downloads/real_2022-04-26 18_05_06.499346", globals())
+# dataloader.load("/home/tabor/Downloads/real_2022-04-26 18_05_06.499346", globals())
 
 
-#new data
-#dataloader.load("/home/tabor/data/real_2023-01-24 16_39_19.923278",globals())
-#dataloader.load("/media/tabor/ESD-ISO/data/75%/real_2023-01-25 17_55_58.639885",globals())
+# new data
+# dataloader.load("/home/tabor/data/real_2023-01-24 16_39_19.923278",globals())
+# dataloader.load("/media/tabor/ESD-ISO/data/75%/real_2023-01-25 17_55_58.639885",globals())
 
-#dataloader.load("/media/tabor/ESD-ISO/data/updated/real_2023-01-25 19_53_52.438495",globals())
-#dataloader.load("/media/tabor/ESD-ISO/data/50%/real_2023-01-25 18_54_49.649503",globals())
-(linear_velocity,
- rotational_velocity,
- positions,
- selected_controls,
- initial_object_properties,
- boat,
- env) = extract_sys_id_data(
-                        '/media/tabor/ESD-ISO/data/updated/real_2023-01-25 23_45_58.252761',skip_end = 50)
-     
-     
+# dataloader.load("/media/tabor/ESD-ISO/data/updated/real_2023-01-25 19_53_52.438495",globals())
+# dataloader.load("/media/tabor/ESD-ISO/data/50%/real_2023-01-25 18_54_49.649503",globals())
+(
+    linear_velocity,
+    rotational_velocity,
+    positions,
+    selected_controls,
+    initial_object_properties,
+    boat,
+    env,
+) = extract_sys_id_data(
+    "/home/tabor/catkin_ws/src/magnetic_system/MagneticControlLaw/data/real_2023-01-27 18:16:01.537996",
+    skip_end=250,
+)
+
 
 # cuboid
 # dataloader.load('/home/tabor/Downloads/real_2022-03-31 15_01_35.949906',globals())
 
 # physical = True
 import matplotlib.pyplot as plt
-
-
 
 
 add_noise = False
@@ -122,11 +125,10 @@ if optimizer_type is Momentum:
 
 
 prob = sysID_type(
-    build_acceleration_q('xyt'),
+    build_acceleration_q("xyt"),
     object_properties=initial_object_properties,
     boat=boat,
 )  # built with M(0.04) Q M(0.04)
-
 optimizer = optimizer_type(problem=prob, **optimizerParams)
 s = time.time()
 prob.update_vals(
@@ -140,7 +142,9 @@ prob.update_vals(
 
 results = []
 for i in tqdm(range(10)):
-    initial_solution = np.random.uniform(prob.min_bounds, prob.max_bounds, (prob.size(), 1))
+    initial_solution = np.random.uniform(
+        prob.min_bounds, prob.max_bounds, (prob.size(), 1)
+    )
     result = optimizer.optimize(initial_solution, max_iterations=40)
     results.append(result)
 print("opt time ", time.time() - s)
@@ -168,7 +172,9 @@ if sysID_type is RadiusSysid:
             ]
         ).reshape((-1, 1))
         iterates.append(iterate)
-    _ = prob.visualize_optimization(iterates, func=np.log, show_costs=True,save_snapshots=False)
+    _ = prob.visualize_optimization(
+        iterates, func=np.log, show_costs=True, save_snapshots=False
+    )
 
     print("brute time ", time.time() - s)
 else:
@@ -181,7 +187,7 @@ print("solution ", result.solution)
 prob.visualize_predicted_acceleration(solution)
 
 
-#positions = np.array([state[0][:3, 3] for state in states])
+# positions = np.array([state[0][:3, 3] for state in states])
 # linear_velocity = np.array(
 #     [np.dot(state[0][:3, :3], state[2][:, 0]) for state in states]
 # )
@@ -189,12 +195,11 @@ prob.visualize_predicted_acceleration(solution)
 #     [np.dot(state[0][:3, :3], state[1][:, 0]) for state in states]
 # )
 import visualization
+
 plots = {
     "Position (m)": np.transpose(positions),
     "Velocity (m/s)": np.transpose(linear_velocity),
     "Rot velocity (_/s)": np.transpose(rotational_velocity),
-
 }
 
 visualization.plot_stuff(plots, "Controller")
-
