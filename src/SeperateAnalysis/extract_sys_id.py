@@ -16,11 +16,11 @@ from ObjectProperties import ObjectProperties, compute_boat_properties
 
 import numpy as np
 
-def extract_sys_id_data(file_name,alt_rotational_velocity=False,skip_end=0):
+
+def extract_sys_id_data(file_name, alt_rotational_velocity=False, skip_end=0):
     dataloader.load(file_name, globals())
-    global controls,mass,i,numSteps,radius,object_properties_approximate,initial_object_properties,sigma_copper,boat_properties
-    
-    
+    global controls, mass, i, numSteps, radius, object_properties_approximate, initial_object_properties, sigma_copper, boat_properties
+
     transform_modify_function = lambda x: x
 
     if type(controls[0]) == list:
@@ -38,15 +38,17 @@ def extract_sys_id_data(file_name,alt_rotational_velocity=False,skip_end=0):
             mass=boat_mass, MOI=boat_MOI
         )  # + ObjectProperties(0.15,np.zeros(3))
         mass, MOI = mass
-        initial_object_properties = ObjectProperties(mass, MOI, radius * 5, 58000000.0 * 5)
-        
+        initial_object_properties = ObjectProperties(
+            mass, MOI, radius * 5, 58000000.0 * 5
+        )
+
         transform_modify_function = np.linalg.inv
-    
+
     try:
         num_steps = numSteps
     except:
         num_steps = i
-    
+
     try:
         initial_object_properties
     except:
@@ -55,7 +57,7 @@ def extract_sys_id_data(file_name,alt_rotational_velocity=False,skip_end=0):
     velocity_shift = 0
     start = -num_steps + 5
     end = -5 - skip_end
-    
+
     # FIX incorrect velocity in real data
     linear_velocity = np.array(
         [
@@ -69,7 +71,7 @@ def extract_sys_id_data(file_name,alt_rotational_velocity=False,skip_end=0):
             for state in states[1 + start + velocity_shift : end - 1 + velocity_shift]
         ]
     )
-    
+
     if alt_rotational_velocity:
         angles = np.array(
             [
@@ -84,8 +86,16 @@ def extract_sys_id_data(file_name,alt_rotational_velocity=False,skip_end=0):
             vel = future - current
             rotational_velocity.append([0, 0, vel])
         rotational_velocity = np.array(rotational_velocity)
-    
+
     positions = np.array([state[0][:3, 3] for state in states[1 + start : end - 1]])
-    selected_controls = controls[start : end - 2]
-    
-    return linear_velocity,rotational_velocity,positions,selected_controls,initial_object_properties,boat,env
+    selected_controls = controls[start + 1 : end - 1]
+
+    return (
+        linear_velocity,
+        rotational_velocity,
+        positions,
+        selected_controls,
+        initial_object_properties,
+        boat,
+        env,
+    )

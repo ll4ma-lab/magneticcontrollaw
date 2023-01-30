@@ -72,17 +72,25 @@ class RadiusSysid(Problem):
         rotational_velocity,
         drag_terms=(0, 0),
     ):
-        # remove first control and position as we dont know its acceleration
+        velocity_shift = 0
 
-        mag_nums = [control.mag_num for control in controls[1:]]
-        chosen_magnet_pose = np.array(magnets)[mag_nums] - positions[1:]
-        dipole_strength = [control.dipole_strength for control in controls[1:]]
-        angles = np.array([(control.psi, control.xi) for control in controls[1:]]).T
-        timesteps = np.array([control.seconds for control in controls[1:]]).reshape(
-            (-1, 1)
+        # remove last control and position as we dont know its acceleration
+
+        mag_nums = [control.mag_num for control in controls[: -1 - velocity_shift]]
+        chosen_magnet_pose = (
+            np.array(magnets)[mag_nums] - positions[: -1 - velocity_shift]
         )
+        dipole_strength = [
+            control.dipole_strength for control in controls[: -1 - velocity_shift]
+        ]
+        angles = np.array(
+            [(control.psi, control.xi) for control in controls[: -1 - velocity_shift]]
+        ).T
+        timesteps = np.array(
+            [control.seconds for control in controls[: -1 - velocity_shift]]
+        ).reshape((-1, 1))
 
-        self.n = len(controls[1:])
+        self.n = len(dipole_strength)
 
         rhos = -chosen_magnet_pose.T
         dists = np.linalg.norm(chosen_magnet_pose, axis=1)
@@ -97,17 +105,19 @@ class RadiusSysid(Problem):
 
         delta_v = np.hstack(
             (
-                linear_velocity[1:, :] - linear_velocity[:-1, :],
-                rotational_velocity[1:, :] - rotational_velocity[:-1, :],
+                linear_velocity[1 + velocity_shift :, :]
+                - linear_velocity[velocity_shift:-1, :],
+                rotational_velocity[1 + velocity_shift :, :]
+                - rotational_velocity[velocity_shift:-1, :],
             )
         )
         np_a = delta_v / timesteps
 
         drag_force = (
-            drag_terms[0] * linear_velocity[:-1, :]
-            + np.sign(linear_velocity[:-1, :])
+            drag_terms[0] * linear_velocity[velocity_shift:-1, :]
+            + np.sign(linear_velocity[velocity_shift:-1, :])
             * drag_terms[1]
-            * linear_velocity[:-1, :] ** 2
+            * linear_velocity[velocity_shift:-1, :] ** 2
         )
 
         self.drag_wrenches = self.make_tensor(
@@ -465,6 +475,7 @@ class SeperateRadiusSysid(RadiusSysid):
         # second radius for mass and MOI
         self.min_bounds[2] = 1e-5
         self.max_bounds[2] = 1e-0
+        self.prior = self.make_tensor((self.max_bounds - self.min_bounds) / 2)
 
     def size(self):
         return 3

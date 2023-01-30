@@ -69,7 +69,7 @@ class Adaptive:
         if batch_size < self.batch_size * 0.5:
             return
 
-        selected_controls = self.controls[-batch_size - 1 : -1]
+        selected_controls = self.controls[-batch_size:]
         selected_positions = np.array(self.positions[-batch_size:])
         selected_linear_velocities = np.array(self.linear_velocities[-batch_size:])
         selected_rotation_velocities = np.array(
