@@ -48,9 +48,12 @@ cylinder_parameters = {
 
 
 def sphere_optimize(prob):
-    solver = NewtonMethod(problem=prob, **sphere_parameters)
-    result = solver.optimize(prob.initial_solution, max_iterations=25)
-    return result
+    try:
+        solver = NewtonMethod(problem=prob, **sphere_parameters)
+        result = solver.optimize(prob.initial_solution, max_iterations=25)
+        return result
+    except:
+        return False
 
 
 def cylinder_optimize(prob):
@@ -105,7 +108,10 @@ class CylinderOptimization(Problem):
 
     def pointing_model_loss(self, x, frame):
         selected_wrench = x[0] ** 2 * torch.cat(
-            (frame @ self.unit_strength_wrench[:3], frame @ self.unit_strength_wrench[3:])
+            (
+                frame @ self.unit_strength_wrench[:3],
+                frame @ self.unit_strength_wrench[3:],
+            )
         )
         error = 1e13 * (self.desired - selected_wrench)
         cost = error.t() @ self.weights @ error
@@ -287,17 +293,23 @@ class MultiMagSolver:
                     self.problems[i * 2 + j].mass_matrix_inv = mass_matrix_inv
 
     def modify_cylinder_problems(self, desired, position):
-        relative_poses = (np.array(self.model.magnets) - np.transpose(position)).tolist()
+        relative_poses = (
+            np.array(self.model.magnets) - np.transpose(position)
+        ).tolist()
 
         for i in range(len(self.model.magnets)):
             chosen_magnet_pose = relative_poses[i]
             omni_frame = get_omni_frame(chosen_magnet_pose)
             dist = np.linalg.norm(chosen_magnet_pose)
-            wrenches = self.model.cylinder_model.model_call(dist, 1)  # 1 dipole strength
+            wrenches = self.model.cylinder_model.model_call(
+                dist, 1
+            )  # 1 dipole strength
             for j in range(3):
                 self.problems[i * 3 + j].frame = torch.Tensor(omni_frame)
                 self.problems[i * 3 + j].desired = torch.Tensor(desired)
-                self.problems[i * 3 + j].unit_strength_wrench = torch.tensor(wrenches[j])
+                self.problems[i * 3 + j].unit_strength_wrench = torch.tensor(
+                    wrenches[j]
+                )
 
     def solve_wrench_cylinder(self, position, desired_wrench):
         s = time.time()
