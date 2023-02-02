@@ -57,6 +57,13 @@ def extract_sys_id_data(file_name, alt_rotational_velocity=False, skip_end=0):
     velocity_shift = 0
     start = -num_steps + 5
     end = -5 - skip_end
+    
+    
+    if velocity_shift > 0:
+        end -= velocity_shift
+    else:
+        start += velocity_shift
+    
 
     # FIX incorrect velocity in real data
     linear_velocity = np.array(
@@ -65,6 +72,8 @@ def extract_sys_id_data(file_name, alt_rotational_velocity=False, skip_end=0):
             for state in states[1 + start + velocity_shift : end - 1 + velocity_shift]
         ]
     )
+    
+    
     rotational_velocity = np.array(
         [
             transform_modify_function(state[0][:3, :3]) @ state[1][:, 0]
