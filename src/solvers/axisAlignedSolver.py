@@ -5,9 +5,7 @@ Created on Mon Aug 29 12:32:40 2022
 
 @author: tabor
 """
-from ll4ma_opt.solvers.line_search import (
-    NewtonMethod
-)
+from ll4ma_opt.solvers.line_search import NewtonMethod
 
 from models import CylinderControlCommand
 from solvers.modelOptimization import build_q

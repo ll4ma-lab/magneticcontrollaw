@@ -28,7 +28,9 @@ from ll4ma_opt.solvers.line_search import NewtonMethod
 
 
 class RadiusSysid(Problem):
-    def __init__(self, weights, object_properties=None, boat=None, drag_terms = (0,0,0,0)):
+    def __init__(
+        self, weights, object_properties=None, boat=None, drag_terms=(0, 0, 0, 0)
+    ):
         super().__init__()
 
         self.single_model = SphereModel(1)
@@ -38,7 +40,6 @@ class RadiusSysid(Problem):
 
         self.regularization_multiplier = 1e12
         self.reset_current_solution(object_properties)
-        
 
         self.min_bounds[0] = 1e-3
         self.max_bounds[0] = 1e-1
@@ -54,14 +55,16 @@ class RadiusSysid(Problem):
         else:
             self.boat = boat
 
-
-        self.param_names = ["Radius (m)","Conductivity " + "%0.2E" % Decimal(self.sigma_multiplier) + " S/m"]
+        self.param_names = [
+            "Radius (m)",
+            "Conductivity " + "%0.2E" % Decimal(self.sigma_multiplier) + " S/m",
+        ]
 
         self.drag_terms = drag_terms
 
-        #self.make_tensor = lambda x:torch.Tensor(x).cuda()
+        # self.make_tensor = lambda x:torch.Tensor(x).cuda()
 
-    def reset_current_solution(self,object_properties=None):
+    def reset_current_solution(self, object_properties=None):
         if object_properties:
             self.initial_solution = np.array(
                 [
@@ -100,8 +103,12 @@ class RadiusSysid(Problem):
             [control.seconds for control in controls[: -1 - velocity_shift]]
         ).reshape((-1, 1))
 
-        self.linear_velocity = self.make_tensor(linear_velocity[1 + velocity_shift :, :])
-        self.rotational_velocity = self.make_tensor(rotational_velocity[1 + velocity_shift :, :])
+        self.linear_velocity = self.make_tensor(
+            linear_velocity[1 + velocity_shift :, :]
+        )
+        self.rotational_velocity = self.make_tensor(
+            rotational_velocity[1 + velocity_shift :, :]
+        )
 
         self.n = len(dipole_strength)
 
@@ -140,10 +147,7 @@ class RadiusSysid(Problem):
             * rotational_velocity[velocity_shift:-1, :] ** 2
         )
 
-
-        self.drag_wrenches = self.make_tensor(
-            np.hstack((-drag_force, -drag_torque))
-        )
+        self.drag_wrenches = self.make_tensor(np.hstack((-drag_force, -drag_torque)))
         self.accelerations = self.make_tensor(np_a.T)
 
         self.material_density = self.make_tensor([8940.0])[0]
@@ -166,8 +170,8 @@ class RadiusSysid(Problem):
         wrenches = modeled_wrenches + self.get_drag_wrenches(x)
 
         return torch.linalg.inv(mass_matrix) @ wrenches.T
-    
-    def get_drag_wrenches(self,x):
+
+    def get_drag_wrenches(self, x):
         return self.drag_wrenches
 
     def get_object_properties(self, x, library=np):
@@ -407,7 +411,9 @@ class RadiusSysid(Problem):
 
     def visualize_predicted_acceleration(self, iterate):
         fig, ax = plt.subplots(3)
-        object_properties = self.get_object_properties(self.make_tensor(iterate), library=torch)
+        object_properties = self.get_object_properties(
+            self.make_tensor(iterate), library=torch
+        )
         modeled_accelerations = self.forward_acceleration(
             iterate,
             object_properties,
@@ -547,87 +553,81 @@ class SeperateRadiusSysid(RadiusSysid):
 
 class MassOnlySysid(SeperateRadiusSysid):
     def __init__(self, weights, object_properties, boat=None):
-        super().__init__(weights=weights, boat=boat,object_properties=object_properties)
-
+        super().__init__(
+            weights=weights, boat=boat, object_properties=object_properties
+        )
 
         self.min_bounds[0] = 0.0
         self.min_bounds[1] = 0
         self.min_bounds[2] = 0
         self.min_bounds[3] = 0
-        
+
         self.max_bounds[0] = 1.5
         self.max_bounds[1] = 0.003
         self.max_bounds[2] = 1e-2
         self.max_bounds[3] = 1e1
 
-
         self.min_bounds[4:] = 0
         self.max_bounds[4:] = 1e-3
 
-
         self.prior = self.make_tensor((self.max_bounds - self.min_bounds) / 2)
         self.initial_solution = self.prior.cpu().numpy()
-        
-                
+
         self.sigma = 5.8e7
         self.radius = 0.019
         self.boat = False
 
         self.regularization_multiplier = 0
-        self.param_names = ["mass","MOI_zz"]
-
-
-
-
+        self.param_names = ["mass", "MOI_zz"]
 
     def get_object_properties(self, x, library=np):
-        boat_mass = x[0,0]
-        boat_MOI_zz = x[1:2,0]
-        
+        boat_mass = x[0, 0]
+        boat_MOI_zz = x[1:2, 0]
+
         if library is np:
-            boat_MOI_diagonal = library.concatenate((library.zeros((2)),boat_MOI_zz))
+            boat_MOI_diagonal = library.concatenate((library.zeros((2)), boat_MOI_zz))
         else:
-            boat_MOI_diagonal = library.concat((library.zeros((2)),boat_MOI_zz))
-        
-        
+            boat_MOI_diagonal = library.concat((library.zeros((2)), boat_MOI_zz))
+
         boat_MOI = library.diag(boat_MOI_diagonal)
-        
+
         mass, MOI = compute_sphere_properties(
             self.material_density, self.radius, library=library
         )
         object_properties = ObjectProperties(
-            mass=mass+boat_mass, MOI=MOI+boat_MOI, radius=self.radius, sigma=self.sigma
+            mass=mass + boat_mass,
+            MOI=MOI + boat_MOI,
+            radius=self.radius,
+            sigma=self.sigma,
         )
-        
+
         return object_properties
-    
+
     def size(self):
         return 6
-    
+
     def get_drag_wrenches(self, x):
-        linear_drag_force_constant = x[2,0]
-        quadratic_drag_force_constant = x[3,0]
+        linear_drag_force_constant = x[2, 0]
+        quadratic_drag_force_constant = x[3, 0]
 
-        linear_drag_torque_constant = x[4,0]
-        quadratic_drag_torque_constant = x[5,0]        
-
-
+        linear_drag_torque_constant = x[4, 0]
+        quadratic_drag_torque_constant = x[5, 0]
 
         drag_force = (
             linear_drag_force_constant * self.linear_velocity
             + torch.sign(self.linear_velocity)
             * quadratic_drag_force_constant
-            * self.linear_velocity ** 2
+            * self.linear_velocity**2
         )
-        
+
         drag_torque = (
             linear_drag_torque_constant * self.rotational_velocity
             + torch.sign(self.rotational_velocity)
             * quadratic_drag_torque_constant
-            * self.rotational_velocity ** 2
+            * self.rotational_velocity**2
         )
 
-        drag_wrench = torch.concat((-drag_force,-drag_torque),1)
+        drag_wrench = torch.concat((-drag_force, -drag_torque), 1)
         return drag_wrench
 
 
@@ -659,10 +659,10 @@ class MassSysID(SeperateRadiusSysid):
                     1.0,  # Izz
                 ]
             ).reshape((-1, 1))
-        
-        #self.min_bounds[0] = 1e-3
 
-        #self.min_bounds[1] = 1e4 / self.sigma_multiplier
+        # self.min_bounds[0] = 1e-3
+
+        # self.min_bounds[1] = 1e4 / self.sigma_multiplier
 
         # radius and sigma keep the same
         # self.min_bounds[2] = 1e-10
@@ -684,11 +684,13 @@ class MassSysID(SeperateRadiusSysid):
         mass_extra = x[2, 0]
         MOI_extra = library.diag(x[3:, 0])
 
-        mass_sphere, MOI_sphere = compute_sphere_properties(self.material_density, radius, library)
+        mass_sphere, MOI_sphere = compute_sphere_properties(
+            self.material_density, radius, library
+        )
 
         mass = mass_sphere + mass_extra
         MOI = MOI_sphere + MOI_extra
-        
+
         object_properties = ObjectProperties(
             mass=mass, MOI=MOI, radius=radius, sigma=sigma * self.sigma_multiplier
         )
