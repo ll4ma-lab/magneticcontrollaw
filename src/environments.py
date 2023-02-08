@@ -15,7 +15,9 @@ class PlanarEnvironments(Enum):
     DOUBLE_SQUARE = 4
     SQUARE_FIXED_HEADING = 5
     ROTATE_IN_PLACE = 6
+    ROTATE_IN_PLACE_FAST = 12
     SQUARE_ROTATE = 7
+    SQUARE_ROTATE_EASY = 11
     INFINITY = 8
     OMEGA = 9
     U = 10
@@ -154,6 +156,24 @@ class PlanarProblem:
             self.times = [360] * self.desired_state.shape[1]
             self.times[0] = 480
 
+        if (
+            challenge_id == PlanarEnvironments.ROTATE_IN_PLACE_FAST
+        ):  # stationary rotation
+            seperate_steps = 100
+            self.true_desired_state = np.zeros((12, seperate_steps))
+
+            a = 0.0001
+            time_per_target = 30
+            for t in range(1, seperate_steps + 1):
+                self.true_desired_state[5, t - 1] = (a / 2) * (
+                    (t * time_per_target) ** 2
+                )
+                self.true_desired_state[11, t - 1] = a * (t * time_per_target)
+            # self.TrueDesiredState[4,:] = np.pi/2
+
+            self.desired_state = self.true_desired_state
+            self.times = [time_per_target] * self.desired_state.shape[1]
+
         if challenge_id == PlanarEnvironments.SQUARE_ROTATE:  # rotate while square
             self.start_state[5] = -np.pi / 4
 
@@ -186,6 +206,39 @@ class PlanarProblem:
 
             self.desired_state = self.true_desired_state
             self.times = [240] * self.desired_state.shape[1]
+
+        if challenge_id == PlanarEnvironments.SQUARE_ROTATE_EASY:  # rotate while square
+            self.start_state[5] = -np.pi / 4
+            self.start_state[:3, 0] = [square_radius, -square_radius, 0]
+
+            self.true_desired_state = np.zeros((12, 9))
+            self.true_desired_state[5, 0] = -np.pi / 4
+
+            self.true_desired_state[:3, 0] = [square_radius, -square_radius, 0]
+            self.true_desired_state[5, 0] = -np.pi
+            self.true_desired_state[5, 1] = -np.pi
+
+            self.true_desired_state[:3, 1] = [-square_radius, -square_radius, 0]
+            self.true_desired_state[:3, 2] = self.true_desired_state[:3, 1]
+            self.true_desired_state[5, 2] = -3.0 * np.pi / 2.0
+            self.true_desired_state[5, 3] = -3.0 * np.pi / 2.0
+
+            self.true_desired_state[:3, 3] = [-square_radius, square_radius, 0]
+            self.true_desired_state[:3, 4] = self.true_desired_state[:3, 3]
+            self.true_desired_state[5, 4] = -2.0 * np.pi
+            self.true_desired_state[5, 5] = -2.0 * np.pi
+
+            self.true_desired_state[:3, 5] = [square_radius, square_radius, 0]
+            self.true_desired_state[:3, 6] = self.true_desired_state[:3, 5]
+            self.true_desired_state[5, 6] = -2.5 * np.pi
+            self.true_desired_state[5, 7] = -2.5 * np.pi
+
+            self.true_desired_state[:3, 7] = [square_radius, -square_radius, 0]
+            self.true_desired_state[:3, 8] = self.true_desired_state[:3, 7]
+            self.true_desired_state[5, 8] = -3.0 * np.pi
+
+            self.desired_state = self.true_desired_state
+            self.times = [480] * self.desired_state.shape[1]
 
         if challenge_id == PlanarEnvironments.INFINITY:  # infinity
             vel = 0.0005

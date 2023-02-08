@@ -65,12 +65,15 @@ from ObjectProperties import (
     boat,
     env,
 ) = extract_sys_id_data(
-    "/home/tabor/catkin_ws/src/magnetic_system/MagneticControlLaw/data/real_2023-02-02 15:06:43.826567",alt_rotational_velocity=False,skip_end=250
+    "/home/tabor/Documents/adaptive/multi-80-20/real_2023-02-07 14:22:15.630229",
+    alt_rotational_velocity=False,
+    skip_end=0,
+    skip_beginning=250,
 )
 
-#boat=False
-boat = ObjectProperties(mass = 0.83,MOI= np.diag((0,0,1.13e-3)))
-    
+# boat=False
+boat = ObjectProperties(mass=0.83, MOI=np.diag((0, 0, 1.13e-3)))
+
 # cuboid
 # dataloader.load('/home/tabor/Downloads/real_2022-03-31 15_01_35.949906',globals())
 
@@ -126,14 +129,14 @@ if optimizer_type is Momentum:
 
 
 if sysID_type is MassOnlySysid:
-    optimizerParams[ "FP_PRECISION"] = 1e-13
+    optimizerParams["FP_PRECISION"] = 1e-13
 
 
 prob = sysID_type(
     build_acceleration_q("xyt"),
     object_properties=initial_object_properties,
     boat=boat,
-    drag_terms=(8.12e-3, 2.15, 1.13e-5, 1.90e-4)
+    drag_terms=(8.12e-3, 2.15, 1.13e-5, 1.90e-4),
 )  # built with M(0.04) Q M(0.04)
 optimizer = optimizer_type(problem=prob, **optimizerParams)
 s = time.time()
@@ -155,7 +158,7 @@ try:
         result = optimizer.optimize(initial_solution, max_iterations=40)
         results.append(result)
 except KeyboardInterrupt:
-    print('keyboard')
+    print("keyboard")
 print("opt time ", time.time() - s)
 
 if prob.size() == 2:
