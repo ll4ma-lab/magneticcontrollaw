@@ -15,7 +15,7 @@ import numpy as np
 import time
 
 
-from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID
+from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID, MassOnlySysid
 from ll4ma_opt.solvers import (
     NewtonMethod,
     GradientDescent,
@@ -65,10 +65,14 @@ from ObjectProperties import (
     boat,
     env,
 ) = extract_sys_id_data(
-    "/home/tabor/catkin_ws/src/magnetic_system/MagneticControlLaw/data/real_2023-01-27 18:16:01.537996",
-    skip_end=250,
+    "/home/tabor/Documents/adaptive/multi-80-20/real_2023-02-07 14:22:15.630229",
+    alt_rotational_velocity=False,
+    skip_end=0,
+    skip_beginning=250,
 )
 
+# boat=False
+boat = ObjectProperties(mass=0.83, MOI=np.diag((0, 0, 1.13e-3)))
 
 # cuboid
 # dataloader.load('/home/tabor/Downloads/real_2022-03-31 15_01_35.949906',globals())
@@ -99,9 +103,9 @@ if optimizer_type is NewtonMethod:
     optimizerParams = {
         "alpha": 1,
         "rho": 0.9,
-        "c1": 1e-3,
-        "FP_PRECISION": 1e-16,
-        "min_alpha": 1e-20,
+        "c1": 1e-30,
+        "FP_PRECISION": 1e-12,
+        "min_alpha": 1e-10,
     }
 elif optimizer_type is GradientDescent or optimizer_type is Momentum:
     step = 1e-11
@@ -124,10 +128,15 @@ if optimizer_type is Momentum:
     optimizerParams["momentum"] = 0.9
 
 
+if sysID_type is MassOnlySysid:
+    optimizerParams["FP_PRECISION"] = 1e-13
+
+
 prob = sysID_type(
     build_acceleration_q("xyt"),
     object_properties=initial_object_properties,
     boat=boat,
+    drag_terms=(8.12e-3, 2.15, 1.13e-5, 1.90e-4),
 )  # built with M(0.04) Q M(0.04)
 optimizer = optimizer_type(problem=prob, **optimizerParams)
 s = time.time()
@@ -137,19 +146,22 @@ prob.update_vals(
     positions,
     noisy_linear_velocity,
     noisy_rotational_velocity,
-    (0.0, 5.4),
 )
 
 results = []
-for i in tqdm(range(10)):
-    initial_solution = np.random.uniform(
-        prob.min_bounds, prob.max_bounds, (prob.size(), 1)
-    )
-    result = optimizer.optimize(initial_solution, max_iterations=40)
-    results.append(result)
+prob.regularization_multiplier = 1e11
+try:
+    for i in tqdm(range(25)):
+        initial_solution = np.random.uniform(
+            prob.min_bounds, prob.max_bounds, (prob.size(), 1)
+        )
+        result = optimizer.optimize(initial_solution, max_iterations=40)
+        results.append(result)
+except KeyboardInterrupt:
+    print("keyboard")
 print("opt time ", time.time() - s)
 
-if sysID_type is RadiusSysid:
+if prob.size() == 2:
     possible_r = np.linspace(prob.min_bounds[0], prob.max_bounds[0], 1000)[:, 0]
 
     possibleCosts = [
@@ -164,7 +176,7 @@ if sysID_type is RadiusSysid:
     s = time.time()
 
     iterates = []
-    for i in range(40):
+    for i in range(np.max([result.iterates.shape for result in results])):
         iterate = np.stack(
             [
                 result.iterates[i] if result.iterates.shape[0] > i else result.solution
@@ -180,9 +192,12 @@ if sysID_type is RadiusSysid:
 else:
     _ = prob.visualize_optimization(result.iterates, func=np.log)
 
-solution = results[np.argmin([result.cost for result in results])].solution
 
-print("solution ", result.solution)
+result = results[np.argmin([result.cost for result in results])]
+
+solution = result.solution
+
+print("solution ", solution)
 
 prob.visualize_predicted_acceleration(solution)
 

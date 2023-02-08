@@ -6,7 +6,7 @@ Created on Tue Dec 14 13:02:06 2021
 @author: tabor
 """
 import sysIDoptimization
-from ll4ma_opt.solvers import Momentum
+from ll4ma_opt.solvers import Momentum, NewtonMethod
 from solvers.modelOptimization import build_acceleration_q
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,27 +21,31 @@ class Adaptive:
         batch_size=1,
         internal_sys_id=sysIDoptimization.RadiusSysid,
         boat=False,
+        drag_terms=(0, 0, 0, 0),
     ):
 
         self.magnets = magnets
         self.object_properties = object_properties
         Q = build_acceleration_q(dimensions)
         print("adaptive weights ", Q)
-        self.problem = internal_sys_id(Q, object_properties, boat=boat)
+        self.problem = internal_sys_id(
+            Q, object_properties, boat=boat, drag_terms=drag_terms
+        )
         self.current_solution = self.problem.initial_solution
-        step = 1e-8  # / batch_size
-        optimizer_params = {"alpha": step, "rho": 0.9, "min_alpha": step / 2}
+        optimizer_params = {"alpha": 3e-3, "rho": 0.9, "min_alpha": 1e-20, "c1": 1e-30}
 
-        optimizer_params = {
-            "alpha": step,
-            "rho": 0.9,
-            "c1": 1e-9,
-            "FP_PRECISION": 1e-15,
-            "min_alpha": 1e-20,
-            "momentum": 0.8,
-        }
+        # step = 1e-15  # / batch_size
 
-        self.optimizer = Momentum(problem=self.problem, **optimizer_params)
+        # optimizer_params = {
+        #     "alpha": step,
+        #     "rho": 0.5,
+        #     "c1": 1e-9,
+        #     "FP_PRECISION": 1e-15,
+        #     "min_alpha": 1e-20,
+        #     "momentum": 0.8,
+        # }
+
+        self.optimizer = NewtonMethod(problem=self.problem, **optimizer_params)
         self.batch_size = batch_size
 
         self.linear_velocities = []
@@ -49,6 +53,9 @@ class Adaptive:
         self.controls = []
         self.positions = []
         self.parameters = []
+
+    def reset_current_solution(self, object_properties):
+        self.current_solution = self.problem.reset_current_solution(object_properties)
 
     def add_state(self, state):
         current_linear_velocity = state[0][:3, :3] @ state[2][:, 0]
@@ -66,7 +73,7 @@ class Adaptive:
             self.parameters.append(self.current_solution)
 
         batch_size = min(self.batch_size, len(self.controls) - 1)
-        if batch_size < self.batch_size * 0.5:
+        if len(self.controls) - 1 < self.batch_size * 2:
             return
 
         selected_controls = self.controls[-batch_size:]

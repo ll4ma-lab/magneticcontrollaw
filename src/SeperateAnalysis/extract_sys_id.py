@@ -17,7 +17,9 @@ from ObjectProperties import ObjectProperties, compute_boat_properties
 import numpy as np
 
 
-def extract_sys_id_data(file_name, alt_rotational_velocity=False, skip_end=0):
+def extract_sys_id_data(
+    file_name, alt_rotational_velocity=False, skip_end=0, skip_beginning=0
+):
     dataloader.load(file_name, globals())
     global controls, mass, i, numSteps, radius, object_properties_approximate, initial_object_properties, sigma_copper, boat_properties
 
@@ -55,8 +57,13 @@ def extract_sys_id_data(file_name, alt_rotational_velocity=False, skip_end=0):
         initial_object_properties = object_properties_approximate
     boat = boat_properties
     velocity_shift = 0
-    start = -num_steps + 5
+    start = -num_steps + 5 + skip_beginning
     end = -5 - skip_end
+
+    if velocity_shift > 0:
+        end -= velocity_shift
+    else:
+        start += velocity_shift
 
     # FIX incorrect velocity in real data
     linear_velocity = np.array(
@@ -65,6 +72,7 @@ def extract_sys_id_data(file_name, alt_rotational_velocity=False, skip_end=0):
             for state in states[1 + start + velocity_shift : end - 1 + velocity_shift]
         ]
     )
+
     rotational_velocity = np.array(
         [
             transform_modify_function(state[0][:3, :3]) @ state[1][:, 0]

@@ -72,7 +72,10 @@ rhoForces = (
     np.concatenate(
         [
             np.stack(
-                [model.forward_pass(position, [0, 2, i, j]) for i in range(1, 40 + 1, 5)]
+                [
+                    model.forward_pass(position, [0, 2, i, j])
+                    for i in range(1, 40 + 1, 5)
+                ]
             )
             for j in range(-180, 180, 6)
         ],

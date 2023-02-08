@@ -28,7 +28,9 @@ from ll4ma_opt.solvers.line_search import NewtonMethod
 
 
 class RadiusSysid(Problem):
-    def __init__(self, weights, object_properties=None, boat=None):
+    def __init__(
+        self, weights, object_properties=None, boat=None, drag_terms=(0, 0, 0, 0)
+    ):
         super().__init__()
 
         self.single_model = SphereModel(1)
@@ -36,23 +38,13 @@ class RadiusSysid(Problem):
 
         self.error_multiplier = 1e6
 
-        self.regularization_multiplier = 1e14
-
-        if object_properties:
-            self.initial_solution = np.array(
-                [
-                    object_properties.radius,
-                    object_properties.sigma / self.sigma_multiplier,
-                ]
-            ).reshape((-1, 1))
-        else:
-            self.initial_solution = np.ones((2, 1)) * 0.001
-            self.initial_solution[1] = 5.8e7 / self.sigma_multiplier
+        self.regularization_multiplier = 1e12
+        self.reset_current_solution(object_properties)
 
         self.min_bounds[0] = 1e-3
         self.max_bounds[0] = 1e-1
 
-        self.min_bounds[1] = 2e5 / self.sigma_multiplier
+        self.min_bounds[1] = 2e6 / self.sigma_multiplier
         self.max_bounds[1] = 8e7 / self.sigma_multiplier
 
         self.prior = self.make_tensor((self.max_bounds - self.min_bounds) / 2)
@@ -63,6 +55,28 @@ class RadiusSysid(Problem):
         else:
             self.boat = boat
 
+        self.param_names = [
+            "Radius (m)",
+            "Conductivity " + "%0.2E" % Decimal(self.sigma_multiplier) + " S/m",
+        ]
+
+        self.drag_terms = drag_terms
+
+        # self.make_tensor = lambda x:torch.Tensor(x).cuda()
+
+    def reset_current_solution(self, object_properties=None):
+        if object_properties:
+            self.initial_solution = np.array(
+                [
+                    object_properties.radius,
+                    object_properties.sigma / self.sigma_multiplier,
+                ]
+            ).reshape((-1, 1))
+        else:
+            self.initial_solution = np.ones((2, 1)) * 0.001
+            self.initial_solution[1] = 5.8e7 / self.sigma_multiplier
+        return self.initial_solution
+
     def update_vals(
         self,
         controls,
@@ -70,7 +84,6 @@ class RadiusSysid(Problem):
         positions,
         linear_velocity,
         rotational_velocity,
-        drag_terms=(0, 0),
     ):
         velocity_shift = 0
 
@@ -89,6 +102,13 @@ class RadiusSysid(Problem):
         timesteps = np.array(
             [control.seconds for control in controls[: -1 - velocity_shift]]
         ).reshape((-1, 1))
+
+        self.linear_velocity = self.make_tensor(
+            linear_velocity[1 + velocity_shift :, :]
+        )
+        self.rotational_velocity = self.make_tensor(
+            rotational_velocity[1 + velocity_shift :, :]
+        )
 
         self.n = len(dipole_strength)
 
@@ -114,21 +134,26 @@ class RadiusSysid(Problem):
         np_a = delta_v / timesteps
 
         drag_force = (
-            drag_terms[0] * linear_velocity[velocity_shift:-1, :]
+            self.drag_terms[0] * linear_velocity[velocity_shift:-1, :]
             + np.sign(linear_velocity[velocity_shift:-1, :])
-            * drag_terms[1]
+            * self.drag_terms[1]
             * linear_velocity[velocity_shift:-1, :] ** 2
         )
 
-        self.drag_wrenches = self.make_tensor(
-            np.hstack((-drag_force, np.zeros_like(drag_force)))
+        drag_torque = (
+            self.drag_terms[2] * rotational_velocity[velocity_shift:-1, :]
+            + np.sign(rotational_velocity[velocity_shift:-1, :])
+            * self.drag_terms[3]
+            * rotational_velocity[velocity_shift:-1, :] ** 2
         )
+
+        self.drag_wrenches = self.make_tensor(np.hstack((-drag_force, -drag_torque)))
         self.accelerations = self.make_tensor(np_a.T)
 
         self.material_density = self.make_tensor([8940.0])[0]
 
     def forward_acceleration(
-        self, object_properties, dists, dipole_strengths, angles, rhos, zero
+        self, x, object_properties, dists, dipole_strengths, angles, rhos, zero
     ):
 
         mass_matrix = self.construct_mass_matrix(object_properties, torch)
@@ -142,9 +167,12 @@ class RadiusSysid(Problem):
 
         # print(modeled_wrenches)
         # print(self.drag_wrenches)
-        wrenches = modeled_wrenches + self.drag_wrenches
+        wrenches = modeled_wrenches + self.get_drag_wrenches(x)
 
         return torch.linalg.inv(mass_matrix) @ wrenches.T
+
+    def get_drag_wrenches(self, x):
+        return self.drag_wrenches
 
     def get_object_properties(self, x, library=np):
         radius = x[0, 0]
@@ -165,9 +193,10 @@ class RadiusSysid(Problem):
         return 2
 
     def tensor_cost(self, x):
-        object_properties = self.get_object_properties(x, torch)
+        object_properties = self.get_object_properties(x, library=torch)
 
         modeled_accelerations = self.forward_acceleration(
+            x,
             object_properties,
             self.dists,
             self.dipole_strength,
@@ -189,9 +218,10 @@ class RadiusSysid(Problem):
         return cost
 
     def tensor_error(self, x):
-        object_properties = self.get_object_properties(x, torch)
+        object_properties = self.get_object_properties(x, library=torch)
 
         modeled_accelerations = self.forward_acceleration(
+            x,
             object_properties,
             self.dists,
             self.dipole_strength,
@@ -207,7 +237,8 @@ class RadiusSysid(Problem):
     def compute_uncertainty(self, x):
         x = torch.tensor(x)
         model_accel_func = lambda x: self.forward_acceleration(
-            self.get_object_properties(x, torch),
+            x,
+            self.get_object_properties(x, library=torch),
             self.dists,
             self.dipole_strength,
             self.angles,
@@ -292,10 +323,8 @@ class RadiusSysid(Problem):
 
         ax.set_xlim(self.min_bounds[0], self.max_bounds[0])
         ax.set_ylim(self.min_bounds[1], self.max_bounds[1])
-        ax.set_xlabel("Radius (m)")
-        ax.set_ylabel(
-            "Conductivity " + "%0.2E" % Decimal(self.sigma_multiplier) + " S/m"
-        )
+        ax.set_xlabel(self.param_names[0])
+        ax.set_ylabel(self.param_names[1])
         points = iterates[0].reshape((-1, 2))
         costs = [
             [min(func(self.cost(point.reshape((-1, 1)))), clip_value)]
@@ -382,8 +411,11 @@ class RadiusSysid(Problem):
 
     def visualize_predicted_acceleration(self, iterate):
         fig, ax = plt.subplots(3)
-        object_properties = self.get_object_properties(self.make_tensor(iterate), torch)
+        object_properties = self.get_object_properties(
+            self.make_tensor(iterate), library=torch
+        )
         modeled_accelerations = self.forward_acceleration(
+            iterate,
             object_properties,
             self.dists,
             self.dipole_strength,
@@ -519,6 +551,86 @@ class SeperateRadiusSysid(RadiusSysid):
             axs[i].plot(xs, func(ys), "b")
 
 
+class MassOnlySysid(SeperateRadiusSysid):
+    def __init__(self, weights, object_properties, boat=None):
+        super().__init__(
+            weights=weights, boat=boat, object_properties=object_properties
+        )
+
+        self.min_bounds[0] = 0.0
+        self.min_bounds[1] = 0
+        self.min_bounds[2] = 0
+        self.min_bounds[3] = 0
+
+        self.max_bounds[0] = 1.5
+        self.max_bounds[1] = 0.003
+        self.max_bounds[2] = 1e-2
+        self.max_bounds[3] = 1e1
+
+        self.min_bounds[4:] = 0
+        self.max_bounds[4:] = 1e-3
+
+        self.prior = self.make_tensor((self.max_bounds - self.min_bounds) / 2)
+        self.initial_solution = self.prior.cpu().numpy()
+
+        self.sigma = 5.8e7
+        self.radius = 0.019
+        self.boat = False
+
+        self.regularization_multiplier = 0
+        self.param_names = ["mass", "MOI_zz"]
+
+    def get_object_properties(self, x, library=np):
+        boat_mass = x[0, 0]
+        boat_MOI_zz = x[1:2, 0]
+
+        if library is np:
+            boat_MOI_diagonal = library.concatenate((library.zeros((2)), boat_MOI_zz))
+        else:
+            boat_MOI_diagonal = library.concat((library.zeros((2)), boat_MOI_zz))
+
+        boat_MOI = library.diag(boat_MOI_diagonal)
+
+        mass, MOI = compute_sphere_properties(
+            self.material_density, self.radius, library=library
+        )
+        object_properties = ObjectProperties(
+            mass=mass + boat_mass,
+            MOI=MOI + boat_MOI,
+            radius=self.radius,
+            sigma=self.sigma,
+        )
+
+        return object_properties
+
+    def size(self):
+        return 6
+
+    def get_drag_wrenches(self, x):
+        linear_drag_force_constant = x[2, 0]
+        quadratic_drag_force_constant = x[3, 0]
+
+        linear_drag_torque_constant = x[4, 0]
+        quadratic_drag_torque_constant = x[5, 0]
+
+        drag_force = (
+            linear_drag_force_constant * self.linear_velocity
+            + torch.sign(self.linear_velocity)
+            * quadratic_drag_force_constant
+            * self.linear_velocity**2
+        )
+
+        drag_torque = (
+            linear_drag_torque_constant * self.rotational_velocity
+            + torch.sign(self.rotational_velocity)
+            * quadratic_drag_torque_constant
+            * self.rotational_velocity**2
+        )
+
+        drag_wrench = torch.concat((-drag_force, -drag_torque), 1)
+        return drag_wrench
+
+
 class MassSysID(SeperateRadiusSysid):
     def __init__(self, weights, object_properties=None, boat=None):
         super().__init__(
@@ -548,19 +660,20 @@ class MassSysID(SeperateRadiusSysid):
                 ]
             ).reshape((-1, 1))
 
-        self.min_bounds[0] = 1e-3
+        # self.min_bounds[0] = 1e-3
 
-        self.min_bounds[1] = 1e4 / self.sigma_multiplier
+        # self.min_bounds[1] = 1e4 / self.sigma_multiplier
 
         # radius and sigma keep the same
-        self.min_bounds[2] = 1e-10
-        self.max_bounds[2] = 2
+        # self.min_bounds[2] = 1e-10
+        # self.max_bounds[2] = 2
 
-        self.min_bounds[3] = 1e-5  # mass
-        self.min_bounds[3:] = 1e-10  # MOI
+        self.min_bounds[2] = -1  # mass
+        self.min_bounds[3:] = -1e-3  # MOI
 
-        self.max_bounds[3] = 2  # mass
-        self.max_bounds[3:] = 1e0  # MOI
+        self.max_bounds[2] = 2  # mass
+        self.max_bounds[3:] = 1e-3  # MOI
+        self.prior = self.make_tensor((self.max_bounds - self.min_bounds) / 2)
 
     def size(self):
         return 6
@@ -568,8 +681,16 @@ class MassSysID(SeperateRadiusSysid):
     def get_object_properties(self, x, library=np):
         radius = x[0, 0]
         sigma = x[1, 0]
-        mass = x[2, 0]
-        MOI = library.diag(x[3:, 0])
+        mass_extra = x[2, 0]
+        MOI_extra = library.diag(x[3:, 0])
+
+        mass_sphere, MOI_sphere = compute_sphere_properties(
+            self.material_density, radius, library
+        )
+
+        mass = mass_sphere + mass_extra
+        MOI = MOI_sphere + MOI_extra
+
         object_properties = ObjectProperties(
             mass=mass, MOI=MOI, radius=radius, sigma=sigma * self.sigma_multiplier
         )
