@@ -582,21 +582,21 @@ class MassOnlySysid(SeperateRadiusSysid):
 
     def get_object_properties(self, x, library=np):
         boat_mass = x[0, 0]
-        boat_MOI_zz = x[1:2, 0]
+        boat_moi_zz = x[1:2, 0]
 
         if library is np:
-            boat_MOI_diagonal = library.concatenate((library.zeros((2)), boat_MOI_zz))
+            boat_moi_diagonal = library.concatenate((library.zeros((2)), boat_moi_zz))
         else:
-            boat_MOI_diagonal = library.concat((library.zeros((2)), boat_MOI_zz))
+            boat_moi_diagonal = library.concat((library.zeros((2)), boat_moi_zz))
 
-        boat_MOI = library.diag(boat_MOI_diagonal)
+        boat_moi = library.diag(boat_moi_diagonal)
 
         mass, MOI = compute_sphere_properties(
             self.material_density, self.radius, library=library
         )
         object_properties = ObjectProperties(
             mass=mass + boat_mass,
-            MOI=MOI + boat_MOI,
+            MOI=MOI + boat_moi,
             radius=self.radius,
             sigma=self.sigma,
         )
@@ -682,14 +682,14 @@ class MassSysID(SeperateRadiusSysid):
         radius = x[0, 0]
         sigma = x[1, 0]
         mass_extra = x[2, 0]
-        MOI_extra = library.diag(x[3:, 0])
+        moi_extra = library.diag(x[3:, 0])
 
-        mass_sphere, MOI_sphere = compute_sphere_properties(
+        mass_sphere, moi_sphere = compute_sphere_properties(
             self.material_density, radius, library
         )
 
         mass = mass_sphere + mass_extra
-        MOI = MOI_sphere + MOI_extra
+        MOI = moi_sphere + moi_extra
 
         object_properties = ObjectProperties(
             mass=mass, MOI=MOI, radius=radius, sigma=sigma * self.sigma_multiplier
