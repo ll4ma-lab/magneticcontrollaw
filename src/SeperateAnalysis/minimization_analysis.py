@@ -31,21 +31,20 @@ sys.path.append("..")  # Adds higher directory to python modules path.
 
 from PDController import PDController
 
-from environments import PlanarProblem, SpaceProblem
+from environments import PlanarProblem, SpaceProblem, SpaceEnvironments
 import SplineProfile
-from discreteTimeSimulator import DiscreteTimeSimulator, sphereProperties
+from ObjectProperties import compute_sphere_properties, ObjectProperties
 
-
-from models import MultiMagModel
-from modelOptimization import multiMagSolver
+from models import MultiMagModel, SphereControlCommand
+from solvers.modelOptimization import MultiMagSolver
 
 
 def optimize(decisionVariable):
     solver = NewtonMethod(alpha, rho, prob, c1=c1, FP_PRECISION=FP_PRECISION)
-    solution, cost, converged, iterates = solver.optimize(
+    result = solver.optimize(
         decisionVariable, max_iterations=max_iterations
     )
-    return solution, cost, converged, iterates
+    return result
 
 
 def getCost(decisionVariable):
@@ -53,36 +52,51 @@ def getCost(decisionVariable):
     return prob.cost(decisionVariable)
 
 
-env = SpaceProblem(4)
+env = SpaceProblem(SpaceEnvironments.REGULATOR)
 controller = PDController(env.start_state, 0.005, 0.00001, 0.005, 0.00001, 0.0, 0.000)
-velocityProfile = SplineProfile.SplineProfile(env, np.sum(env.times), env.times)
+velocityProfile = SplineProfile.SplineProfile(env, env.times)
 
 
+sigma_copper = 5.87e07
+sigma_al = 3.77e07
+
+# simulator object
 radius = 0.02
-mass = sphereProperties(8940, radius)
-objectProperties = {"mass": mass[0], "MOI": mass[1], "radius": radius}
+mass, MOI = compute_sphere_properties(8940, radius)
+object_properties = ObjectProperties(
+    mass=mass, MOI=MOI, radius=radius, sigma=sigma_copper
+ )
 
 
 optimizerParams = {
     "alpha": 1.0,
-    "ro": 0.9,
+    "rho": 0.9,
     "c1": 1e-9,
     "FP_PRECISION": 1e-2,
     "min_alpha": 1e-15,
 }
 optimizerParams = {
     "alpha": 1.0,
-    "ro": 0.5,
+    "rho": 0.5,
     "c1": 1e-9,
     "FP_PRECISION": 1e-15,
     "min_alpha": 1e-15,
 }
 
+optimizerParams = {
+    "alpha": 1.0,
+    "rho": 0.5,
+    "c1": 1e-9,
+    "FP_PRECISION": 1e-5,
+    "min_alpha": 1e-10,
+}
 
-newModel = MultiMagModel(env.magnets, objectProperties, True)
+
+model = MultiMagModel(env.magnets, object_properties, True)
 # control = [1,2,np.random.random()*40,np.random.random()*360-180]
 control = [5, 2, 38, 173]
-print(newModel.forward_pass(np.zeros((3, 1)), control))
+control = SphereControlCommand(5, 2, 38, 173)
+print(model.forward_pass(np.zeros((3, 1)), control))
 # np.random.seed(473)
 
 # desired_wrench = (np.random.random((6,1))-0.5)*1e-4
@@ -101,7 +115,12 @@ def fixmaxDegree(angles):
 
 BRUTEFORCECOLOR = False
 if __name__ == "__main__":
-    builder = multiMagSolver(newModel, "all", True)
+    builder = MultiMagSolver(
+         model=model,
+         state_cost_string=env.trajectory_dimensions,
+         object_properties=object_properties,
+         sphere_model=True,
+     )
 
     for _ in range(100):
         np.random.seed(_)
@@ -110,26 +129,29 @@ if __name__ == "__main__":
         desired_wrench[1, 0] *= 2
         print(desired_wrench)
 
-        builder.modifyProblems(desired_wrench, np.zeros((3, 1)))
+        builder.modify_problems(desired_wrench, np.zeros((3, 1)))
 
-        for i in range(len(builder.problems[:1])):
-            prob = builder.problems[control[0]]
-            val = 30
-            prob.boundConstraints[0] = (val - 1e-30, val + 1e-30)
+        # for i in range(len(builder.problems[:1])):
+        #     prob = builder.problems[control.mag_num]
+        #     val = 30
+        #     prob.min_bounds[0] = val - 1e-30
+        #     prob.max_bounds[0] = val + 1e-30
+
+        prob = builder.problems[0]
 
         s = time.time()
         optimizer = NewtonMethod(problem=prob, **optimizerParams)
-        solution, cost, converged, iterates = optimizer.optimize(
+        result = optimizer.optimize(
             np.array([20, 0, 0]).reshape((3, 1)), max_iterations=25
         )
-        solution2, cost2, converged2, iterates2 = optimizer.optimize(
+        result2 = optimizer.optimize(
             np.array([20, 180, 180]).reshape((3, 1)), max_iterations=25
         )
         print("elapsed newton time ", time.time() - s)
 
         # print(solution,cost,converged,iterates.shape)
 
-        strength = [30]  # np.linspace(0,40,21)
+        strength = np.linspace(0,40,21)
         psis = np.linspace(-180, 180, 91)
         xis = np.linspace(-180, 180, 91)
         xx, yy, zz = np.meshgrid(strength, psis, xis)
@@ -179,24 +201,26 @@ if __name__ == "__main__":
         )
         print(
             "newton method best ",
-            solution[0],
-            solution[1],
-            solution[2],
+            result.solution[0],
+            result.solution[1],
+            result.solution[2],
             "with cost ",
-            cost,
+            result.cost,
             " ratio ",
-            cost / costs[bestarg],
+            result.cost / costs[bestarg],
         )
         print(
             "newton method best ",
-            solution2[0],
-            solution2[1],
-            solution2[2],
+            result2.solution[0],
+            result2.solution[1],
+            result2.solution[2],
             "with cost ",
-            cost2,
+            result2.cost,
             " ratio ",
-            cost2 / costs[bestarg],
+            result2.cost / costs[bestarg],
         )
+        print('')
+        print('')
         # if(cost2/costs[bestarg] >1 and cost/costs[bestarg] >1):
         #     for params in [(90,90),(45,45),(45,0),(0,45),(90,0),(0,90),(180,0),(0,180)]:
         #         solution3, cost3, converged3, iterates3 = optimizer.optimize(np.array([20,params[0],params[1]]).reshape((3,1)))
@@ -209,11 +233,11 @@ if __name__ == "__main__":
 
         if plot:
             foundCosts = []
-            for j in range(iterates.shape[0]):
-                foundCosts.append(func(prob.cost(iterates[j, :, :])))
+            for j in range(result.iterates.shape[0]):
+                foundCosts.append(func(prob.cost(result.iterates[j, :, :])))
             foundCosts2 = []
-            for j in range(iterates2.shape[0]):
-                foundCosts2.append(func(prob.cost(iterates2[j, :, :])))
+            for j in range(result2.iterates.shape[0]):
+                foundCosts2.append(func(prob.cost(result2.iterates[j, :, :])))
 
             npCosts = np.array(costs)
             npc = np.array(colors)
@@ -223,7 +247,7 @@ if __name__ == "__main__":
                 fig = plt.figure(figsize=(10, 10))
                 ax = fig.add_subplot(projection="3d")
 
-                # fig.suptitle(str(streng) +' dipole', fontsize=16)
+                fig.suptitle(str(streng) +' dipole', fontsize=16)
 
                 ax.scatter(
                     y[indices], z[indices], npCosts[indices], s=1, c=npc[indices]
@@ -244,16 +268,16 @@ if __name__ == "__main__":
                     anim.save("basic_animation.mp4", fps=30)
                 else:
                     ax.plot(
-                        fixmaxDegree(iterates[:, 1, 0]),
-                        fixmaxDegree(iterates[:, 2, 0]),
+                        fixmaxDegree(result.iterates[:, 1, 0]),
+                        fixmaxDegree(result.iterates[:, 2, 0]),
                         foundCosts,
                         c="r",
                         markersize=200,
                         linewidth=6,
                     )
                     ax.plot(
-                        fixmaxDegree(iterates2[:, 1, 0]),
-                        fixmaxDegree(iterates2[:, 2, 0]),
+                        fixmaxDegree(result2.iterates[:, 1, 0]),
+                        fixmaxDegree(result2.iterates[:, 2, 0]),
                         foundCosts2,
                         c="g",
                         markersize=200,
@@ -262,12 +286,12 @@ if __name__ == "__main__":
 
         # print('elapsed time ',time.time()-s)
 
-        producedControl = [0, solution[0, 0], solution[1, 0], solution[2, 0]]
-        bestWrench = newModel.forward_pass(np.zeros((3, 1)), producedControl)
+        producedControl = SphereControlCommand(0, result.solution[0, 0], result.solution[1, 0], result.solution[2, 0])
+        bestWrench = model.forward_pass(np.zeros((3, 1)), producedControl)
         # print(bestWrench)
         # print(desired_wrench)
 
-        producedControl2 = [0, solution2[0, 0], solution2[1, 0], solution2[2, 0]]
-        bestWrench2 = newModel.forward_pass(np.zeros((3, 1)), producedControl2)
+        producedControl2 = SphereControlCommand(0, result2.solution[0, 0], result2.solution[1, 0], result2.solution[2, 0])
+        bestWrench2 = model.forward_pass(np.zeros((3, 1)), producedControl2)
         # print(bestWrench2)
         break
