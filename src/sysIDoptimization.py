@@ -488,8 +488,8 @@ class RadiusSysid(Problem):
 
 
 class SeperateRadiusSysid(RadiusSysid):
-    def __init__(self, weights, object_properties, boat=None):
-        super().__init__(weights=weights, boat=boat)
+    def __init__(self, weights, object_properties, boat=None, drag_terms=(0, 0, 0, 0)):
+        super().__init__(weights=weights, boat=boat, drag_terms=drag_terms)
 
         if object_properties:
             self.initial_solution = np.array(
@@ -552,7 +552,7 @@ class SeperateRadiusSysid(RadiusSysid):
 
 
 class MassOnlySysid(SeperateRadiusSysid):
-    def __init__(self, weights, object_properties, boat=None):
+    def __init__(self, weights, object_properties, boat=None, drag_terms=(0, 0, 0, 0)):
         super().__init__(
             weights=weights, boat=boat, object_properties=object_properties
         )
@@ -632,9 +632,14 @@ class MassOnlySysid(SeperateRadiusSysid):
 
 
 class MassSysID(SeperateRadiusSysid):
-    def __init__(self, weights, object_properties=None, boat=None):
+    def __init__(
+        self, weights, object_properties=None, boat=None, drag_terms=(0, 0, 0, 0)
+    ):
         super().__init__(
-            weights=weights, object_properties=object_properties, boat=boat
+            weights=weights,
+            object_properties=object_properties,
+            boat=boat,
+            drag_terms=drag_terms,
         )
 
         if object_properties:
