@@ -52,11 +52,11 @@ if __name__ == "__main__":
     vel_noise = False
     control_noise = False
 
-    env = SpaceProblem(SpaceEnvironments.BACKANDFORTH)
+    env = SpaceProblem(SpaceEnvironments.CUBE)
     env.magnets = env.magnets[:]
     # env.trajectoryDimensions = 'xyz'
 
-    sim_time = 100  # np.sum(env.times)
+    sim_time = np.sum(env.times)
 
     sigma_copper = 5.87e07
     sigma_al = 3.77e07
