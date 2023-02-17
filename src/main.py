@@ -38,7 +38,7 @@ from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID
 
 if __name__ == "__main__":
 
-    use_special_case_solver = True
+    use_special_case_solver = False
     use_sphere = True
     cheat = False
 
@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
     env = SpaceProblem(SpaceEnvironments.CUBE)
     env.magnets = env.magnets[:]
-    # env.trajectoryDimensions = 'xyz'
+    env.trajectory_dimensions = 'xyz'
 
     sim_time = np.sum(env.times)
 
@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
     if use_special_case_solver:
         solver = AxisAlignedSolver(solver_model, env.trajectory_dimensions)
-        solver = DevinSolver(solver_model)
+        solver = DevinSolver2(solver_model)
     else:
         solver = MultiMagSolver(
             model=solver_model,
@@ -113,13 +113,21 @@ if __name__ == "__main__":
             num_processes=10,
         )
 
+    # if inverse_dynamics:
+    #     controller = PDController(env.start_state, 0.12, 0.004, 0.12, 0.004, 0, 0)
+    # elif use_special_case_solver:
+    #     controller = PDController(env.start_state, 0.12, 0.004, 0.12, 0.004, 0.0, 0.0)
+    # else:
+    #     controller = PDController(
+    #         env.start_state, 0.0005, 0.000001, 0.0005, 0.000002, 0.0, 0.000
+    #     )
     if inverse_dynamics:
         controller = PDController(env.start_state, 0.12, 0.004, 0.12, 0.004, 0, 0)
     elif use_special_case_solver:
-        controller = PDController(env.start_state, 0.004, 0.0, 0.04, 0.0, 0.0, 0.0)
+        controller = PDController(env.start_state, .0007, 0.000, 0.03, 0.0, 0.0, 0.0)
     else:
         controller = PDController(
-            env.start_state, 0.0005, 0.000001, 0.0005, 0.000002, 0.0, 0.000
+            env.start_state, 0.007, 0.000001, 0.03, 0.000002, 0.0, 0.000
         )
     simulator = DiscreteTimeSimulator(env.start_state, object_properties)
     velocity_profile = SplineProfile.SplineProfile(env, env.times)
@@ -218,8 +226,9 @@ if __name__ == "__main__":
     diff = npdesired_states[:, 0, 0] - positions[:, 0]
     plt.figure()
     plt.plot(diff)
-    print(np.mean(np.square(diff)))
-    print(np.amax(diff))
+    max_error = np.amax(diff)
+    rms_error = np.mean(np.square(diff))
+    
 
     import dataloader
     from datetime import datetime
