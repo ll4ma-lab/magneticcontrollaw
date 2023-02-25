@@ -23,7 +23,7 @@ from solvers.modelOptimization import build_q, build_acceleration_q
 from ll4ma_opt.problems import Problem
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-
+import matplotlib
 from ll4ma_opt.solvers.line_search import NewtonMethod
 
 
@@ -57,7 +57,7 @@ class RadiusSysid(Problem):
 
         self.param_names = [
             "Radius (m)",
-            "Conductivity " + "%0.2E" % Decimal(self.sigma_multiplier) + " S/m",
+            "Conductivity (S/m) x 10^7",
         ]
 
         self.drag_terms = drag_terms
@@ -209,7 +209,7 @@ class RadiusSysid(Problem):
         left = (error.T @ self.weights).unsqueeze(1)
         right = error.T.unsqueeze(2)
         cost = (
-            torch.sum(torch.bmm(left, right)) / self.rhos.shape[0]
+            torch.sum(torch.bmm(left, right)) / self.rhos.shape[1]
         )  # -  5e14* (x[0:1])**2
 
         prior_error = x - self.prior
@@ -301,9 +301,16 @@ class RadiusSysid(Problem):
         samples=50,
         func=np.abs,
         show_costs=False,
-        save_snapshots=False,
+        save_location=False,
         make_heatmap=False,
     ):
+        if save_location:
+            font = {'weight' : 'bold',
+                    'size'   : 22}
+            
+            matplotlib.rc('font', **font)
+        
+        
         fig = plt.figure(figsize=(10, 10))
         if show_costs:
             ax = fig.add_subplot(projection="3d")
@@ -322,9 +329,14 @@ class RadiusSysid(Problem):
         possible_costs[possible_costs > clip_value] = clip_value
 
         ax.set_xlim(self.min_bounds[0], self.max_bounds[0])
-        ax.set_ylim(self.min_bounds[1], self.max_bounds[1])
+        ax.set_ylim(self.min_bounds[1] * self.sigma_multiplier, self.max_bounds[1] * self.sigma_multiplier)
         ax.set_xlabel(self.param_names[0])
         ax.set_ylabel(self.param_names[1])
+        
+        ax.set_xticks(np.arange(0.01, 0.11, step=0.02))
+        ax.set_yticks(np.arange(1e7, 8e7, step=1e7))
+
+        
         points = iterates[0].reshape((-1, 2))
         costs = [
             [min(func(self.cost(point.reshape((-1, 1)))), clip_value)]
@@ -333,7 +345,7 @@ class RadiusSysid(Problem):
         if make_heatmap:
             c = ax.contourf(
                 xs.reshape((samples, samples)),
-                ys.reshape((samples, samples)),
+                ys.reshape((samples, samples)) * self.sigma_multiplier,
                 possible_costs.reshape((samples, samples)),
                 30,
                 cmap="RdBu",
@@ -343,27 +355,27 @@ class RadiusSysid(Problem):
                 [
                     self.min_bounds[0],
                     self.max_bounds[0],
-                    self.min_bounds[1],
-                    self.max_bounds[1],
+                    self.min_bounds[1] * self.sigma_multiplier,
+                    self.max_bounds[1] * self.sigma_multiplier    ,
                 ]
             )
             fig.colorbar(c, ax=ax)
 
         if show_costs:
-            ax.scatter(xs, ys, possible_costs, color=(0, 0, 1, 0.5))
+            ax.scatter(xs, ys * self.sigma_multiplier, possible_costs, color=(0, 0, 1, 0.5))
             # ax.set_zlim(0, clip_value)
             points_3d = np.concatenate((points, np.array(costs)), 1)
             # silly hack to get filled circle
             scat = ax.scatter(
                 points_3d[:, 0],
-                points_3d[:, 1],
+                points_3d[:, 1] * self.sigma_multiplier,
                 points_3d[:, 2],
                 linewidths=10,
                 c="orange",
             )
             scat2 = ax.scatter(
                 points_3d[:, 0],
-                points_3d[:, 1],
+                points_3d[:, 1] * self.sigma_multiplier,
                 points_3d[:, 2],
                 linewidths=10,
                 c="orange",
@@ -371,15 +383,15 @@ class RadiusSysid(Problem):
 
             # scat._offsets3d = (points_3d[:, 0], points_3d[:, 1], points_3d[:, 2])
         else:
-            scat = plt.scatter(points[:, 0], points[:, 1], linewidths=10, c="orange")
+            scat = plt.scatter(points[:, 0], points[:, 1] * self.sigma_multiplier, linewidths=10, c="orange")
             scat.set_offsets(points)
             scat2 = None
-        if save_snapshots:
+        if save_location:
             fig.savefig("../../videos/initial.pdf")
 
-        def update(num, scat, scat2, iterates, show_costs, ax, save_snapshots):
+        def update(num, scat, scat2, iterates, show_costs, ax, save_location):
 
-            ax.set_title(num)
+            #ax.set_title(num)
             if show_costs:
                 ax.view_init(elev=ax.elev, azim=ax.azim + 1 / 3)
             points = iterates[num].reshape((-1, 2))
@@ -390,27 +402,33 @@ class RadiusSysid(Problem):
             points_3d = np.concatenate((points, np.array(costs)), 1)
             # print(points_3d.shape)
             if show_costs:
-                scat._offsets3d = (points_3d[:, 0], points_3d[:, 1], points_3d[:, 2])
-                scat2._offsets3d = (points_3d[:, 0], points_3d[:, 1], points_3d[:, 2])
+                scat._offsets3d = (points_3d[:, 0], points_3d[:, 1] * self.sigma_multiplier, points_3d[:, 2])
+                scat2._offsets3d = (points_3d[:, 0], points_3d[:, 1] * self.sigma_multiplier, points_3d[:, 2])
 
             else:
-                scat.set_offsets(points)
+                scat.set_offsets(points * [1,self.sigma_multiplier])
 
-            if save_snapshots:
-                fig.savefig("../../videos/" + str(num) + ".pdf")
+            if save_location:
+                fig.savefig("../../" + save_location + "/" + str(num) + ".pdf")
 
         anim = FuncAnimation(
             fig,
             update,
-            fargs=(scat, scat2, iterates, show_costs, ax, save_snapshots),
+            fargs=(scat, scat2, iterates, show_costs, ax, save_location),
             frames=len(iterates),
             interval=100,
             repeat=True,
         )
         return anim
 
-    def visualize_predicted_acceleration(self, iterate):
-        fig, ax = plt.subplots(3)
+    def visualize_predicted_acceleration(self, iterate,save_location = False):
+        font = {'weight' : 'bold',
+                'size'   : 12}
+        
+        matplotlib.rc('font', **font)
+        
+        
+        fig, ax = plt.subplots(3,1,figsize=(10, 6))
         object_properties = self.get_object_properties(
             self.make_tensor(iterate), library=torch
         )
@@ -447,7 +465,11 @@ class RadiusSysid(Problem):
             ax[fig_index].plot(
                 modeled_accelerations[acceleration_index], label="predicted"
             )
-            ax[fig_index].legend()
+            if not save_location:
+                ax[fig_index].legend()
+        if save_location:
+            fig.savefig("../../" + save_location + "/accel.pdf")
+
 
     def visualize_uncertainty(self, x, multiplier=1, circles=1):
         fig = plt.figure(figsize=(10, 10))
@@ -562,7 +584,7 @@ class MassOnlySysid(SeperateRadiusSysid):
         self.min_bounds[2] = 0
         self.min_bounds[3] = 0
 
-        self.max_bounds[0] = 1.5
+        self.max_bounds[0] = 0.15
         self.max_bounds[1] = 0.003
         self.max_bounds[2] = 1e-2
         self.max_bounds[3] = 1e1
