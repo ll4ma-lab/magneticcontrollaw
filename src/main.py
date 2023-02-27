@@ -38,7 +38,7 @@ from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID
 
 if __name__ == "__main__":
 
-    use_special_case_solver = False
+    use_special_case_solver = True
     use_sphere = True
     cheat = False
 
