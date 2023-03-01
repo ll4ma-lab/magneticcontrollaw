@@ -36,7 +36,9 @@ class SpaceEnvironments(Enum):
 
 
 class PlanarProblem:
-    def __init__(self, challenge_id=0):
+    def __init__(
+        self, challenge_id=PlanarEnvironments.ROTATE_IN_PLACE, square_radius=0.075
+    ):
         self.trajectory_dimensions = "xyt"
         width = 0.38
         length = 0.62
@@ -72,7 +74,6 @@ class PlanarProblem:
         self.tolerances = (linear_tolerance, rotational_tolerance)
 
         self.start_state = np.zeros((12, 1))
-        square_radius = 0.075
         if challenge_id == PlanarEnvironments.LINE:  # line
             self.true_desired_state = np.zeros((12, 2))
             self.true_desired_state[:3, 0] = [square_radius, -square_radius, 0]
@@ -474,8 +475,12 @@ class SpaceProblem:
             self.desired_state = self.true_desired_state
             self.times = [600]
         if challenge_id == SpaceEnvironments.CUBE:  # floating square
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.magnets[0][1] += 1e-15
+            self.magnets[1][1] += 1e-15
+
             self.true_desired_state = np.zeros((12, 9))
-            r = 0.075
+            r = 0.025
             self.true_desired_state[:3, 0] = [r, -r, -r]
             self.true_desired_state[:3, 1] = [-r, -r, -r]
             self.true_desired_state[:3, 2] = [-r, r, -r]
@@ -489,7 +494,7 @@ class SpaceProblem:
             self.true_desired_state[:3, 8] = [r, -r, -r]
 
             self.desired_state = self.true_desired_state
-            self.times = [300] * self.desired_state.shape[1]
+            self.times = [50] * self.desired_state.shape[1]
         if challenge_id == SpaceEnvironments.CUBE_ROTATE:  # floating square
             self.true_desired_state = np.zeros((12, 18))
             r = 0.075

@@ -41,9 +41,7 @@ from solvers.modelOptimization import MultiMagSolver
 
 def optimize(decisionVariable):
     solver = NewtonMethod(alpha, rho, prob, c1=c1, FP_PRECISION=FP_PRECISION)
-    result = solver.optimize(
-        decisionVariable, max_iterations=max_iterations
-    )
+    result = solver.optimize(decisionVariable, max_iterations=max_iterations)
     return result
 
 
@@ -65,7 +63,7 @@ radius = 0.02
 mass, MOI = compute_sphere_properties(8940, radius)
 object_properties = ObjectProperties(
     mass=mass, MOI=MOI, radius=radius, sigma=sigma_copper
- )
+)
 
 
 optimizerParams = {
@@ -116,11 +114,11 @@ def fixmaxDegree(angles):
 BRUTEFORCECOLOR = False
 if __name__ == "__main__":
     builder = MultiMagSolver(
-         model=model,
-         state_cost_string=env.trajectory_dimensions,
-         object_properties=object_properties,
-         sphere_model=True,
-     )
+        model=model,
+        state_cost_string=env.trajectory_dimensions,
+        object_properties=object_properties,
+        sphere_model=True,
+    )
 
     for _ in range(100):
         np.random.seed(_)
@@ -151,7 +149,7 @@ if __name__ == "__main__":
 
         # print(solution,cost,converged,iterates.shape)
 
-        strength = np.linspace(0,40,21)
+        strength = np.linspace(0, 40, 21)
         psis = np.linspace(-180, 180, 91)
         xis = np.linspace(-180, 180, 91)
         xx, yy, zz = np.meshgrid(strength, psis, xis)
@@ -219,8 +217,8 @@ if __name__ == "__main__":
             " ratio ",
             result2.cost / costs[bestarg],
         )
-        print('')
-        print('')
+        print("")
+        print("")
         # if(cost2/costs[bestarg] >1 and cost/costs[bestarg] >1):
         #     for params in [(90,90),(45,45),(45,0),(0,45),(90,0),(0,90),(180,0),(0,180)]:
         #         solution3, cost3, converged3, iterates3 = optimizer.optimize(np.array([20,params[0],params[1]]).reshape((3,1)))
@@ -247,7 +245,7 @@ if __name__ == "__main__":
                 fig = plt.figure(figsize=(10, 10))
                 ax = fig.add_subplot(projection="3d")
 
-                fig.suptitle(str(streng) +' dipole', fontsize=16)
+                fig.suptitle(str(streng) + " dipole", fontsize=16)
 
                 ax.scatter(
                     y[indices], z[indices], npCosts[indices], s=1, c=npc[indices]
@@ -286,12 +284,16 @@ if __name__ == "__main__":
 
         # print('elapsed time ',time.time()-s)
 
-        producedControl = SphereControlCommand(0, result.solution[0, 0], result.solution[1, 0], result.solution[2, 0])
+        producedControl = SphereControlCommand(
+            0, result.solution[0, 0], result.solution[1, 0], result.solution[2, 0]
+        )
         bestWrench = model.forward_pass(np.zeros((3, 1)), producedControl)
         # print(bestWrench)
         # print(desired_wrench)
 
-        producedControl2 = SphereControlCommand(0, result2.solution[0, 0], result2.solution[1, 0], result2.solution[2, 0])
+        producedControl2 = SphereControlCommand(
+            0, result2.solution[0, 0], result2.solution[1, 0], result2.solution[2, 0]
+        )
         bestWrench2 = model.forward_pass(np.zeros((3, 1)), producedControl2)
         # print(bestWrench2)
         break

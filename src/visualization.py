@@ -194,7 +194,7 @@ def animate_2d_path(
     )
     ax.set_title(name)
 
-    save_plot_steps = save_plot_steps.copy()
+    save_plot_steps = save_plot_steps.copy() if save else []
 
     def update_lines(
         num, positions, transforms, controls, traj_plot, scatter, lines, cubes
@@ -224,7 +224,7 @@ def animate_2d_path(
             save_plot_steps.remove(
                 seconds
             )  # dont keep doing this and save every loop through animation forever
-            plt.savefig("../videos/" + str(seconds) + ".pdf")
+            fig.savefig("../videos/" + str(seconds) + ".pdf")
         return traj_plot, scatter, lines
 
     traj_plot = ax.plot(

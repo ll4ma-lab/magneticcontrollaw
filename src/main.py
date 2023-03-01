@@ -82,7 +82,7 @@ if __name__ == "__main__":
     boat_mass, boat_moi = compute_boat_properties(0.059, 0.075, 0.07, 0.031)
     boat_properties = ObjectProperties(mass=boat_mass, MOI=boat_moi)
 
-    adaptive_model = MassSysID
+    adaptive_model = RadiusSysid
 
     if simulate_boat:
         object_properties = object_properties + boat_properties
