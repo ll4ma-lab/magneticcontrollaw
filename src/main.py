@@ -52,11 +52,11 @@ if __name__ == "__main__":
     vel_noise = False
     control_noise = False
 
-    env = SpaceProblem(SpaceEnvironments.CUBE)
+    env = SpaceProblem(SpaceEnvironments.BACKANDFORTH)
     env.magnets = env.magnets[:]
     env.trajectory_dimensions = 'xyz'
 
-    sim_time = 269#np.sum(env.times)
+    sim_time = np.sum(env.times)
 
     sigma_copper = 5.87e07
     sigma_al = 3.77e07
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     if inverse_dynamics:
         controller = PDController(env.start_state, 0.12, 0.004, 0.12, 0.004, 0, 0)
     elif use_special_case_solver:
-        controller = PDController(env.start_state, .0007, 0.000, 0.03, 0.0, 0.0, 0.0)
+        controller = PDController(env.start_state, .0005, 0.000, 0.036, 0.0, 0.0, 0.0)
     else:
         controller = PDController(
             env.start_state, 0.007, 0.000001, 0.03, 0.000002, 0.0, 0.000
@@ -189,7 +189,7 @@ if __name__ == "__main__":
         controls,
         name="",
         save_plot_steps=velocity_profile.switching_times,
-        save=False,
+        save=True,
     )
     npdesired_states = np.array(desired_states)
 

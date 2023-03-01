@@ -416,8 +416,8 @@ class SpaceProblem:
 
         magnets = np.array(
             [
-                (0.15, 0.00, 0),
-                (-0.15, 0.0, 0),
+                (0.195, 0.00, 0),
+                (-0.195, 0.0, 0),
                 (0.00, 0.150, 0.0),
                 (0.00, -0.150, 0.0),
                 (1e-10, 0.000, 0.15),
@@ -492,7 +492,7 @@ class SpaceProblem:
             self.true_desired_state[:3, 8] = [r, -r, -r]
 
             self.desired_state = self.true_desired_state
-            self.times = [300] * self.desired_state.shape[1]
+            self.times = [200] * self.desired_state.shape[1]
         if challenge_id == SpaceEnvironments.CUBE_ROTATE:  # floating square
             self.true_desired_state = np.zeros((12, 18))
             r = 0.075
@@ -580,39 +580,21 @@ class SpaceProblem:
             self.magnets[0][1] += 1e-15
             self.magnets[1][1] += 1e-15
 
-            self.true_desired_state = np.zeros((12, 8))
+            self.true_desired_state = np.zeros((12, 3))
 
-            self.true_desired_state[0, 0] = 0.025
-            self.true_desired_state[1, 0] = 0.025
-            self.true_desired_state[2, 0] = 0.025
+            self.true_desired_state[0, 0] = 0.05
+            self.true_desired_state[1, 0] = 0.0
+            self.true_desired_state[2, 0] = 0.0
 
-            self.true_desired_state[0, 1] = 0.025
-            self.true_desired_state[1, 1] = 0.025
-            self.true_desired_state[2, 1] = -0.025
+            self.true_desired_state[0, 1] = -0.05
+            self.true_desired_state[1, 1] = 0.0
+            self.true_desired_state[2, 1] = 0.0
 
-            self.true_desired_state[0, 2] = 0.025
-            self.true_desired_state[1, 2] = -0.025
-            self.true_desired_state[2, 2] = -0.025
+            self.true_desired_state[0, 2] = 0.0
+            self.true_desired_state[1, 2] = 0.0
+            self.true_desired_state[2, 2] = 0.0
 
-            self.true_desired_state[0, 3] = 0.025
-            self.true_desired_state[1, 3] = -0.025
-            self.true_desired_state[2, 3] = 0.025
 
-            self.true_desired_state[0, 4] = -0.025
-            self.true_desired_state[1, 4] = -0.025
-            self.true_desired_state[2, 4] = 0.025
-
-            self.true_desired_state[0, 5] = -0.025
-            self.true_desired_state[1, 5] = -0.025
-            self.true_desired_state[2, 5] = -0.025
-
-            self.true_desired_state[0, 6] = -0.025
-            self.true_desired_state[1, 6] = 0.025
-            self.true_desired_state[2, 6] = -0.025
-
-            self.true_desired_state[0, 7] = -0.025
-            self.true_desired_state[1, 7] = 0.025
-            self.true_desired_state[2, 7] = 0.025
 
             self.desired_state = self.true_desired_state
             self.times = [100] * self.desired_state.shape[1]

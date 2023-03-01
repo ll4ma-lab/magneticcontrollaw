@@ -358,13 +358,13 @@ class DevinSolver2:
 
             actual_wrench = np.zeros((6, 1))
 
-            print("")
-            print("")
-            print("Times")
-            print(self.t1)
-            print(self.t2)
-            print("")
-            print("")
+            #print("")
+            #print("")
+            #print("Times")
+            #print(self.t1)
+            #print(self.t2)
+            #print("")
+            #print("")
 
             for i in range(len(self.model.magnets)):
                 angles = deconstruct_omega(self.omegas[i])
@@ -385,13 +385,13 @@ class DevinSolver2:
                 #)
                 # print(F*self.duty_time,T*self.duty_time)
                 self.controls.append(control)
-            print("")
-            print("")
-            print(actual_wrench / 2)
-            print(desired_wrench)
+            #print("")
+            #print("")
+            #print(actual_wrench / 2)
+            #print(desired_wrench)
 
-            print("")
-            print("")
+            #print("")
+            #print("")
 
         control = self.controls[model_id]
 
