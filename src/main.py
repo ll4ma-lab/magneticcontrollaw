@@ -56,16 +56,17 @@ if __name__ == "__main__":
     env.magnets = env.magnets[:]
     env.trajectory_dimensions = 'xyz'
 
-    sim_time = np.sum(env.times)
+    sim_time = 269#np.sum(env.times)
 
     sigma_copper = 5.87e07
     sigma_al = 3.77e07
 
     # simulator object
     radius = 0.02
-    mass, MOI = compute_sphere_properties(8940, radius)
+    #mass, MOI = compute_sphere_properties(8940, radius)
+    mass, MOI = compute_sphere_properties(2710, radius)
     object_properties = ObjectProperties(
-        mass=mass, MOI=MOI, radius=radius, sigma=sigma_copper
+        mass=mass, MOI=MOI, radius=radius, sigma=sigma_al
     )
 
     # controller object
@@ -75,7 +76,7 @@ if __name__ == "__main__":
         mass=mass_initial,
         MOI=moi_initial,
         radius=initial_radius_guess,
-        sigma=sigma_copper,
+        sigma=sigma_al,
     )
 
     # boat object
@@ -101,7 +102,7 @@ if __name__ == "__main__":
 
     if use_special_case_solver:
         solver = AxisAlignedSolver(solver_model, env.trajectory_dimensions)
-        solver = DevinSolver2(solver_model)
+        solver = DevinSolver(solver_model)
     else:
         solver = MultiMagSolver(
             model=solver_model,

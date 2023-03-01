@@ -95,7 +95,7 @@ def simulate_experiment(
         else:
             control = solver.solve_wrench(state[0][:3, 3], desired_wrench)
             true_wrench = model.forward_pass(state[0][:3, 3], control)
-            true_wrench[3:] *= 0
+            #true_wrench[3:]=0
             wrench_error = true_wrench - desired_wrench
             cost = np.sum((wrench_error[:3, :] ** 2)) + 200 * np.sum(
                 (wrench_error[3:, :] ** 2)
