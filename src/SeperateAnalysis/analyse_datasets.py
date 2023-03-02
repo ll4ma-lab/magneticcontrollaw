@@ -30,25 +30,11 @@ def rms(error, axis=None):
     return np.sqrt(np.mean(error**2, axis=axis))
 
 
-# folder = 'nature'
-# folder = 'double_cube'
-# folder = 'base_real'
-# folder= 'U'
-# folder = 'cuboid'
-# folder = 'copper_sphere'
-# folder = 'no_orientation'
-folder = "cylinder"
-# folder = 'aluminum_sphere'
-# folder = 'copper_sphere_lower_lower_bounds'
-# folder = 'copper_half_conductivity'
-# folder = 'copper_double_conductivity'
-# folder = 'copper_half_both'
-# folder = 'copper_larger_radius'
-# folder = 'copper_double_both'
-# folder = 'square'
-# folder = 'different_radius'
-# mypath = "/media/tabor/Storage/experiments/" + folder + "/"
-mypath = "/media/tabor/Storage/new_experiments/" + folder + "/"
+folder = 'aluminum_sphere_prior'
+mypath = "/home/tabor/IJRR/" + folder + "/"
+
+
+
 onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
 
 PositionErrors = []
@@ -87,38 +73,39 @@ for fileName in onlyfiles:
             dataloader.load((mypath + fileName)[:-4], globals())
 
         print(fileName)
-        if "useSphere" in globals():
-            from se3Utils import build_skew, build_tf, matrixLog, skewToVector
+        if "use_sphere" in globals():
+            from se3Utils import build_skew, build_tf, matrix_log, skew_to_vector
 
             errors = []
-            # numSteps = 2000
+            num_steps = i
+            print(i)
             positions = []
-            for k in range(numSteps):
-                desired = desiredStates[k + (len(states) - numSteps)]
-                current = states[k + (len(states) - numSteps)]
+            for k in range(i):
+                desired = desired_states[k + (len(states) - num_steps)]
+                current = states[k + (len(states) - num_steps)]
                 currentTF = current[0]
                 positions.append(currentTF[:3, 3])
                 desiredTF = build_tf(desired[:3, 0], desired[3:6, 0])
-                positionError = controller.computeError(currentTF, desiredTF)
-                rotVelError = desired[6:9] - np.dot(currentTF[:3, :3], current[1])
-                linearVelError = desired[6:9] - np.dot(currentTF[:3, :3], current[2])
+                positionError = controller.compute_error(currentTF, desiredTF)
+                rotVelError = desired[9:12] - currentTF[:3, :3] @ current[1]
+                linearVelError = desired[6:9] - currentTF[:3, :3] @ current[2]
                 velError = np.concatenate((linearVelError, rotVelError), 0)
                 errors.append(np.concatenate((positionError, velError)))
             error = np.array(errors)
 
             npStates = np.array(positions)
-            npdesiredStates = np.array(desiredStates)
+            npdesired_states = np.array(desired_states)
 
             npStates[:, 1] *= -1  # flip y to make plots z down
-            npdesiredStates[:, 1] *= -1
+            npdesired_states[:, 1] *= -1
             allStates.append(npStates.T)
 
             fig.axes[0].plot(npStates[:, 0], npStates[:, 1], c=Lanc1, alpha=0.5)
 
-            if runAdaptive:
-                # first parameter was held until 1/2 batch size(25)
+            if run_adaptive:
+                # first parameter was held until batch size(25) +5
                 adaptive_parameters = np.array(
-                    [adaptive.parameters[0]] * 12 + adaptive.parameters
+                    [adaptive.parameters[0]] * 30 + adaptive.parameters
                 )
                 all_adaptive_params.append(adaptive_parameters)
                 # parameter_ax[0].plot(adaptive_parameters[:,0],'k',alpha=0.6)
@@ -126,15 +113,15 @@ for fileName in onlyfiles:
                 print(adaptive_parameters.shape)
         else:
 
-            npdesiredStates = np.array(desiredStates)
+            npdesired_states = np.array(desired_states)
             npStates = np.array(states)
             npStates[:, 1, :] *= -1  # flip y to make plots z down
-            npdesiredStates[:, 1, :] *= -1
+            npdesired_states[:, 1, :] *= -1
 
             allStates.append(npStates)
             fig.axes[0].plot(npStates[:, 0, 0], npStates[:, 1, 0], "k", alpha=0.5)
 
-            error = npdesiredStates - npStates
+            error = npdesired_states - npStates
 
         sqError = np.power(error, 2)
         absError = np.abs(error)
@@ -158,7 +145,7 @@ parameter_ax[0].set_ylabel("Radius (m)")
 parameter_ax[1].set_ylabel("Conductivity")
 
 
-if runAdaptive:
+if False:
     np_adaptive_params = np.array(all_adaptive_params)
     average_params = np.mean(np_adaptive_params, 0)
     std_params = np.std(np_adaptive_params, 0)
@@ -257,26 +244,26 @@ print(
 )
 
 
-# fig.axes[0].plot(npdesiredStates[240:,0,0],npdesiredStates[240:,1,0],color=Lanc1,linewidth=4)
+# fig.axes[0].plot(npdesired_states[240:,0,0],npdesired_states[240:,1,0],color=Lanc1,linewidth=4)
 fig.axes[0].tick_params(axis="both", which="major", labelsize=20)
 fig.axes[0].tick_params(axis="both", which="minor", labelsize=20)
 
 
 npAllStates = np.array(allStates).squeeze()
-if "useSphere" in globals():
+if "use_sphere" in globals():
     npAllStates = np.transpose(npAllStates, (0, 2, 1))
 averagedStates = np.average(npAllStates, 0)
 
 npAllStates[:, :, [0, 1]] *= 1000
 
 print(npAllStates.shape)
-npAllCov = np.zeros((6, 6, numSteps))
+npAllCov = np.zeros((6, 6, num_steps))
 
-npPrecisionValues = np.zeros((4, numSteps))
+npPrecisionValues = np.zeros((4, num_steps))
 
 multiplier = 5.991
 ellipseDataset = []
-for i in range(numSteps):
+for i in range(num_steps):
 
     properData = np.transpose(npAllStates[:, i, [0, 1]])
     npAllCov[:2, :2, i] = np.cov(properData)
@@ -302,7 +289,7 @@ for i in range(numSteps):
         angle=angle,
     )
     if i > 240:
-        desired = [npdesiredStates[i, 0, 0], npdesiredStates[i, 1, 0]]
+        desired = [npdesired_states[i, 0, 0], npdesired_states[i, 1, 0]]
     else:
         desired = [0, 0]
 
