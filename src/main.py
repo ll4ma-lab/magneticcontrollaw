@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
     if use_special_case_solver:
         solver = AxisAlignedSolver(solver_model, env.trajectory_dimensions)
-        solver = DevinSolver(solver_model)
+        solver = DevinSolver2(solver_model)
     else:
         solver = MultiMagSolver(
             model=solver_model,
@@ -189,7 +189,7 @@ if __name__ == "__main__":
         controls,
         name="",
         save_plot_steps=velocity_profile.switching_times,
-        save=True,
+        save=False
     )
     npdesired_states = np.array(desired_states)
 

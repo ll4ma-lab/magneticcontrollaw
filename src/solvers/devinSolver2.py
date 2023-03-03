@@ -380,9 +380,9 @@ class DevinSolver2:
                 else:
                     control.seconds = self.t2 * self.duty_time
 
-                #actual_wrench += (
-                #    self.model.forwardSphere(position, control) * control.seconds
-                #)
+                actual_wrench += (
+                    self.model.forwardSphere(position, control) * control.seconds
+                )
                 # print(F*self.duty_time,T*self.duty_time)
                 self.controls.append(control)
             #print("")

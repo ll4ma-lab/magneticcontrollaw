@@ -577,16 +577,15 @@ class SpaceProblem:
 
         if challenge_id == SpaceEnvironments.BACKANDFORTH:  # individual axis
             self.magnets = [self.magnets[i] for i in [0, 1]]
-            self.magnets[0][1] += 1e-15
-            self.magnets[1][1] += 1e-15
+
 
             self.true_desired_state = np.zeros((12, 3))
 
-            self.true_desired_state[0, 0] = 0.05
+            self.true_desired_state[0, 0] = 0.075
             self.true_desired_state[1, 0] = 0.0
             self.true_desired_state[2, 0] = 0.0
 
-            self.true_desired_state[0, 1] = -0.05
+            self.true_desired_state[0, 1] = -0.075
             self.true_desired_state[1, 1] = 0.0
             self.true_desired_state[2, 1] = 0.0
 
