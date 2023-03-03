@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
     if use_special_case_solver:
         solver = AxisAlignedSolver(solver_model, env.trajectory_dimensions)
-        solver = DevinSolver2(solver_model)
+        solver = DevinSolver(solver_model)
     else:
         solver = MultiMagSolver(
             model=solver_model,

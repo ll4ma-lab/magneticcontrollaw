@@ -14,6 +14,7 @@ class DevinSolver:
         self.model = model
         self.count = 0
         self.time = 0
+        self.outcount = 0
 
         self.max_frequency = 15
         self.max_dipole_strength = 40
@@ -104,8 +105,8 @@ class DevinSolver:
         iphi1 = np.cross(w1hat, p1) / np.linalg.norm(np.cross(w1hat, p1))
         iphi2 = np.cross(w2hat, p2) / np.linalg.norm(np.cross(w2hat, p2))
         iphi3 = np.cross(w3hat, p3) / np.linalg.norm(np.cross(w3hat, p3))
-
         iphi3b = np.cross(w3bhat, p3) / np.linalg.norm(np.cross(w3bhat, p3))
+        
         itheta1 = np.cross(iphi1, ip1)
         itheta2 = np.cross(iphi2, ip2)
         itheta3 = np.cross(iphi3, ip3)
@@ -310,28 +311,54 @@ class DevinSolver:
     def solve_wrench(self, position, desired_wrench):
         start = time.time()
         model_id = self.count % (2 * len(self.model.magnets))
+        switcher_flag = self.count % 4
         self.count += 1
-        if model_id == 0:
-            (
-                F,
-                T,
-                w1,
-                w2,
-                w3,
-                w3b,
-                mag1,
-                mag2,
-                mag3,
-                mag4,
-                m1_set,
-                m2_set,
-                m3_set,
-                m3_set,
-                d_yz,
-                _,
-                d_x,
-                _,
-            ) = self.calculate_duty_cycling(position, desired_wrench)
+        if self.outcount % 2 == 0:
+            if model_id == 0:
+                (
+                    F,
+                    T,
+                    w1,
+                    w2,
+                    w3,
+                    w3b,
+                    mag1,
+                    mag2,
+                    mag3,
+                    mag4,
+                    m1_set,
+                    m2_set,
+                    m3_set,
+                    m3_set,
+                    d_yz,
+                    _,
+                    d_x,
+                    _,
+                ) = self.calculate_duty_cycling(position, desired_wrench)
+            else:
+                if model_id == 0:
+                    (
+                        F,
+                        T,
+                        w1,
+                        w2,
+                        w3b,
+                        w3,
+                        mag1,
+                        mag2,
+                        mag4,
+                        mag3,
+                        m1_set,
+                        m2_set,
+                        m3_set,
+                        m3_set,
+                        d_yz,
+                        _,
+                        d_x,
+                        _,
+                    ) = self.calculate_duty_cycling(position, desired_wrench)
+            if switcher_flag == 0:
+                self.outcount += 1
             # print(m1_set, m2_set, m3_set, m3_set, d_yz, d_x)
             mags = [mag1, mag2, mag3, mag4]
 
