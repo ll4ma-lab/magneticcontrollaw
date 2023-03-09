@@ -30,13 +30,14 @@ def rms(error, axis=None):
     return np.sqrt(np.mean(error**2, axis=axis))
 
 
-folder = 'aluminum_sphere_prior'
-mypath = "/home/tabor/IJRR/" + folder + "/"
+folder = 'omni_only_easy'
+parent_folder = "/home/tabor/IJRR/"
+mypath = parent_folder + folder + "/"
 
 
 
 onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
-
+full_trials_controls = []
 PositionErrors = []
 VelocityErrors = []
 orientationErrors = []
@@ -56,7 +57,7 @@ parameter_fig, parameter_ax = plt.subplots(
     (2), sharex=True, gridspec_kw={"height_ratios": [3, 1]}
 )
 
-name = "Paths " + folder
+name = "Paths_" + folder
 # fig.suptitle(name)
 
 for fileName in onlyfiles:
@@ -75,7 +76,7 @@ for fileName in onlyfiles:
         print(fileName)
         if "use_sphere" in globals():
             from se3Utils import build_skew, build_tf, matrix_log, skew_to_vector
-
+            full_trials_controls.extend(controls[-i:])
             errors = []
             num_steps = i
             print(i)
@@ -192,42 +193,42 @@ parameter_fig.tight_layout()
 
 print(
     "average position error "
-    + str(np.average(PositionErrors))
+    + str(np.average(np.concatenate(PositionErrors)))
     + " std "
-    + str(np.std(PositionErrors))
+    + str(np.std(np.concatenate(PositionErrors)))
     + " max "
-    + str(np.max(np.abs(PositionErrors)))
+    + str(np.max(np.abs(np.concatenate(PositionErrors))))
 )
 print(
     "average velocity error "
-    + str(np.average(VelocityErrors))
+    + str(np.average(np.concatenate(VelocityErrors)))
     + " std "
-    + str(np.std(VelocityErrors))
+    + str(np.std(np.concatenate(VelocityErrors)))
     + " max "
-    + str(np.max(np.abs(VelocityErrors)))
+    + str(np.max(np.abs(np.concatenate(VelocityErrors))))
 )
 print(
     "average orientation error "
-    + str(np.average(orientationErrors))
+    + str(np.average(np.concatenate(orientationErrors)))
     + " std "
-    + str(np.std(orientationErrors))
+    + str(np.std(np.concatenate(orientationErrors)))
     + " max "
-    + str(np.max(np.abs(orientationErrors)))
+    + str(np.max(np.abs(np.concatenate(orientationErrors))))
 )
 print(
     "average orientation velocity error "
-    + str(np.average(rotationalVelocityErrors))
+    + str(np.average(np.concatenate(rotationalVelocityErrors)))
     + " std "
-    + str(np.std(rotationalVelocityErrors))
+    + str(np.std(np.concatenate(rotationalVelocityErrors)))
     + " max "
-    + str(np.max(np.abs(rotationalVelocityErrors)))
+    + str(np.max(np.abs(np.concatenate(rotationalVelocityErrors))))
 )
 
 print(
     "RMS position "
-    + str(rms(np.array(PositionErrors)))
+    + str(rms(np.array(np.concatenate(PositionErrors))))
     + " RMS orientation "
-    + str(rms(np.array(orientationErrors)))
+    + str(rms(np.array(np.concatenate(orientationErrors))))
 )
 print(
     "RMS position "
@@ -248,85 +249,91 @@ print(
 fig.axes[0].tick_params(axis="both", which="major", labelsize=20)
 fig.axes[0].tick_params(axis="both", which="minor", labelsize=20)
 
+successful_length = np.min([state.shape[1] for state in allStates])
 
-npAllStates = np.array(allStates).squeeze()
-if "use_sphere" in globals():
-    npAllStates = np.transpose(npAllStates, (0, 2, 1))
-averagedStates = np.average(npAllStates, 0)
 
-npAllStates[:, :, [0, 1]] *= 1000
+npAllStates = np.array([states[:,:successful_length] for states in allStates]).squeeze()
 
-print(npAllStates.shape)
-npAllCov = np.zeros((6, 6, num_steps))
+if len(allStates) > 1:
 
-npPrecisionValues = np.zeros((4, num_steps))
-
-multiplier = 5.991
-ellipseDataset = []
-for i in range(num_steps):
-
-    properData = np.transpose(npAllStates[:, i, [0, 1]])
-    npAllCov[:2, :2, i] = np.cov(properData)
-
-    detPartialCov = np.linalg.det(np.cov(properData[:2, :]))
-    detPartialCovVel = np.linalg.det(np.cov(properData[3:5, :]))
-
-    eigval, eigvec = np.linalg.eig(npAllCov[:2, :2, i])
-
-    maxIndex = np.argmax(abs(eigval))  # cant remember if eigvals are always positive
-    angle = np.rad2deg(np.arctan2(eigvec[1, maxIndex], eigvec[0, maxIndex]))
-    width = (
-        np.sqrt(multiplier * eigval[maxIndex]) * 2 / 1000
-    )  # large axis   * numberSTDs * 2(radius to diamter) * m/mm
-    height = (
-        np.sqrt(multiplier * eigval[maxIndex - 1]) * 2 / 1000
-    )  # small axis   * numberSTDs * 2(radius to diamter) * m/mm
-    # print(width,stdStates[i,0,0]*multiplier*2)
-    ells = Ellipse(
-        xy=averagedStates[i, :2],
-        width=width,
-        height=height,  # 2x to get to radius from diameter
-        angle=angle,
-    )
-    if i > 240:
-        desired = [npdesired_states[i, 0, 0], npdesired_states[i, 1, 0]]
-    else:
-        desired = [0, 0]
-
-    trials_data = np.concatenate(
-        [
-            [npAllStates[k, i, 0], npAllStates[k, i, 1]]
-            for k in range(npAllStates.shape[0])
+    if "use_sphere" in globals():
+        npAllStates = np.transpose(npAllStates, (0, 2, 1))
+    averagedStates = np.average(npAllStates, 0)
+    
+    npAllStates[:, :, [0, 1]] *= 1000
+    
+    print(npAllStates.shape)
+    npAllCov = np.zeros((6, 6, num_steps))
+    
+    npPrecisionValues = np.zeros((4, num_steps))
+    
+    multiplier = 5.991
+    ellipseDataset = []
+    for i in range(successful_length):
+    
+        properData = np.transpose(npAllStates[:, i, [0, 1]])
+        npAllCov[:2, :2, i] = np.cov(properData)
+    
+        detPartialCov = np.linalg.det(np.cov(properData[:2, :]))
+        detPartialCovVel = np.linalg.det(np.cov(properData[3:5, :]))
+    
+        eigval, eigvec = np.linalg.eig(npAllCov[:2, :2, i])
+    
+        maxIndex = np.argmax(abs(eigval))  # cant remember if eigvals are always positive
+        angle = np.rad2deg(np.arctan2(eigvec[1, maxIndex], eigvec[0, maxIndex]))
+        width = (
+            np.sqrt(multiplier * eigval[maxIndex]) * 2 / 1000
+        )  # large axis   * numberSTDs * 2(radius to diamter) * m/mm
+        height = (
+            np.sqrt(multiplier * eigval[maxIndex - 1]) * 2 / 1000
+        )  # small axis   * numberSTDs * 2(radius to diamter) * m/mm
+        # print(width,stdStates[i,0,0]*multiplier*2)
+        ells = Ellipse(
+            xy=averagedStates[i, :2],
+            width=width,
+            height=height,  # 2x to get to radius from diameter
+            angle=angle,
+        )
+        if i > 240:
+            desired = [npdesired_states[i, 0, 0], npdesired_states[i, 1, 0]]
+        else:
+            desired = [0, 0]
+    
+        trials_data = np.concatenate(
+            [
+                [npAllStates[k, i, 0], npAllStates[k, i, 1]]
+                for k in range(npAllStates.shape[0])
+            ]
+        ).tolist()
+        # print(trials_data)
+        ellipseDatum = [
+            averagedStates[i, 0],
+            averagedStates[i, 1],
+            desired[0],
+            desired[1],
+            width,
+            height,
+            angle,
         ]
-    ).tolist()
-    # print(trials_data)
-    ellipseDatum = [
-        averagedStates[i, 0],
-        averagedStates[i, 1],
-        desired[0],
-        desired[1],
-        width,
-        height,
-        angle,
-    ]
-    ellipseDataset.append(trials_data + ellipseDatum[:7])
-    fig.axes[0].add_artist(ells)
-    ells.set_alpha(1)
-    ells.set_facecolor(Lanc2)
-    ells.set_clip_box(fig.axes[0].bbox)
+        ellipseDataset.append(trials_data + ellipseDatum[:7])
+        fig.axes[0].add_artist(ells)
+        ells.set_alpha(1)
+        ells.set_facecolor(Lanc2)
+        ells.set_clip_box(fig.axes[0].bbox)
 
 num = 5
 width = 0.1
 
 fig.axes[0].set_xticks(np.linspace(-width, width, num))
 fig.axes[0].set_yticks(np.linspace(-width, width, num))
-
+fig.axes[0].set_xlim(-width,width)
+fig.axes[0].set_ylim(-width,width)
 
 fig.set_size_inches(8, 8)
 fig.axes[0].set_aspect("equal")
 print("showing")
 plt.show()
-fig.savefig(name + ".pdf")
+fig.savefig(parent_folder + name + ".pdf")
 header = []
 for i in range(5):
     header.append("x_trial_" + str(i))
