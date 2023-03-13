@@ -52,7 +52,7 @@ if __name__ == "__main__":
     vel_noise = False
     control_noise = False
 
-    env = SpaceProblem(SpaceEnvironments.BACKANDFORTH)
+    env = SpaceProblem(SpaceEnvironments.CUBE)
     env.magnets = env.magnets[:]
     env.trajectory_dimensions = 'xyz'
 
