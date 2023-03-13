@@ -73,12 +73,38 @@ ax2.set_yticks(remap(np.array([sigma for sigma in label_sigmas])))
 ax2.set_yticklabels(["{:.1e}".format(sigma) for sigma in label_sigmas])
 
 
-
 #ax2.set_ylim(0,pixel_height)
-fig.set_figheight(4)
+fig.set_figheight(4.0)
 fig.set_figwidth(2.0)
 
 fig.tight_layout()
 fig.show()
-fig.savefig('colormap.pdf')
+fig.savefig('colormap_vertical.pdf')
 
+
+fig, ax1 = plt.subplots( )
+ax1.set_xlim(0,pixel_height)
+
+ax2 = ax1.twiny()
+
+ax1.imshow(Y.T,cmap=newcmp,origin='lower',aspect='auto')
+ax2.imshow(Y.T,cmap=newcmp,origin='lower',aspect='auto')
+ax1.plot(np.linspace(0,width,9))
+
+ax1.set_yticks([])
+ax2.set_yticks([])
+
+ax2.set_xticks(remap(np.array([sigma[1] for sigma in important_sigmas])))
+ax2.set_xticklabels([sigma[0] for sigma in important_sigmas],rotation=45,ha='left')
+
+ax1.set_xticks(remap(np.array([sigma for sigma in label_sigmas])))
+ax1.set_xticklabels(["{:.1e}".format(sigma) for sigma in label_sigmas],rotation=-45,ha='left')
+
+
+#ax2.set_ylim(0,pixel_height)
+fig.set_figheight(1.8)
+fig.set_figwidth(4.0)
+
+fig.tight_layout()
+fig.show()
+fig.savefig('colormap_horizontal.pdf')
