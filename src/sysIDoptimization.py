@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import matplotlib
 from ll4ma_opt.solvers.line_search import NewtonMethod
-
+from visualization import Lanc1,Lanc2,Lanc3
 
 class RadiusSysid(Problem):
     def __init__(
@@ -435,12 +435,16 @@ class RadiusSysid(Problem):
         )
         return anim
 
-    def visualize_predicted_acceleration(self, iterate, save_location=False):
+    def visualize_predicted_acceleration(self, iterate,start=0,end=-1,show_measured=True,save_location = False):
+        font = {'weight' : 'bold',
+                'size'   : 12}
+        
+        matplotlib.rc('font', **font)
+        
+        
+        fig, ax = plt.subplots(3,1,figsize=(5, 5),sharex=True)
         font = {"weight": "bold", "size": 12}
-
         matplotlib.rc("font", **font)
-
-        fig, ax = plt.subplots(3, 1, figsize=(10, 6))
         object_properties = self.get_object_properties(
             self.make_tensor(iterate), library=torch
         )
@@ -453,16 +457,15 @@ class RadiusSysid(Problem):
             self.rhos,
             self.zero,
         )
-        fig.suptitle("Modeled vs Measured Accelerations")
+        fig.suptitle("Acceleration Fit")
 
-        titles = ["x", "y", "θ"]
-
+        titles = ["X", "Y", "θ"]
         for fig_index, acceleration_index in enumerate([0, 1, 5]):
             ax[fig_index].set_title(titles[fig_index])
 
             measured_acceleration = self.accelerations[acceleration_index].numpy()
-
-            ax[fig_index].plot(measured_acceleration, label="measured")
+            if show_measured:
+                ax[fig_index].plot(measured_acceleration[start:end], label="measured")
 
             smoothing_factor = 10
             smoothed_acceleration = np.convolve(
@@ -470,17 +473,22 @@ class RadiusSysid(Problem):
                 np.ones((smoothing_factor,)) / smoothing_factor,
                 mode="same",
             )
-            ax[fig_index].plot(
-                smoothed_acceleration, label="smooth measured", linestyle="--"
+            smooth_line = ax[fig_index].plot(
+                smoothed_acceleration[start:end], label="smooth measured", linestyle="--", c=Lanc1, linewidth=3
             )
 
-            ax[fig_index].plot(
-                modeled_accelerations[acceleration_index], label="predicted"
+            predicted_line = ax[fig_index].plot(
+                modeled_accelerations[acceleration_index][start:end], label="predicted",c=Lanc3, linewidth=3
             )
-            if not save_location:
-                ax[fig_index].legend()
+            ax[fig_index].ticklabel_format(style='sci',scilimits=(0,5))
+
+           # if not fig_index:
+          #      ax[fig_index].legend(loc="upper right")
+        fig.legend([smooth_line[0],predicted_line[0]],['Measured','Predicted'])
+        fig.tight_layout()
         if save_location:
             fig.savefig("../../" + save_location + "/accel.pdf")
+            
 
     def visualize_uncertainty(self, x, multiplier=1, circles=1):
         fig = plt.figure(figsize=(10, 10))
