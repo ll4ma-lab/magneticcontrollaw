@@ -158,9 +158,33 @@ results.append(
         [0.019671835612115718, 0.04409474238596917, 0.04057560214307449],
     ]
 )
+results.append(
+    [
+        "Alum structure modified",
+        [0.0012833658649873429],
+        [0.15155496260999268],
+    ]
+)
+results.append(
+    [
+        "Alum box strongly initialized",
+        [0.0004425410927559336],
+        [0.009352275079602448],
+    ]
+)
+
+mode = 'additional_experiments'
+
+if mode == 'sphere':
+    results = results[:8]
+elif mode == 'nonsphere':
+    results = results[8:16]
+elif mode == 'additional_experiments':
+    results = [results[index] for index in [10,11,13,16,17,18]]
 
 
-results = results[:7]
+
+
 names = [result[0] for result in results]
 position_errors = np.array([np.median(result[1]) for result in results]) * 1000
 position_errors_max = (
@@ -260,5 +284,6 @@ ax2.set_ylabel(
 ax.set_xticks([r + barWidth / 2 for r in range(len(names))])
 ax.set_xticklabels(names, rotation=-45, ha="left", fontsize=font)
 
-plt.show()
-plt.tight_layout()
+fig.show()
+fig.tight_layout()
+fig.savefig(mode + '_quantitative.pdf')
