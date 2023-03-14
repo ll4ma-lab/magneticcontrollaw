@@ -25,7 +25,8 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import matplotlib
 from ll4ma_opt.solvers.line_search import NewtonMethod
-from visualization import Lanc1,Lanc2,Lanc3
+from visualization import Lanc1, Lanc2, Lanc3
+
 
 class RadiusSysid(Problem):
     def __init__(
@@ -435,14 +436,14 @@ class RadiusSysid(Problem):
         )
         return anim
 
-    def visualize_predicted_acceleration(self, iterate,start=0,end=-1,show_measured=True,save_location = False):
-        font = {'weight' : 'bold',
-                'size'   : 12}
-        
-        matplotlib.rc('font', **font)
-        
-        
-        fig, ax = plt.subplots(3,1,figsize=(5, 5),sharex=True)
+    def visualize_predicted_acceleration(
+        self, iterate, start=0, end=-1, show_measured=True, save_location=False
+    ):
+        font = {"weight": "bold", "size": 12}
+
+        matplotlib.rc("font", **font)
+
+        fig, ax = plt.subplots(3, 1, figsize=(5, 5), sharex=True)
         font = {"weight": "bold", "size": 12}
         matplotlib.rc("font", **font)
         object_properties = self.get_object_properties(
@@ -474,21 +475,27 @@ class RadiusSysid(Problem):
                 mode="same",
             )
             smooth_line = ax[fig_index].plot(
-                smoothed_acceleration[start:end], label="smooth measured", linestyle="--", c=Lanc1, linewidth=3
+                smoothed_acceleration[start:end],
+                label="smooth measured",
+                linestyle="--",
+                c=Lanc1,
+                linewidth=3,
             )
 
             predicted_line = ax[fig_index].plot(
-                modeled_accelerations[acceleration_index][start:end], label="predicted",c=Lanc3, linewidth=3
+                modeled_accelerations[acceleration_index][start:end],
+                label="predicted",
+                c=Lanc3,
+                linewidth=3,
             )
-            ax[fig_index].ticklabel_format(style='sci',scilimits=(0,5))
+            ax[fig_index].ticklabel_format(style="sci", scilimits=(0, 5))
 
-           # if not fig_index:
-          #      ax[fig_index].legend(loc="upper right")
-        fig.legend([smooth_line[0],predicted_line[0]],['Measured','Predicted'])
+        # if not fig_index:
+        #      ax[fig_index].legend(loc="upper right")
+        fig.legend([smooth_line[0], predicted_line[0]], ["Measured", "Predicted"])
         fig.tight_layout()
         if save_location:
             fig.savefig("../../" + save_location + "/accel.pdf")
-            
 
     def visualize_uncertainty(self, x, multiplier=1, circles=1):
         fig = plt.figure(figsize=(10, 10))

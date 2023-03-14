@@ -50,14 +50,14 @@ results.append(
     [
         "Copper known object  ",
         [0.0020667575767537396, 0.0020880214072635313, 0.002065432514759025],
-        [0.17612697791853424, 0.13891845171811004, 0.17450872824627833]
+        [0.17612697791853424, 0.13891845171811004, 0.17450872824627833],
     ]
 )
 results.append(
     [
         "Copper adaptive no prior",
         [0.008954000939082827, 0.007858609691721604, 0.007928749353677668],
-        [0.14053674510060915, 0.21380164210790242, 0.11589210833286683]
+        [0.14053674510060915, 0.21380164210790242, 0.11589210833286683],
     ]
 )
 results.append(
@@ -173,16 +173,14 @@ results.append(
     ]
 )
 
-mode = 'additional_experiments'
+mode = "additional_experiments"
 
-if mode == 'sphere':
+if mode == "sphere":
     results = results[:8]
-elif mode == 'nonsphere':
+elif mode == "nonsphere":
     results = results[8:16]
-elif mode == 'additional_experiments':
-    results = [results[index] for index in [10,11,13,16,17,18]]
-
-
+elif mode == "additional_experiments":
+    results = [results[index] for index in [10, 11, 13, 16, 17, 18]]
 
 
 names = [result[0] for result in results]
@@ -194,8 +192,8 @@ position_errors_min = (
     position_errors - np.array([np.min(result[1]) for result in results]) * 1000
 )
 
-#av_position_errors = np.array([result[1] for result in results]) * 1000
-#av_orientation_errors = np.array([result[2] for result in results])
+# av_position_errors = np.array([result[1] for result in results]) * 1000
+# av_orientation_errors = np.array([result[2] for result in results])
 
 # position_errors_std = np.array([result[2] for result in results]) * 1000
 orientation_errors = np.array(
@@ -233,21 +231,28 @@ ax.bar(
 )
 
 
-
 ax.tick_params(axis="y", labelcolor=position_color)
 
 ax2 = ax.twinx()
 ax2.tick_params(axis="y", labelcolor=orientation_color)
 
-for index,location in enumerate(br1):
+for index, location in enumerate(br1):
     position_errors_local = np.array(results[index][1]) * 1000
 
-    ax.scatter([location] * len(position_errors_local), position_errors_local, color=position_color)
+    ax.scatter(
+        [location] * len(position_errors_local),
+        position_errors_local,
+        color=position_color,
+    )
 
-for index,location in enumerate(br2):
+for index, location in enumerate(br2):
     orientation_errors_local = np.array(results[index][2])
 
-    ax2.scatter([location] * len(orientation_errors_local), orientation_errors_local, color=orientation_color)
+    ax2.scatter(
+        [location] * len(orientation_errors_local),
+        orientation_errors_local,
+        color=orientation_color,
+    )
 
 
 ax2.bar(
@@ -286,4 +291,4 @@ ax.set_xticklabels(names, rotation=-45, ha="left", fontsize=font)
 
 fig.show()
 fig.tight_layout()
-fig.savefig(mode + '_quantitative.pdf')
+fig.savefig(mode + "_quantitative.pdf")

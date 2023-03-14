@@ -30,10 +30,9 @@ def rms(error, axis=None):
     return np.sqrt(np.mean(error**2, axis=axis))
 
 
-folder = 'omni_only_easy'
+folder = "omni_only_easy"
 parent_folder = "/home/tabor/IJRR/"
 mypath = parent_folder + folder + "/"
-
 
 
 onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
@@ -76,6 +75,7 @@ for fileName in onlyfiles:
         print(fileName)
         if "use_sphere" in globals():
             from se3Utils import build_skew, build_tf, matrix_log, skew_to_vector
+
             full_trials_controls.extend(controls[-i:])
             errors = []
             num_steps = i
@@ -252,34 +252,38 @@ fig.axes[0].tick_params(axis="both", which="minor", labelsize=20)
 successful_length = np.min([state.shape[1] for state in allStates])
 
 
-npAllStates = np.array([states[:,:successful_length] for states in allStates]).squeeze()
+npAllStates = np.array(
+    [states[:, :successful_length] for states in allStates]
+).squeeze()
 
 if len(allStates) > 1:
 
     if "use_sphere" in globals():
         npAllStates = np.transpose(npAllStates, (0, 2, 1))
     averagedStates = np.average(npAllStates, 0)
-    
+
     npAllStates[:, :, [0, 1]] *= 1000
-    
+
     print(npAllStates.shape)
     npAllCov = np.zeros((6, 6, num_steps))
-    
+
     npPrecisionValues = np.zeros((4, num_steps))
-    
+
     multiplier = 5.991
     ellipseDataset = []
     for i in range(successful_length):
-    
+
         properData = np.transpose(npAllStates[:, i, [0, 1]])
         npAllCov[:2, :2, i] = np.cov(properData)
-    
+
         detPartialCov = np.linalg.det(np.cov(properData[:2, :]))
         detPartialCovVel = np.linalg.det(np.cov(properData[3:5, :]))
-    
+
         eigval, eigvec = np.linalg.eig(npAllCov[:2, :2, i])
-    
-        maxIndex = np.argmax(abs(eigval))  # cant remember if eigvals are always positive
+
+        maxIndex = np.argmax(
+            abs(eigval)
+        )  # cant remember if eigvals are always positive
         angle = np.rad2deg(np.arctan2(eigvec[1, maxIndex], eigvec[0, maxIndex]))
         width = (
             np.sqrt(multiplier * eigval[maxIndex]) * 2 / 1000
@@ -298,7 +302,7 @@ if len(allStates) > 1:
             desired = [npdesired_states[i, 0, 0], npdesired_states[i, 1, 0]]
         else:
             desired = [0, 0]
-    
+
         trials_data = np.concatenate(
             [
                 [npAllStates[k, i, 0], npAllStates[k, i, 1]]
@@ -326,8 +330,8 @@ width = 0.1
 
 fig.axes[0].set_xticks(np.linspace(-width, width, num))
 fig.axes[0].set_yticks(np.linspace(-width, width, num))
-fig.axes[0].set_xlim(-width,width)
-fig.axes[0].set_ylim(-width,width)
+fig.axes[0].set_xlim(-width, width)
+fig.axes[0].set_ylim(-width, width)
 
 fig.set_size_inches(8, 8)
 fig.axes[0].set_aspect("equal")
