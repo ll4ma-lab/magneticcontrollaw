@@ -28,13 +28,13 @@ min_sigma = 2e6
 # https://en.m.wikipedia.org/wiki/Electrical_resistivity_and_conductivity
 
 important_sigmas = [
-    ("Silver  \nat -35°C", 8e7),
-    ("Silver", 6.3e7),
-    ("Copper", 5.8e7),
-    ("Gold", 4.1e7),
-    ("Aluminum", 3.5e7),
-    ("Platinum", 9.4e6),
-    ("Titanium", 2.4e6),
+    ("Silver (Ag)  \n@ -35°C", 8e7),
+    ("Silver (Ag)", 6.3e7),
+    ("Copper (Cu)", 5.8e7),
+    ("Gold (Au)", 4.1e7),
+    ("Aluminum (Al)", 3.5e7),
+    ("Platinum (Pt)", 9.4e6),
+    ("Titanium (Ti)", 2.4e6),
 ]
 
 label_sigmas = np.linspace(min_sigma, max_sigma, 9)
@@ -103,7 +103,7 @@ ax1.set_xticklabels(
 
 
 # ax2.set_ylim(0,pixel_height)
-fig.set_figheight(1.8)
+fig.set_figheight(2.0)
 fig.set_figwidth(4.0)
 
 fig.tight_layout()

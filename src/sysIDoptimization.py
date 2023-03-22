@@ -442,6 +442,10 @@ class RadiusSysid(Problem):
         font = {"weight": "bold", "size": 12}
 
         matplotlib.rc("font", **font)
+        matplotlib.rcParams["mathtext.fontset"] = "custom"
+        matplotlib.rcParams["mathtext.rm"] = "Bitstream Vera Sans"
+        matplotlib.rcParams["mathtext.it"] = "Bitstream Vera Sans:italic"
+        matplotlib.rcParams["mathtext.bf"] = "Bitstream Vera Sans:bold"
 
         fig, ax = plt.subplots(3, 1, figsize=(5, 5), sharex=True)
         font = {"weight": "bold", "size": 12}
@@ -459,8 +463,13 @@ class RadiusSysid(Problem):
             self.zero,
         )
         fig.suptitle("Acceleration Fit")
+        plt.rcParams["text.usetex"] = True
 
-        titles = ["X", "Y", "θ"]
+        titles = ["X", "Y", r"$\theta$"]
+        linear_axis_latex = r"$(\frac{m}{s^2})$"
+        rotation_axis_latex = r"$(\frac{rad}{s^2})$"
+
+        axis_labels = [linear_axis_latex, linear_axis_latex, rotation_axis_latex]
         for fig_index, acceleration_index in enumerate([0, 1, 5]):
             ax[fig_index].set_title(titles[fig_index])
 
@@ -488,7 +497,16 @@ class RadiusSysid(Problem):
                 c=Lanc3,
                 linewidth=3,
             )
+
             ax[fig_index].ticklabel_format(style="sci", scilimits=(0, 5))
+            ax[fig_index].set_ylabel(axis_labels[fig_index], rotation=0, fontsize=15)
+
+            if fig_index < 2:
+                ax[fig_index].set_ylim((-2.5e-5, 2.5e-5))
+            else:
+                ax[fig_index].set_ylim((-5e-4, 5e-4))
+
+        ax[fig_index].set_xlabel(r"Time (s)", rotation=0, fontsize=15)
 
         # if not fig_index:
         #      ax[fig_index].legend(loc="upper right")

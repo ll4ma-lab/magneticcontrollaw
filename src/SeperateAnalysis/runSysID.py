@@ -65,14 +65,14 @@ from ObjectProperties import (
     boat,
     env,
 ) = extract_sys_id_data(
-    "/home/tabor/Documents/adaptive/multi-80-20/real_2023-02-07 14:22:15.630229",
+    "/home/tabor/IJRR/known_sphere/real_2023-03-07 16:03:45.715925_MultiMagSolver",
     alt_rotational_velocity=False,
     skip_end=0,
-    skip_beginning=250,
+    skip_beginning=0,
 )
 
 # boat=False
-boat = ObjectProperties(mass=0.83, MOI=np.diag((0, 0, 1.13e-3)))
+# boat = ObjectProperties(mass=0.83, MOI=np.diag((0, 0, 1.13e-3)))
 
 # cuboid
 # dataloader.load('/home/tabor/Downloads/real_2022-03-31 15_01_35.949906',globals())
@@ -136,7 +136,7 @@ prob = sysID_type(
     build_acceleration_q("xyt"),
     object_properties=initial_object_properties,
     boat=boat,
-    drag_terms=(8.12e-3, 2.15, 1.13e-5, 1.90e-4),
+    # drag_terms=(8.12e-3, 2.15, 1.13e-5, 1.90e-4),
 )  # built with M(0.04) Q M(0.04)
 optimizer = optimizer_type(problem=prob, **optimizerParams)
 s = time.time()
@@ -149,7 +149,7 @@ prob.update_vals(
 )
 
 results = []
-prob.regularization_multiplier = 1e11
+prob.regularization_multiplier = 0
 try:
     for i in tqdm(range(25)):
         initial_solution = np.random.uniform(
@@ -184,9 +184,7 @@ if prob.size() == 2:
             ]
         ).reshape((-1, 1))
         iterates.append(iterate)
-    _ = prob.visualize_optimization(
-        iterates, func=np.log, show_costs=True, save_snapshots=False
-    )
+    _ = prob.visualize_optimization(iterates, func=np.log, show_costs=True)
 
     print("brute time ", time.time() - s)
 else:
@@ -198,8 +196,6 @@ result = results[np.argmin([result.cost for result in results])]
 solution = result.solution
 
 print("solution ", solution)
-
-prob.visualize_predicted_acceleration(solution)
 
 
 # positions = np.array([state[0][:3, 3] for state in states])
@@ -218,3 +214,6 @@ plots = {
 }
 
 visualization.plot_stuff(plots, "Controller")
+
+
+prob.visualize_predicted_acceleration(solution, show_measured=False)

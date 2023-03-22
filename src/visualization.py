@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import mpl_toolkits.mplot3d.axes3d as p3
 from matplotlib import animation
-
+from matplotlib import cm
 
 Lanc3 = (0, 0.4470, 0.7410)
 Lanc1 = (0.8500, 0.3250, 0.0980)
@@ -121,30 +121,58 @@ def draw_sphere(center, radius, ax):
     ax.plot_wireframe(x, y, z, color="orange")
 
 
-def visualize_2d_path(environment, states, name="path"):
-    magnets = environment.magnets
-    fig = plt.figure()
-    fig.suptitle(name)
-    ax = fig.add_subplot(111, projection="3d")
+def visualize_2d_path(environment, positions, controls, name="path"):
+
+    fig = plt.figure(figsize=(12, 12))
+    ax = p3.Axes3D(fig)
     ax.set_xlim(*environment.visualization_boundary_y)
     ax.set_ylim(*environment.visualization_boundary_y)
     ax.set_zlim(*environment.visualization_boundary_y)
     # ax.set_aspect('equal')
+    ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
 
-    draw_cubes(magnets, [], ax, environment.radius)
-    plt.plot(states[0, :], states[1, :], states[2, :], linewidth=4, color="g")
-    add_rect(
-        (0, 0, environment.lims[2][0] / 2),
-        w=environment.lims[0][1],
-        l=environment.lims[1][1],
-        h=environment.lims[2][1],
-        color=(0, 0, 1, 0.1),
-        ax=ax,
+    opacity = 0.3
+    color_map = np.array(
+        [
+            (0, 0.4470, 0.7410, opacity),
+            (0.8500, 0.3250, 0.0980, opacity),
+            (0.9290, 0.6940, 0.1250, opacity),
+            (66 / 256, 245 / 256, 50 / 256, opacity),
+        ]
     )
+
+    cubes = draw_cubes(environment.magnets, [], ax, environment.radius)
+    for i, cube in enumerate(cubes):
+        colorinfo = list(color_map[i])
+        print(colorinfo)
+        cube.set_facecolor(colorinfo)
+
+    color_map[:, 3] = 0.6
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_zticks([])
+
+    colors = np.array([color_map[control.mag_num] for control in controls])
+
+    ax.scatter(
+        positions[:, 0], positions[:, 1], positions[:, 2], color=colors, linewidths=1
+    )
+
+    # add_rect(
+    #     (0, 0, environment.lims[2][0] / 2),
+    #     w=environment.lims[0][1],
+    #     l=environment.lims[1][1],
+    #     h=environment.lims[2][1],
+    #     color=(0, 0, 1, 0.1),
+    #     ax=ax,
+    # )
 
     ax.view_init(elev=environment.el, azim=environment.az)
 
-    plt.show()
+    fig.show()
+    return fig
 
 
 def draw_origin(ax, length=0.1):
@@ -174,6 +202,7 @@ def animate_2d_path(
     save_plot_steps=[],
     name="path",
     save=False,
+    magnet_color=False,
 ):
     # Attaching 3D axis to the figure
     fig = plt.figure()
