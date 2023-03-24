@@ -437,15 +437,24 @@ class RadiusSysid(Problem):
         return anim
 
     def visualize_predicted_acceleration(
-        self, iterate, start=0, end=-1, show_measured=True, save_location=False
+        self,
+        iterate,
+        start=0,
+        end=-1,
+        show_measured=True,
+        save_location=False,
+        paper_version=False,
     ):
         font = {"weight": "bold", "size": 12}
 
         matplotlib.rc("font", **font)
-        matplotlib.rcParams["mathtext.fontset"] = "custom"
-        matplotlib.rcParams["mathtext.rm"] = "Bitstream Vera Sans"
-        matplotlib.rcParams["mathtext.it"] = "Bitstream Vera Sans:italic"
-        matplotlib.rcParams["mathtext.bf"] = "Bitstream Vera Sans:bold"
+
+        if paper_version:
+            matplotlib.rcParams["mathtext.fontset"] = "custom"
+            matplotlib.rcParams["mathtext.rm"] = "Bitstream Vera Sans"
+            matplotlib.rcParams["mathtext.it"] = "Bitstream Vera Sans:italic"
+            matplotlib.rcParams["mathtext.bf"] = "Bitstream Vera Sans:bold"
+            plt.rcParams["text.usetex"] = True
 
         fig, ax = plt.subplots(3, 1, figsize=(5, 5), sharex=True)
         font = {"weight": "bold", "size": 12}
@@ -463,7 +472,6 @@ class RadiusSysid(Problem):
             self.zero,
         )
         fig.suptitle("Acceleration Fit")
-        plt.rcParams["text.usetex"] = True
 
         titles = ["X", "Y", r"$\theta$"]
         linear_axis_latex = r"$(\frac{m}{s^2})$"

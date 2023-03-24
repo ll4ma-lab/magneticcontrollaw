@@ -71,7 +71,7 @@ from ObjectProperties import (
     skip_beginning=0,
 )
 
-# boat=False
+boat = False
 # boat = ObjectProperties(mass=0.83, MOI=np.diag((0, 0, 1.13e-3)))
 
 # cuboid
@@ -136,7 +136,7 @@ prob = sysID_type(
     build_acceleration_q("xyt"),
     object_properties=initial_object_properties,
     boat=boat,
-    # drag_terms=(8.12e-3, 2.15, 1.13e-5, 1.90e-4),
+    drag_terms=(8.12e-3, 2.15, 1.13e-5, 1.90e-4),
 )  # built with M(0.04) Q M(0.04)
 optimizer = optimizer_type(problem=prob, **optimizerParams)
 s = time.time()
@@ -197,6 +197,9 @@ solution = result.solution
 
 print("solution ", solution)
 
+prob.visualize_predicted_acceleration(
+    solution, show_measured=False, paper_version=False
+)
 
 # positions = np.array([state[0][:3, 3] for state in states])
 # linear_velocity = np.array(
@@ -214,6 +217,3 @@ plots = {
 }
 
 visualization.plot_stuff(plots, "Controller")
-
-
-prob.visualize_predicted_acceleration(solution, show_measured=False)

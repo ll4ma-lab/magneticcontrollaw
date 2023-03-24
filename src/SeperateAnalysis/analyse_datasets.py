@@ -30,7 +30,7 @@ def rms(error, axis=None):
     return np.sqrt(np.mean(error**2, axis=axis))
 
 
-folder = "omni_only_easy"
+folder = "sphere_inv"
 parent_folder = "/home/tabor/IJRR/"
 mypath = parent_folder + folder + "/"
 
@@ -52,9 +52,7 @@ fig = plt.figure()
 fig.add_subplot()
 all_adaptive_params = []
 
-parameter_fig, parameter_ax = plt.subplots(
-    (2), sharex=True, gridspec_kw={"height_ratios": [3, 1]}
-)
+parameter_fig, parameter_ax = plt.subplots((2), sharex=True)
 
 name = "Paths_" + folder
 # fig.suptitle(name)
@@ -138,7 +136,7 @@ for fileName in onlyfiles:
 
         rotationalVelocityErrors.append(absError[:, 11, 0])
 
-adaptive_plot_max_t = 600
+adaptive_plot_max_t = 1500
 
 # parameter_ax[1].plot([0,adaptive_plot_max_t],[3.77E+07,3.77E+07],'k--')
 # parameter_fig.suptitle('Adapted parameters over time')
@@ -146,47 +144,73 @@ parameter_ax[0].set_ylabel("Radius (m)")
 parameter_ax[1].set_ylabel("Conductivity")
 
 
-if False:
+if True:
     np_adaptive_params = np.array(all_adaptive_params)
-    average_params = np.mean(np_adaptive_params, 0)
-    std_params = np.std(np_adaptive_params, 0)
+    # average_params = np.mean(np_adaptive_params, 0)
+    # std_params = np.std(np_adaptive_params, 0)
 
     i = 0
-    parameter_ax[0].plot(all_adaptive_params[i][:adaptive_plot_max_t, 0], c=Lanc3)
-    parameter_ax[1].plot(all_adaptive_params[i][:adaptive_plot_max_t, 1], c=Lanc3)
+    parameter_ax[0].plot(all_adaptive_params[i][:adaptive_plot_max_t, 0], c=Lanc1)
+    parameter_ax[1].plot(
+        all_adaptive_params[i][:adaptive_plot_max_t, 1]
+        * adaptive.problem.sigma_multiplier,
+        c=Lanc1,
+    )
 
     i = 1
     parameter_ax[0].plot(all_adaptive_params[i][:adaptive_plot_max_t, 0], c=Lanc2)
-    parameter_ax[1].plot(all_adaptive_params[i][:adaptive_plot_max_t, 1], c=Lanc2)
+    parameter_ax[1].plot(
+        all_adaptive_params[i][:adaptive_plot_max_t, 1]
+        * adaptive.problem.sigma_multiplier,
+        c=Lanc2,
+    )
+
+    i = 2
+    parameter_ax[0].plot(all_adaptive_params[i][:adaptive_plot_max_t, 0], c=Lanc3)
+    parameter_ax[1].plot(
+        all_adaptive_params[i][:adaptive_plot_max_t, 1]
+        * adaptive.problem.sigma_multiplier,
+        c=Lanc3,
+    )
 
     # parameter_ax[0].plot(average_params[:adaptive_plot_max_t,0],c=Lanc1)
     # parameter_ax[1].plot(average_params[:adaptive_plot_max_t,1],c=Lanc1)
 
-    deviations = 1
-    upper_bound = (average_params + std_params * deviations)[:adaptive_plot_max_t, :, 0]
-    lower_bound = (average_params - std_params * deviations)[:adaptive_plot_max_t, :, 0]
+    # deviations = 1
+    # upper_bound = (average_params + std_params * deviations)[:adaptive_plot_max_t, :, 0]
+    # lower_bound = (average_params - std_params * deviations)[:adaptive_plot_max_t, :, 0]
 
-    bounds = np.concatenate((upper_bound[:, 0], np.flip(lower_bound[:, 0])))
-    timesteps = list(range(adaptive_plot_max_t))
+    # bounds = np.concatenate((upper_bound[:, 0], np.flip(lower_bound[:, 0])))
+    # timesteps = list(range(adaptive_plot_max_t))
 
-    poly_points = np.stack((np.concatenate((timesteps, np.flip(timesteps))), bounds)).T
-    # poly_points = np.stack((timesteps,upper_bound[:,0])).T
-    poly = Polygon(poly_points, facecolor=Lanc2)
-    # parameter_ax[0].add_patch(poly)
+    # poly_points = np.stack((np.concatenate((timesteps, np.flip(timesteps))), bounds)).T
+    # # poly_points = np.stack((timesteps,upper_bound[:,0])).T
+    # poly = Polygon(poly_points, facecolor=Lanc2)
+    # # parameter_ax[0].add_patch(poly)
 
     # parameter_ax[0].plot(upper_bound[:,0],c=UtahU)
     # parameter_ax[0].plot(lower_bound[:,0],c=UtahU)
 
     # parameter_ax[0].set_xticks(np.linspace(0,adaptive_plot_max_t,11))
-    parameter_ax[1].set_xticks(np.linspace(0, adaptive_plot_max_t, 6))
+    parameter_ax[0].set_ylim(0, adaptive.problem.max_bounds[0] * 1.05)
+    parameter_ax[1].set_ylim(
+        0, adaptive.problem.max_bounds[1] * 1.05 * adaptive.problem.sigma_multiplier
+    )
+    parameter_ax[0].set_xlim(0, adaptive_plot_max_t)
+
+    # parameter_ax[0].set_yticks(np.linspace(0, adaptive.problem.max_bounds[0], 6))
+
+    # parameter_ax[0].set_yticks(np.linspace(0, adaptive.problem.max_bounds[0], 6))
+    # parameter_ax[1].set_yticks(np.linspace(0, adaptive.problem.max_bounds[1], 6))
+
 
 parameter_ax[0].plot([0, adaptive_plot_max_t], [0.02, 0.02], "k--")
 parameter_ax[1].plot([0, adaptive_plot_max_t], [5.8e07, 5.8e07], "k--")
 
 # parameter_ax[0].set_yticks(np.linspace(0.01,0.025,4))
-parameter_ax[0].set_yticks(np.linspace(0.01, 0.04, 7))
+# parameter_ax[0].set_yticks(np.linspace(0.01, 0.04, 7))
 
-parameter_ax[1].set_yticks(np.linspace(2e7, 7e7, 3))
+# parameter_ax[1].set_yticks(np.linspace(2e7, 7e7, 3))
 parameter_fig.set_size_inches(5, 3)
 parameter_fig.tight_layout()
 
