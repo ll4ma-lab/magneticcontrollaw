@@ -134,18 +134,22 @@ class RadiusSysid(Problem):
         )
         np_a = delta_v / timesteps
 
-        drag_force = (
-            self.drag_terms[0] * linear_velocity[velocity_shift:-1, :]
-            + np.sign(linear_velocity[velocity_shift:-1, :])
-            * self.drag_terms[1]
-            * linear_velocity[velocity_shift:-1, :] ** 2
+        drag_force = self.drag_terms[0] * linear_velocity[
+            velocity_shift:-1, :
+        ] + self.drag_terms[1] * linear_velocity[velocity_shift:-1, :] * np.tile(
+            np.linalg.norm(linear_velocity[velocity_shift:-1, :], axis=1).reshape(
+                (-1, 1)
+            ),
+            3,
         )
 
-        drag_torque = (
-            self.drag_terms[2] * rotational_velocity[velocity_shift:-1, :]
-            + np.sign(rotational_velocity[velocity_shift:-1, :])
-            * self.drag_terms[3]
-            * rotational_velocity[velocity_shift:-1, :] ** 2
+        drag_torque = self.drag_terms[2] * rotational_velocity[
+            velocity_shift:-1, :
+        ] + self.drag_terms[3] * rotational_velocity[velocity_shift:-1, :] * np.tile(
+            np.linalg.norm(rotational_velocity[velocity_shift:-1, :], axis=1).reshape(
+                (-1, 1)
+            ),
+            3,
         )
 
         self.drag_wrenches = self.make_tensor(np.hstack((-drag_force, -drag_torque)))
@@ -689,16 +693,16 @@ class MassOnlySysid(SeperateRadiusSysid):
 
         drag_force = (
             linear_drag_force_constant * self.linear_velocity
-            + torch.sign(self.linear_velocity)
-            * quadratic_drag_force_constant
-            * self.linear_velocity**2
+            + quadratic_drag_force_constant
+            * self.linear_velocity
+            * torch.linalg.norm(self.linear_velocity, axis=1).expand(3, -1).T
         )
 
         drag_torque = (
             linear_drag_torque_constant * self.rotational_velocity
-            + torch.sign(self.rotational_velocity)
-            * quadratic_drag_torque_constant
-            * self.rotational_velocity**2
+            + quadratic_drag_torque_constant
+            * self.rotational_velocity
+            * torch.linalg.norm(self.rotational_velocity, axis=1).expand(3, -1).T
         )
 
         drag_wrench = torch.concat((-drag_force, -drag_torque), 1)

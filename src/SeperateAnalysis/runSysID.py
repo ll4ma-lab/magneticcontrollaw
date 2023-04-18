@@ -205,7 +205,7 @@ solution = result.solution
 print("solution ", solution)
 
 prob.visualize_predicted_acceleration(
-    solution, show_measured=False,start = 250,end=1250, paper_version=False
+    solution, show_measured=False, start=250, end=1250, paper_version=False
 )
 
 # positions = np.array([state[0][:3, 3] for state in states])
