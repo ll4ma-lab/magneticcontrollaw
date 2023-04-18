@@ -56,6 +56,13 @@ from ObjectProperties import (
 
 # dataloader.load("/media/tabor/ESD-ISO/data/updated/real_2023-01-25 19_53_52.438495",globals())
 # dataloader.load("/media/tabor/ESD-ISO/data/50%/real_2023-01-25 18_54_49.649503",globals())
+
+
+file_name = "/home/tabor/Downloads/IJRR/known_sphere/real_2023-03-07 16:03:45.715925_MultiMagSolver"
+file_name = "/home/tabor/Downloads/IJRR/known_sphere/real_2023-03-07 14:10:43.061701_MultiMagSolver"
+file_name = "/home/tabor/Downloads/IJRR/known_sphere/real_2023-03-07 15:11:55.936480_MultiMagSolver"
+
+
 (
     linear_velocity,
     rotational_velocity,
@@ -65,13 +72,13 @@ from ObjectProperties import (
     boat,
     env,
 ) = extract_sys_id_data(
-    "/home/tabor/IJRR/known_sphere/real_2023-03-07 16:03:45.715925_MultiMagSolver",
+    file_name,
     alt_rotational_velocity=False,
     skip_end=0,
     skip_beginning=0,
 )
 
-boat = False
+# boat = False
 # boat = ObjectProperties(mass=0.83, MOI=np.diag((0, 0, 1.13e-3)))
 
 # cuboid
@@ -198,7 +205,7 @@ solution = result.solution
 print("solution ", solution)
 
 prob.visualize_predicted_acceleration(
-    solution, show_measured=False, paper_version=False
+    solution, show_measured=False,start = 250,end=1250, paper_version=False
 )
 
 # positions = np.array([state[0][:3, 3] for state in states])
