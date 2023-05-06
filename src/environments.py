@@ -381,6 +381,7 @@ class SpaceProblem:
     def __init__(
         self,
         challenge_id=0,
+        magnet_setup=None
     ):
         self.trajectory_dimensions = "xyzrpt"
         width = 0.001
@@ -404,27 +405,31 @@ class SpaceProblem:
         self.tolerances = (linear_tolerance, rotational_tolerance)
         self.radius = 0.065
 
-        num_pts = 6
-        from numpy import pi, cos, sin, arccos, arange
+        if magnet_setup and magnet_setup != 6:
+            num_magnets = magnet_setup 
+            from numpy import pi, cos, sin, arccos, arange
+    
+            indices = arange(0, num_magnets, dtype=float) + 0.5
+    
+            phi = arccos(1 - 2 * indices / num_magnets)
+            theta = pi * (1 + 5**0.5) * indices
+    
+            x, y, z = cos(theta) * sin(phi), sin(theta) * sin(phi), cos(phi)
+            magnets = np.transpose(np.array((x, y, z))) * 0.15
+        else:
+            magnets = np.array(
+                [
+                    (0.15, 0.00, 0),
+                    (-0.15, 0.0, 0),
+                    (0.00, 0.150, 0.0),
+                    (0.00, -0.150, 0.0),
+                    (1e-10, 0.000, 0.15),
+                    (1e-10, 0.00, -0.15),
+                ]
+            )
 
-        indices = arange(0, num_pts, dtype=float) + 0.5
 
-        phi = arccos(1 - 2 * indices / num_pts)
-        theta = pi * (1 + 5**0.5) * indices
 
-        x, y, z = cos(theta) * sin(phi), sin(theta) * sin(phi), cos(phi)
-        magnets = np.transpose(np.array((x, y, z))) * 0.15
-
-        magnets = np.array(
-            [
-                (0.15, 0.00, 0),
-                (-0.15, 0.0, 0),
-                (0.00, 0.150, 0.0),
-                (0.00, -0.150, 0.0),
-                (1e-10, 0.000, 0.15),
-                (1e-10, 0.00, -0.15),
-            ]
-        )
         self.magnets = magnets.tolist()
         self.start_state = np.zeros((12, 1))
 
@@ -470,10 +475,10 @@ class SpaceProblem:
             self.start_state[:3, 0] = np.linspace(0.05, 0.05, 3)
             self.start_state[3:6, 0] = np.linspace(0.5, 1.5, 3)
 
-            self.true_desired_state = np.zeros((12, 1))
+            self.true_desired_state = np.zeros((12, 2))
 
             self.desired_state = self.true_desired_state
-            self.times = [600]
+            self.times = [600,1200]
         if challenge_id == SpaceEnvironments.CUBE:  # floating square
             self.magnets = [self.magnets[i] for i in [0, 1]]
             self.magnets[0][1] += 1e-15

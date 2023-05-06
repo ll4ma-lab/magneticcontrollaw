@@ -366,7 +366,8 @@ def plot_stuff(data_dict, name):
         data = data_dict[key]
         for i in range(data.shape[0]):
             axs[index].plot(data[i, :])
-
+    fig.tight_layout()
+    return fig
 
 def draw_arrow(vector, color, ax, torque=False):
     if torque:

@@ -42,21 +42,21 @@ if __name__ == "__main__":
     use_sphere = True
     cheat = False
 
-    run_adaptive = False and use_sphere
+    run_adaptive = True and use_sphere
     inverse_dynamics = True and use_sphere and not cheat and not use_special_case_solver
 
-    simulate_boat = False
+    simulate_boat = True
 
-    controller_knows_boat = True and simulate_boat
+    controller_knows_boat = False and simulate_boat
 
     vel_noise = False
     control_noise = False
 
-    env = SpaceProblem(SpaceEnvironments.BACKANDFORTH)
-    env.magnets = env.magnets[:]
+    env = SpaceProblem(SpaceEnvironments.REGULATOR,3)
+    #env.magnets = env.magnets[:4]
     # env.trajectoryDimensions = 'xyz'
 
-    sim_time = 100  # np.sum(env.times)
+    sim_time = np.sum(env.times)
 
     sigma_copper = 5.87e07
     sigma_al = 3.77e07
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     )
 
     # controller object
-    initial_radius_guess = 0.02
+    initial_radius_guess = 0.01
     mass_initial, moi_initial = compute_sphere_properties(8940, radius)
     object_properties_approximate = ObjectProperties(
         mass=mass_initial,
@@ -80,13 +80,12 @@ if __name__ == "__main__":
 
     # boat object
     boat_mass, boat_moi = compute_boat_properties(0.059, 0.075, 0.07, 0.031)
-    boat_properties = ObjectProperties(mass=boat_mass, MOI=boat_moi)
-
+    boat_properties = ObjectProperties(mass=boat_mass*0.1, MOI=boat_moi*0.1)
+    # np.diag((0,1,0.5))@
     adaptive_model = RadiusSysid
 
     if simulate_boat:
         object_properties = object_properties + boat_properties
-
     if controller_knows_boat:
         controller_boat = boat_properties
     else:
@@ -114,7 +113,7 @@ if __name__ == "__main__":
         )
 
     if inverse_dynamics:
-        controller = PDController(env.start_state, 0.12, 0.004, 0.12, 0.004, 0, 0)
+        controller = PDController(env.start_state, 0.012, 0.004, 0.012, 0.01, 0, 0)
     elif use_special_case_solver:
         controller = PDController(env.start_state, 0.0005, 0.0, 0.1, 0.0, 0.0, 0.000)
     else:
@@ -168,7 +167,7 @@ if __name__ == "__main__":
     transforms = np.array([state[0] for state in states])
     desired_final_tf = build_tf(desired_states[-1][:3, 0], desired_states[-1][3:6, 0])
     remaining_error = np.array(
-        [controller.compute_error(transforms[0], state[0]) for state in states]
+        [controller.compute_error(state[0],desired_final_tf) for state in states]
     )
 
     # visualization stuff
@@ -184,17 +183,17 @@ if __name__ == "__main__":
     )
     npdesired_states = np.array(desired_states)
 
-    plots = {
-        "Position (m)": np.transpose(positions),
-        "Velocity (m/s)": np.transpose(linear_velocity),
-        "Rot velocity (_/s)": np.transpose(rotational_velocity),
-        "Force ": np.transpose(np.array(wrenches)[:, :3, 0]),
-        "Torque ": np.transpose(np.array(wrenches)[:, 3:, 0]),
-        "Desired position (m)": np.transpose(npdesired_states[:, :3, 0]),
-        "Desired velocity (m/s) ": np.transpose(npdesired_states[:, 6:9, 0]),
-    }
+    # plots = {
+    #     "Position (m)": np.transpose(positions),
+    #     "Velocity (m/s)": np.transpose(linear_velocity),
+    #     "Rot velocity (_/s)": np.transpose(rotational_velocity),
+    #     "Force ": np.transpose(np.array(wrenches)[:, :3, 0]),
+    #     "Torque ": np.transpose(np.array(wrenches)[:, 3:, 0]),
+    #     "Desired position (m)": np.transpose(npdesired_states[:, :3, 0]),
+    #     "Desired velocity (m/s) ": np.transpose(npdesired_states[:, 6:9, 0]),
+    # }
 
-    visualization.plot_stuff(plots, "Controller")
+    # visualization.plot_stuff(plots, "Controller")
 
     plots = {
         "Position Error(m)": np.abs(np.transpose(remaining_error[:, :3, 0])),
@@ -203,23 +202,23 @@ if __name__ == "__main__":
 
     visualization.plot_stuff(plots, "Error")
 
-    plots = {
-        "desired Position(m)": np.array(desired_states)[:, :3, 0].T,
-        "desired Orientation (radians)": np.array(desired_states)[:, 3:6, 0].T,
-    }
+    # plots = {
+    #     "desired Position(m)": np.array(desired_states)[:, :3, 0].T,
+    #     "desired Orientation (radians)": np.array(desired_states)[:, 3:6, 0].T,
+    # }
 
-    visualization.plot_stuff(plots, "Desired Pose")
+    # visualization.plot_stuff(plots, "Desired Pose")
 
-    # print('Time spent doing visualization ' + str(time.time()-visStart))
+    # # print('Time spent doing visualization ' + str(time.time()-visStart))
 
-    plt.figure()
-    plt.plot(minimization_costs)
+    # plt.figure()
+    # plt.plot(minimization_costs)
 
-    diff = npdesired_states[:, 0, 0] - positions[:, 0]
-    plt.figure()
-    plt.plot(diff)
-    print(np.mean(np.square(diff)))
-    print(np.amax(diff))
+    # diff = npdesired_states[:, :3, 0] - positions[:, :]
+    # plt.figure()
+    # plt.plot(diff)
+    # print(np.mean(np.square(diff)))
+    # print(np.amax(diff))
 
     import dataloader
     from datetime import datetime
