@@ -60,7 +60,6 @@ name = "Paths_" + folder
 # fig.suptitle(name)
 
 
-
 for fileName in onlyfiles:
     if (
         "bag" not in fileName
@@ -149,42 +148,45 @@ parameter_ax[1].set_ylabel("Conductivity")
 
 
 r_mulitplier = 100
-#parameter_ax[0].plot([0, adaptive_plot_max_t], [0.02*r_mulitplier, 0.02*r_mulitplier], "k--")
-#parameter_ax[1].plot([0, adaptive_plot_max_t], [5.8e07, 5.8e07], "k--")
+# parameter_ax[0].plot([0, adaptive_plot_max_t], [0.02*r_mulitplier, 0.02*r_mulitplier], "k--")
+# parameter_ax[1].plot([0, adaptive_plot_max_t], [5.8e07, 5.8e07], "k--")
 if True:
     np_adaptive_params = np.array(all_adaptive_params)
     # average_params = np.mean(np_adaptive_params, 0)
     # std_params = np.std(np_adaptive_params, 0)
 
     i = 0
-    parameter_ax[0].plot(all_adaptive_params[i][:adaptive_plot_max_t, 0]*r_mulitplier, c=Lanc1)
+    parameter_ax[0].plot(
+        all_adaptive_params[i][:adaptive_plot_max_t, 0] * r_mulitplier, c=Lanc1
+    )
     parameter_ax[1].plot(
         all_adaptive_params[i][:adaptive_plot_max_t, 1]
         * adaptive.problem.sigma_multiplier,
         c=Lanc1,
     )
-    #parameter_ax[2].plot([control.dipole_strength for control in full_trials_controls[i][:adaptive_plot_max_t]], c=Lanc1)
-
+    # parameter_ax[2].plot([control.dipole_strength for control in full_trials_controls[i][:adaptive_plot_max_t]], c=Lanc1)
 
     i = 1
-    parameter_ax[0].plot(all_adaptive_params[i][:adaptive_plot_max_t, 0]*r_mulitplier, c=Lanc2)
+    parameter_ax[0].plot(
+        all_adaptive_params[i][:adaptive_plot_max_t, 0] * r_mulitplier, c=Lanc2
+    )
     parameter_ax[1].plot(
         all_adaptive_params[i][:adaptive_plot_max_t, 1]
         * adaptive.problem.sigma_multiplier,
         c=Lanc2,
     )
-    #parameter_ax[2].plot([control.dipole_strength for control in full_trials_controls[i][:adaptive_plot_max_t]], c=Lanc2)
-
+    # parameter_ax[2].plot([control.dipole_strength for control in full_trials_controls[i][:adaptive_plot_max_t]], c=Lanc2)
 
     i = 2
-    parameter_ax[0].plot(all_adaptive_params[i][:adaptive_plot_max_t, 0]*r_mulitplier, c=Lanc3)
+    parameter_ax[0].plot(
+        all_adaptive_params[i][:adaptive_plot_max_t, 0] * r_mulitplier, c=Lanc3
+    )
     parameter_ax[1].plot(
         all_adaptive_params[i][:adaptive_plot_max_t, 1]
         * adaptive.problem.sigma_multiplier,
         c=Lanc3,
     )
-    #parameter_ax[2].plot([control.dipole_strength for control in full_trials_controls[i][:adaptive_plot_max_t]], c=Lanc3)
-
+    # parameter_ax[2].plot([control.dipole_strength for control in full_trials_controls[i][:adaptive_plot_max_t]], c=Lanc3)
 
     # parameter_ax[0].plot(average_params[:adaptive_plot_max_t,0],c=Lanc1)
     # parameter_ax[1].plot(average_params[:adaptive_plot_max_t,1],c=Lanc1)
@@ -205,27 +207,27 @@ if True:
     # parameter_ax[0].plot(lower_bound[:,0],c=UtahU)
 
     # parameter_ax[0].set_xticks(np.linspace(0,adaptive_plot_max_t,11))
-    parameter_ax[0].set_ylim(0, adaptive.problem.max_bounds[0] * 1.05*r_mulitplier)
+    parameter_ax[0].set_ylim(0, adaptive.problem.max_bounds[0] * 1.05 * r_mulitplier)
     parameter_ax[1].set_ylim(
         0, adaptive.problem.max_bounds[1] * 1.05 * adaptive.problem.sigma_multiplier
     )
     parameter_ax[0].set_xlim(0, adaptive_plot_max_t)
-    
-    
-    label_sigmas = np.linspace(0, adaptive.problem.max_bounds[1] * adaptive.problem.sigma_multiplier, 5).flatten()
+
+    label_sigmas = np.linspace(
+        0, adaptive.problem.max_bounds[1] * adaptive.problem.sigma_multiplier, 5
+    ).flatten()
     parameter_ax[1].set_yticks(label_sigmas)
-    
-    
-    label_radius = np.linspace(0, adaptive.problem.max_bounds[0]*r_mulitplier, 6).flatten()
+
+    label_radius = np.linspace(
+        0, adaptive.problem.max_bounds[0] * r_mulitplier, 6
+    ).flatten()
     parameter_ax[0].set_yticks(label_radius)
 
-    parameter_ax[1].set_xlabel('Time (s)')
+    parameter_ax[1].set_xlabel("Time (s)")
     # parameter_ax[0].set_yticks(np.linspace(0, adaptive.problem.max_bounds[0], 6))
 
     # parameter_ax[0].set_yticks(np.linspace(0, adaptive.problem.max_bounds[0], 6))
     # parameter_ax[1].set_yticks(np.linspace(0, adaptive.problem.max_bounds[1], 6))
-
-
 
 
 # parameter_ax[0].set_yticks(np.linspace(0.01,0.025,4))
@@ -234,7 +236,7 @@ if True:
 # parameter_ax[1].set_yticks(np.linspace(2e7, 7e7, 3))
 parameter_fig.set_size_inches(5, 3)
 parameter_fig.tight_layout()
-parameter_fig.savefig(parent_folder + 'Parameters-' + folder + ".pdf")
+parameter_fig.savefig(parent_folder + "Parameters-" + folder + ".pdf")
 
 
 print(

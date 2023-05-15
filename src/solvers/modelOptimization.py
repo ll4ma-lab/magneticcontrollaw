@@ -63,7 +63,7 @@ def cylinder_optimize(prob):
 
 
 def build_acceleration_q(state_cost_string):
-    return build_q(state_cost_string, 2e4, 1)
+    return build_q(state_cost_string, 2e5, 1e2)
 
 
 def build_force_q(state_cost_string):
@@ -251,7 +251,7 @@ class MultiMagSolver:
                 prob.rho_mode = (i % 3) == 2
                 self.problems.append(prob)
         ctx = multiprocessing.get_context("spawn")
-        if len(self.problems) > num_processes:
+        if len(self.problems) < num_processes:
             num_processes = len(self.problems)
         self.pool = ctx.Pool(processes=num_processes)
 

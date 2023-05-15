@@ -475,9 +475,9 @@ class RadiusSysid(Problem):
             self.rhos,
             self.zero,
         )
-        fig.suptitle("Acceleration Fit")
+        # fig.suptitle("Acceleration Fit")
 
-        titles = ["X", "Y", r"$\theta$"]
+        titles = ["$\ddot{X}$", "$\ddot{Y}$", r"$\ddot{\theta}$"]  # noqa: W605
         linear_axis_latex = r"$(\frac{m}{s^2})$"
         rotation_axis_latex = r"$(\frac{rad}{s^2})$"
 

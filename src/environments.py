@@ -378,11 +378,7 @@ class PlanarProblem:
 
 
 class SpaceProblem:
-    def __init__(
-        self,
-        challenge_id=0,
-        magnet_setup=None
-    ):
+    def __init__(self, challenge_id=0, magnet_setup=6):
         self.trajectory_dimensions = "xyzrpt"
         width = 0.001
         length = 0.001
@@ -401,36 +397,71 @@ class SpaceProblem:
         linear_tolerance = 0.005
         deg_tolerance = 10.0
         rotational_tolerance = np.pi * deg_tolerance / 180.0
-
+        
+        workspace_radius = 0.15
+        
         self.tolerances = (linear_tolerance, rotational_tolerance)
         self.radius = 0.065
 
-        if magnet_setup and magnet_setup != 6:
-            num_magnets = magnet_setup 
-            from numpy import pi, cos, sin, arccos, arange
-    
-            indices = arange(0, num_magnets, dtype=float) + 0.5
-    
-            phi = arccos(1 - 2 * indices / num_magnets)
-            theta = pi * (1 + 5**0.5) * indices
-    
-            x, y, z = cos(theta) * sin(phi), sin(theta) * sin(phi), cos(phi)
-            magnets = np.transpose(np.array((x, y, z))) * 0.15
-        else:
-            magnets = np.array(
-                [
-                    (0.15, 0.00, 0),
-                    (-0.15, 0.0, 0),
-                    (0.00, 0.150, 0.0),
-                    (0.00, -0.150, 0.0),
-                    (1e-10, 0.000, 0.15),
-                    (1e-10, 0.00, -0.15),
+        if magnet_setup == 2:
+            self.magnets = [
+                    (workspace_radius, 0.00, 0),
+                    (-workspace_radius, 0.0, 0)
                 ]
-            )
+        
+        elif magnet_setup == 3:
+            theta = 0
+            angle_offset = np.pi * 2 / 3
+            self.magnets = (workspace_radius * np.array(
+                [
+                    (np.cos(theta), np.sin(theta), 0),
+                    (np.cos(theta + angle_offset), np.sin(theta + angle_offset), 0),
+                    (np.cos(theta + 2 * angle_offset), np.sin(theta + 2 * angle_offset), 0),
+                ]
+            )).tolist()        
+        elif magnet_setup == 4:
+            z = 1/np.sqrt(2)
+            self.magnets = (workspace_radius * np.array(
+                [
+                    (1,0,-z),
+                    (-1,0,-z),
+                    (0,1,z),
+                    (0,-1,z)
+                ]
+            )).tolist()
+        
+        elif magnet_setup == 6:
+            self.magnets = [
+                    (workspace_radius, 0.00, 0),
+                    (-workspace_radius, 0.0, 0),
+                    (0.00, workspace_radius, 0.0),
+                    (0.00, -workspace_radius, 0.0),
+                    (1e-10, 0.000, workspace_radius),
+                    (1e-10, 0.00, -workspace_radius),
+                ]
+        elif magnet_setup == 12:
+            phi = (1 + np.sqrt(5))/np.sqrt(2)
+            scale_multiplier = workspace_radius / np.sqrt(phi**2 + 1**2)
+            self.magnets = []
+            for phi_index in range(3):
+                for phi_sign in [-1,1]:
+                    for one_sign in [-1,1]:
+                        magnet = [0]*3
+                        magnet[phi_index] = scale_multiplier * phi * phi_sign
+                        magnet[(phi_index+1)%3] = scale_multiplier * 1 * one_sign
+                        self.magnets.append(magnet)
+        else:
+            print('unknown Thomson solution for specified number of magnets, approximating')
+            num_magnets = magnet_setup
 
+            indices = np.arange(0, num_magnets, dtype=float) + 0.5
 
+            phi = np.arccos(1 - 2 * indices / num_magnets)
+            theta = np.pi * (1 + 5**0.5) * indices
 
-        self.magnets = magnets.tolist()
+            x, y, z = np.cos(theta) * np.sin(phi), np.sin(theta) * np.sin(phi), np.cos(phi)
+            magnets = np.transpose(np.array((x, y, z))) * workspace_radius
+            self.magnets = magnets.tolist()
         self.start_state = np.zeros((12, 1))
 
         if challenge_id == SpaceEnvironments.SQUARE:  # floating square
@@ -478,7 +509,7 @@ class SpaceProblem:
             self.true_desired_state = np.zeros((12, 2))
 
             self.desired_state = self.true_desired_state
-            self.times = [600,1200]
+            self.times = [1200, 1200]
         if challenge_id == SpaceEnvironments.CUBE:  # floating square
             self.magnets = [self.magnets[i] for i in [0, 1]]
             self.magnets[0][1] += 1e-15

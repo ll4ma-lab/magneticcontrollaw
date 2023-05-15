@@ -369,6 +369,7 @@ def plot_stuff(data_dict, name):
     fig.tight_layout()
     return fig
 
+
 def draw_arrow(vector, color, ax, torque=False):
     if torque:
         start_index = 3

@@ -45,16 +45,17 @@ if __name__ == "__main__":
     run_adaptive = True and use_sphere
     inverse_dynamics = True and use_sphere and not cheat and not use_special_case_solver
 
-    simulate_boat = True
+    simulate_boat = False
 
     controller_knows_boat = False and simulate_boat
 
     vel_noise = False
     control_noise = False
 
-    env = SpaceProblem(SpaceEnvironments.REGULATOR,3)
-    #env.magnets = env.magnets[:4]
-    # env.trajectoryDimensions = 'xyz'
+    num_magnets = 2
+    env = SpaceProblem(SpaceEnvironments.REGULATOR, num_magnets)
+    # env.magnets = env.magnets[:4]
+    #env.trajectoryDimensions = 'xyz'
 
     sim_time = np.sum(env.times)
 
@@ -80,7 +81,7 @@ if __name__ == "__main__":
 
     # boat object
     boat_mass, boat_moi = compute_boat_properties(0.059, 0.075, 0.07, 0.031)
-    boat_properties = ObjectProperties(mass=boat_mass*0.1, MOI=boat_moi*0.1)
+    boat_properties = ObjectProperties(mass=boat_mass, MOI=boat_moi)
     # np.diag((0,1,0.5))@
     adaptive_model = RadiusSysid
 
@@ -113,7 +114,7 @@ if __name__ == "__main__":
         )
 
     if inverse_dynamics:
-        controller = PDController(env.start_state, 0.012, 0.004, 0.012, 0.01, 0, 0)
+        controller = PDController(env.start_state, 0.012, 0.004, 0.012, 0.013, 0, 0)
     elif use_special_case_solver:
         controller = PDController(env.start_state, 0.0005, 0.0, 0.1, 0.0, 0.0, 0.000)
     else:
@@ -167,7 +168,7 @@ if __name__ == "__main__":
     transforms = np.array([state[0] for state in states])
     desired_final_tf = build_tf(desired_states[-1][:3, 0], desired_states[-1][3:6, 0])
     remaining_error = np.array(
-        [controller.compute_error(state[0],desired_final_tf) for state in states]
+        [controller.compute_error(state[0], desired_final_tf) for state in states]
     )
 
     # visualization stuff
