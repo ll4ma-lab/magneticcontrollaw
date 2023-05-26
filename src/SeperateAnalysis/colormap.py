@@ -14,11 +14,10 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
 import numpy as np
 
+import sys
 
-original_cm = cm.get_cmap("hot_r", 256)
-newcolors = original_cm(np.concatenate([np.linspace(0.2, 0.85, 1000)]))
-
-newcmp = ListedColormap(newcolors)
+sys.path.append("..")  # Adds higher directory to python modules path.
+from visualization import sigma_color_map
 
 max_sigma = 8e7
 min_sigma = 2e6
@@ -58,8 +57,8 @@ ax1.set_ylim(0, pixel_height)
 
 ax2 = ax1.twinx()
 
-ax1.imshow(Y, cmap=newcmp, origin="lower", aspect="auto")
-ax2.imshow(Y, cmap=newcmp, origin="lower", aspect="auto")
+ax1.imshow(Y, cmap=sigma_color_map, origin="lower", aspect="auto")
+ax2.imshow(Y, cmap=sigma_color_map, origin="lower", aspect="auto")
 ax1.plot(np.linspace(0, pixel_height, 9))
 
 ax1.set_xticks([])
@@ -86,8 +85,8 @@ ax1.set_xlim(0, pixel_height)
 
 ax2 = ax1.twiny()
 
-ax1.imshow(Y.T, cmap=newcmp, origin="lower", aspect="auto")
-ax2.imshow(Y.T, cmap=newcmp, origin="lower", aspect="auto")
+ax1.imshow(Y.T, cmap=sigma_color_map, origin="lower", aspect="auto")
+ax2.imshow(Y.T, cmap=sigma_color_map, origin="lower", aspect="auto")
 ax1.plot(np.linspace(0, width, 9))
 
 ax1.set_yticks([])

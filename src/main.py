@@ -42,7 +42,7 @@ if __name__ == "__main__":
     use_sphere = True
     cheat = False
 
-    run_adaptive = True and use_sphere
+    run_adaptive = True and use_sphere and not cheat
     inverse_dynamics = True and use_sphere and not cheat and not use_special_case_solver
 
     simulate_boat = False
@@ -172,15 +172,24 @@ if __name__ == "__main__":
     )
 
     # visualization stuff
+    if run_adaptive:
+        object_parameters_over_time = [(adaptive.parameters[0][:2].T @ np.diag((1,adaptive.problem.sigma_multiplier))).T] \
+                                      * (sim_time - len(adaptive.parameters))\
+                                      + adaptive.parameters
+    else:
+        object_parameters_over_time = [[object_properties_approximate.radius,object_properties_approximate.sigma]] * sim_time
+
+       
     env.radius *= 0.5
     anim = visualization.animate_2d_path(
         env,
         positions,
         transforms,
         controls,
+        object_parameters_over_time=object_parameters_over_time,
         name="",
         save_plot_steps=velocity_profile.switching_times,
-        save=False,
+        save_location=False,
     )
     npdesired_states = np.array(desired_states)
 
@@ -223,7 +232,12 @@ if __name__ == "__main__":
 
     import dataloader
     from datetime import datetime
-
+    
+    if not use_special_case_solver:
+        del solver.pool
+    if run_adaptive:
+        del adaptive.optimizer
+    
     dataloader.save(
         "../data/sim_" + str(sim_time) + "s_" + str(datetime.now()).replace(":", "."),
         [globals()],

@@ -503,13 +503,13 @@ class SpaceProblem:
             self.desired_state = self.true_desired_state
             self.times = [120] * self.desired_state.shape[1]
         if challenge_id == SpaceEnvironments.REGULATOR:
-            self.start_state[:3, 0] = np.linspace(0.05, 0.05, 3)
+            self.start_state[:3, 0] = np.linspace(0.03, 0.05, 3)
             self.start_state[3:6, 0] = np.linspace(0.5, 1.5, 3)
 
             self.true_desired_state = np.zeros((12, 2))
 
             self.desired_state = self.true_desired_state
-            self.times = [1200, 1200]
+            self.times = [1200, 600]
         if challenge_id == SpaceEnvironments.CUBE:  # floating square
             self.magnets = [self.magnets[i] for i in [0, 1]]
             self.magnets[0][1] += 1e-15

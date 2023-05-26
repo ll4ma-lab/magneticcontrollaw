@@ -11,11 +11,27 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import mpl_toolkits.mplot3d.axes3d as p3
 from matplotlib import animation
 from matplotlib import cm
+from matplotlib.colors import ListedColormap
 
 Lanc3 = (0, 0.4470, 0.7410)
 Lanc1 = (0.8500, 0.3250, 0.0980)
 Lanc2 = (0.9290, 0.6940, 0.1250)
 
+
+original_cm = cm.get_cmap('hot_r', 256)
+trimmed_cm = original_cm(np.concatenate([np.linspace(0.2,0.85,1000)]))
+
+sigma_color_map = ListedColormap(trimmed_cm)
+
+def get_color_from_sigma(sigma):
+    max_sigma = 8e7
+    min_sigma = 2e6
+    
+    percent_color = (sigma-min_sigma)/(max_sigma-min_sigma)
+    
+    
+    colors = sigma_color_map(percent_color)
+    return colors
 
 def add_cube(center, radius, op, ax):
     cube_definition = build_rectangular_prism(center, radius, radius, radius)
@@ -112,13 +128,14 @@ def draw_arrows(vectors, errors, threshold, ax, torque=False):
             draw_arrow(vector, "red", ax, torque)
 
 
-def draw_sphere(center, radius, ax):
+def draw_sphere(center, radius, ax, color="orange"):
     # draw sphere
     u, v = np.mgrid[0 : 2 * np.pi : 20j, 0 : np.pi : 10j]
     x = np.cos(u) * np.sin(v) * radius + center[0]
     y = np.sin(u) * np.sin(v) * radius + center[1]
     z = np.cos(v) * radius + center[2]
-    ax.plot_wireframe(x, y, z, color="orange")
+    sphere_frame = ax.plot_surface(x, y, z, color=color, shade=False)
+    return sphere_frame
 
 
 def visualize_2d_path(environment, positions, controls, name="path"):
@@ -199,9 +216,10 @@ def animate_2d_path(
     positions,
     transforms,
     controls,
+    object_parameters_over_time=None,
     save_plot_steps=[],
     name="path",
-    save=False,
+    save_location=False,
     magnet_color=False,
 ):
     # Attaching 3D axis to the figure
@@ -223,27 +241,38 @@ def animate_2d_path(
     )
     ax.set_title(name)
 
-    save_plot_steps = save_plot_steps.copy() if save else []
-
+    save_plot_steps = save_plot_steps.copy() if save_location else []
     def update_lines(
-        num, positions, transforms, controls, traj_plot, scatter, lines, cubes
+        num, positions, transforms, controls, object_parameters_over_time, traj_plot, scatter, lines, cubes
     ):
         # num = num + states.shape[1]/2
         update_axes_with_tf(transforms[num], lines)
         traj_plot.set_data(np.transpose(positions[: num + 1, 0:2]))
         traj_plot.set_3d_properties(positions[: num + 1, 2])
-        scatter._offsets3d = (
-            positions[num, 0:1],
-            positions[num, 1:2],
-            positions[num, 2:3],
-        )
 
+        if object_parameters_over_time:
+            global current_sphere
+            if current_sphere:
+                current_sphere.remove()
+                
+            color = list(get_color_from_sigma(object_parameters_over_time[num][1]))
+            color[3] = 0.4
+            sphere_radius = object_parameters_over_time[num][0]
+            current_sphere = draw_sphere(positions[num],
+                                         sphere_radius,
+                                         ax,
+                                         color)
+        else:
+            scatter._offsets3d = (
+                positions[num, 0:1],
+                positions[num, 1:2],
+                positions[num, 2:3],
+            )
+        
+        colorinfo = [119 / 256.0, 27 / 256.0, 12 / 256.0, 0.2]
         for i in range(len(cubes)):
             cube = cubes[i]
-            colorinfo = [119 / 256.0, 27 / 256.0, 12 / 256.0, 0.2]
             # print(controls[num][0],i)
-            if controls[num].mag_num == i:
-                colorinfo[3] = 0.8
             cube.set_facecolor(colorinfo)
 
         seconds = num + 1
@@ -253,7 +282,14 @@ def animate_2d_path(
             save_plot_steps.remove(
                 seconds
             )  # dont keep doing this and save every loop through animation forever
-            fig.savefig("../videos/" + str(seconds) + ".pdf")
+            fig.savefig(save_location + str(seconds) + ".pdf")
+        
+        
+        # if there are magnets, highlight current commanded magnet
+        if len(cubes): 
+            colorinfo[3] = 0.8
+            cubes[controls[num].mag_num].set_facecolor(colorinfo)
+        
         return traj_plot, scatter, lines
 
     traj_plot = ax.plot(
@@ -283,29 +319,35 @@ def animate_2d_path(
             color=Lanc3,
         )[0],
     ]
-
-    scatter = ax.scatter(
-        positions[0:1, 0],
-        positions[0:1, 1],
-        positions[0:1, 2],
-        linewidth=10,
-        color="orange",
-    )
+    if object_parameters_over_time:
+        global current_sphere
+        current_sphere = None
+        scatter = None
+    else:
+        scatter = ax.scatter(
+            positions[0:1, 0],
+            positions[0:1, 1],
+            positions[0:1, 2],
+            linewidth=10,
+            color="orange",
+        )
     # Creating the Animation object
     line_ani = animation.FuncAnimation(
         fig,
         update_lines,
         positions.shape[0],
-        fargs=(positions, transforms, controls, traj_plot, scatter, lines, cubes),
+        fargs=(positions, transforms, controls, object_parameters_over_time, traj_plot, scatter, lines, cubes),
         interval=1,
         blit=False,
     )
 
     ax.view_init(elev=environment.el, azim=environment.az)
     plt.show()
-    if save:
-        line_ani.save("../videos/animation.mp4", writer="ffmpeg", fps=20, dpi=400)
-    return line_ani
+    if save_location:
+        line_ani.save(save_location + "animation.mp4", writer="ffmpeg", fps=20, dpi=400)
+    return line_ani,ax
+
+
 
 
 def animate_optimization_2d_path(environment, states, name="path"):
