@@ -12,26 +12,29 @@ import mpl_toolkits.mplot3d.axes3d as p3
 from matplotlib import animation
 from matplotlib import cm
 from matplotlib.colors import ListedColormap
+from models import construct_omega, SphereControlCommand
+
 
 Lanc3 = (0, 0.4470, 0.7410)
 Lanc1 = (0.8500, 0.3250, 0.0980)
 Lanc2 = (0.9290, 0.6940, 0.1250)
 
 
-original_cm = cm.get_cmap('hot_r', 256)
-trimmed_cm = original_cm(np.concatenate([np.linspace(0.2,0.85,1000)]))
+original_cm = cm.get_cmap("hot_r", 256)
+trimmed_cm = original_cm(np.concatenate([np.linspace(0.2, 0.85, 1000)]))
 
 sigma_color_map = ListedColormap(trimmed_cm)
+
 
 def get_color_from_sigma(sigma):
     max_sigma = 8e7
     min_sigma = 2e6
-    
-    percent_color = (sigma-min_sigma)/(max_sigma-min_sigma)
-    
-    
+
+    percent_color = (sigma - min_sigma) / (max_sigma - min_sigma)
+
     colors = sigma_color_map(percent_color)
     return colors
+
 
 def add_cube(center, radius, op, ax):
     cube_definition = build_rectangular_prism(center, radius, radius, radius)
@@ -220,14 +223,15 @@ def animate_2d_path(
     save_plot_steps=[],
     name="path",
     save_location=False,
-    fig=None
+    fig=None,
+    mag_color=[119 / 256.0, 27 / 256.0, 12 / 256.0, 0.2],
 ):
     if fig:
         ax = fig.gca()
     else:
         fig = plt.figure()
         ax = p3.Axes3D(fig)
-    
+
     ax.set_xlim(*environment.visualization_boundary_y)
     ax.set_ylim(*environment.visualization_boundary_y)
     ax.set_zlim(*environment.visualization_boundary_y)
@@ -245,11 +249,23 @@ def animate_2d_path(
     ax.set_title(name)
 
     save_plot_steps = save_plot_steps.copy() if save_location else []
-    def update_lines(
-        num, positions, transforms, controls, object_parameters_over_time, traj_plot, scatter, lines, cubes
+
+    def update(
+        num,
+        positions,
+        transforms,
+        controls,
+        object_parameters_over_time,
+        traj_plot,
+        scatter,
+        axis_lines,
+        cubes,
+        mag_color,
+        dipole_axis_line,
+        magnets,
     ):
         # num = num + states.shape[1]/2
-        update_axes_with_tf(transforms[num], lines)
+        update_axes_with_tf(transforms[num], axis_lines)
         traj_plot.set_data(np.transpose(positions[: num + 1, 0:2]))
         traj_plot.set_3d_properties(positions[: num + 1, 2])
 
@@ -257,22 +273,19 @@ def animate_2d_path(
             global current_sphere
             if current_sphere:
                 current_sphere.remove()
-                
+
             color = list(get_color_from_sigma(object_parameters_over_time[num][1]))
             color[3] = 0.4
             sphere_radius = object_parameters_over_time[num][0]
-            current_sphere = draw_sphere(positions[num],
-                                         sphere_radius,
-                                         ax,
-                                         color)
+            current_sphere = draw_sphere(positions[num], sphere_radius, ax, color)
         else:
             scatter._offsets3d = (
                 positions[num, 0:1],
                 positions[num, 1:2],
                 positions[num, 2:3],
             )
-        
-        colorinfo = [119 / 256.0, 27 / 256.0, 12 / 256.0, 0.2]
+
+        colorinfo = mag_color.copy()
         for i in range(len(cubes)):
             cube = cubes[i]
             # print(controls[num][0],i)
@@ -286,20 +299,28 @@ def animate_2d_path(
                 seconds
             )  # dont keep doing this and save every loop through animation forever
             fig.savefig(save_location + str(seconds) + ".pdf")
-        
-        
+
         # if there are magnets, highlight current commanded magnet
-        if len(cubes): 
+        if len(cubes):
             colorinfo[3] = 0.8
             cubes[controls[num].mag_num].set_facecolor(colorinfo)
-        
-        return traj_plot, scatter, lines
+            if type(controls[num]) is SphereControlCommand:
+                angles = np.array([controls[num].psi, controls[num].xi])
+                omega_vector = construct_omega(angles).flatten()
+                magnet_position = np.array(magnets[controls[num].mag_num])
+                dipole_points = np.array(
+                    [magnet_position, magnet_position + omega_vector * 0.1]
+                )
+                dipole_axis_line.set_data(dipole_points[:, :2].T)
+                dipole_axis_line.set_3d_properties(dipole_points[:, 2])
+
+        return traj_plot, scatter, axis_lines
 
     traj_plot = ax.plot(
         positions[0:1, 0], positions[0:1, 1], positions[0:1, 2], linewidth=2, color="k"
     )[0]
 
-    lines = [
+    axis_lines = [
         ax.plot(
             positions[0:1, 0],
             positions[0:1, 1],
@@ -322,7 +343,7 @@ def animate_2d_path(
             color=Lanc3,
         )[0],
     ]
-    origin_lines = [
+    starting_axis_lines = [
         ax.plot(
             positions[0:1, 0],
             positions[0:1, 1],
@@ -345,7 +366,15 @@ def animate_2d_path(
             color=Lanc3,
         )[0],
     ]
-    update_axes_with_tf(transforms[0], origin_lines)
+    update_axes_with_tf(transforms[0], starting_axis_lines)
+    dipole_axis_line = ax.plot(
+        positions[0:1, 0],
+        positions[0:1, 1],
+        positions[0:1, 2],
+        linewidth=3,
+        color="blue",
+    )[0]
+
     if object_parameters_over_time:
         global current_sphere
         current_sphere = None
@@ -361,9 +390,21 @@ def animate_2d_path(
     # Creating the Animation object
     line_ani = animation.FuncAnimation(
         fig,
-        update_lines,
+        update,
         positions.shape[0],
-        fargs=(positions, transforms, controls, object_parameters_over_time, traj_plot, scatter, lines, cubes),
+        fargs=(
+            positions,
+            transforms,
+            controls,
+            object_parameters_over_time,
+            traj_plot,
+            scatter,
+            axis_lines,
+            cubes,
+            mag_color,
+            dipole_axis_line,
+            environment.magnets,
+        ),
         interval=1,
         blit=False,
     )
@@ -372,9 +413,7 @@ def animate_2d_path(
     plt.show()
     if save_location:
         line_ani.save(save_location + "animation.mp4", writer="ffmpeg", fps=20, dpi=400)
-    return line_ani,fig
-
-
+    return line_ani, fig
 
 
 def animate_optimization_2d_path(environment, states, name="path"):
