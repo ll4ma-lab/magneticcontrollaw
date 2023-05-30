@@ -220,11 +220,14 @@ def animate_2d_path(
     save_plot_steps=[],
     name="path",
     save_location=False,
-    magnet_color=False,
+    fig=None
 ):
-    # Attaching 3D axis to the figure
-    fig = plt.figure()
-    ax = p3.Axes3D(fig)
+    if fig:
+        ax = fig.gca()
+    else:
+        fig = plt.figure()
+        ax = p3.Axes3D(fig)
+    
     ax.set_xlim(*environment.visualization_boundary_y)
     ax.set_ylim(*environment.visualization_boundary_y)
     ax.set_zlim(*environment.visualization_boundary_y)
@@ -319,6 +322,30 @@ def animate_2d_path(
             color=Lanc3,
         )[0],
     ]
+    origin_lines = [
+        ax.plot(
+            positions[0:1, 0],
+            positions[0:1, 1],
+            positions[0:1, 2],
+            linewidth=2,
+            color=Lanc1,
+        )[0],
+        ax.plot(
+            positions[0:1, 0],
+            positions[0:1, 1],
+            positions[0:1, 2],
+            linewidth=2,
+            color=Lanc2,
+        )[0],
+        ax.plot(
+            positions[0:1, 0],
+            positions[0:1, 1],
+            positions[0:1, 2],
+            linewidth=2,
+            color=Lanc3,
+        )[0],
+    ]
+    update_axes_with_tf(transforms[0], origin_lines)
     if object_parameters_over_time:
         global current_sphere
         current_sphere = None
@@ -345,7 +372,7 @@ def animate_2d_path(
     plt.show()
     if save_location:
         line_ani.save(save_location + "animation.mp4", writer="ffmpeg", fps=20, dpi=400)
-    return line_ani,ax
+    return line_ani,fig
 
 
 
