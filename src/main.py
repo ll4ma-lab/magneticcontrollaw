@@ -23,6 +23,7 @@ import TrapProfile
 from Adaptive import Adaptive
 
 
+
 from models import MultiMagModel
 from solvers.modelOptimization import MultiMagSolver
 from solvers.axisAlignedSolver import AxisAlignedSolver
@@ -39,6 +40,9 @@ from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID
 if __name__ == "__main__":
 
     use_special_case_solver = True
+    special_case_solver = 'DevinSolver2'
+    ex_filename =     'excelfiles/ds1_c1.csv'
+    vel_ex_filename = 'excelfiles/ds1_c1_r.csv'
     use_sphere = True
     cheat = False
 
@@ -52,7 +56,7 @@ if __name__ == "__main__":
     vel_noise = False
     control_noise = False
 
-    env = SpaceProblem(SpaceEnvironments.CUBE)
+    env = SpaceProblem(SpaceEnvironments.REGULATOR2)
     env.magnets = env.magnets[:]
     env.trajectory_dimensions = 'xyz'
 
@@ -69,9 +73,10 @@ if __name__ == "__main__":
         mass=mass, MOI=MOI, radius=radius, sigma=sigma_al
     )
 
-    # controller object
+      # controller object
     initial_radius_guess = 0.02
-    mass_initial, moi_initial = compute_sphere_properties(8940, radius)
+    #mass_initial, moi_initial = compute_sphere_properties(8940, radius)
+    mass_initial, moi_initial = compute_sphere_properties(2710, radius)
     object_properties_approximate = ObjectProperties(
         mass=mass_initial,
         MOI=moi_initial,
@@ -81,6 +86,7 @@ if __name__ == "__main__":
 
     # boat object
     boat_mass, boat_moi = compute_boat_properties(0.059, 0.075, 0.07, 0.031)
+    #boat_mass = 0.056
     boat_properties = ObjectProperties(mass=boat_mass, MOI=boat_moi)
 
     adaptive_model = MassSysID
@@ -102,7 +108,10 @@ if __name__ == "__main__":
 
     if use_special_case_solver:
         solver = AxisAlignedSolver(solver_model, env.trajectory_dimensions)
-        solver = DevinSolver(solver_model)
+        if special_case_solver == 'DevinSolver':
+            solver = DevinSolver(solver_model)
+        else:
+            solver = DevinSolver2(solver_model)
     else:
         solver = MultiMagSolver(
             model=solver_model,
@@ -122,10 +131,18 @@ if __name__ == "__main__":
     #     controller = PDController(
     #         env.start_state, 0.0005, 0.000001, 0.0005, 0.000002, 0.0, 0.000
     #     )
+    alpha = 0.9
+    if special_case_solver == 'DevinSolver':
+        T = 4
+    else:
+        T = 2
+    totalmass = mass_initial + 0.056
+    kp = (totalmass)/(T**2)*(alpha**2 -2*alpha + 1)
+    kd = (4*(totalmass)*(1-alpha) - kp*T**2)/(2*T)
     if inverse_dynamics:
-        controller = PDController(env.start_state, 0.12, 0.004, 0.12, 0.004, 0, 0)
+        controller = PDController(env.start_state, kp, 0.004, kd, 0.004, 0, 0)
     elif use_special_case_solver:
-        controller = PDController(env.start_state, .0005, 0.000, 0.036, 0.0, 0.0, 0.0)
+        controller = PDController(env.start_state, kp, 0.000, kd, 0.0, 0.0, 0.0)
     else:
         controller = PDController(
             env.start_state, 0.007, 0.000001, 0.03, 0.000002, 0.0, 0.000
@@ -231,6 +248,14 @@ if __name__ == "__main__":
     rms_error = np.mean(np.square(diff))
     
 
+    print(np.linalg.norm(positions[-1]))
+    print(np.linalg.norm(linear_velocity[-1]))
+    print(np.linalg.norm(rotational_velocity[-1]))
+    
+    
+
+    np.savetxt(ex_filename, positions, delimiter=",")
+    np.savetxt(vel_ex_filename, rotational_velocity, delimiter=",")
     import dataloader
     from datetime import datetime
 
@@ -238,3 +263,4 @@ if __name__ == "__main__":
         "../data/sim_" + str(sim_time) + "s_" + str(datetime.now()).replace(":", "."),
         [globals()],
     )
+    

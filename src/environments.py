@@ -6,6 +6,7 @@ Created on Thu Feb 20 13:20:28 2020
 """
 import numpy as np
 from enum import Enum
+import random
 
 
 class PlanarEnvironments(Enum):
@@ -33,6 +34,35 @@ class SpaceEnvironments(Enum):
     SPIN = 7
     SPIN2 = 8
     BACKANDFORTH = 9
+    CENTER = 10
+    CENTER2 = 11
+    CENTER3 = 12
+    CENTER4 = 13
+    CENTER5 = 14
+    CENTER6 = 15
+    CENTER7 = 16
+    CENTER8 = 17
+    CENTER9 = 18
+    CENTER10 = 19
+    CENTER11 = 20
+    CENTER12 = 21
+    CENTER13 = 22
+    CENTER14 = 23
+    REGULATOR2 = 24
+    REGULATOR3 = 25
+    REGULATOR4 = 26
+    REGULATOR5 = 27
+    REGULATOR6 = 28
+    REGULATOR7 = 29
+    REGULATOR8 = 30
+    REGULATOR9 = 31
+    REGULATOR10 = 32
+    REGULATOR11 = 33
+    REGULATOR12 = 32
+    REGULATOR13 = 35
+    REGULATOR14 = 36
+    REGULATOR15 = 37
+    
 
 
 class PlanarProblem:
@@ -390,6 +420,8 @@ class SpaceProblem:
         self.visualization_boundary_z = (-0.3, 0.3)
         self.az = -43
         self.el = -160
+        self.centertime = 500
+        self.regtime = 1000
         self.lims = [
             (-width / 2, width / 2),
             (-length / 2, length / 2),
@@ -416,8 +448,8 @@ class SpaceProblem:
 
         magnets = np.array(
             [
-                (0.195, 0.00, 0),
-                (-0.195, 0.0, 0),
+                (0.2225, 0.00, 0),
+                (-0.2225, 0.0, 0),
                 (0.00, 0.150, 0.0),
                 (0.00, -0.150, 0.0),
                 (1e-10, 0.000, 0.15),
@@ -426,6 +458,12 @@ class SpaceProblem:
         )
         self.magnets = magnets.tolist()
         self.start_state = np.zeros((12, 1))
+        self.start_state[0,0] = 0.15
+        self.start_state[1,0] = 0.15
+        self.start_state[2,0] = 0.15
+        #self.start_state[0,0] = random.random()/10
+        #self.start_state[1,0] = random.random()/10
+        #self.start_state[2,0] = random.random()/10
 
         if challenge_id == SpaceEnvironments.SQUARE:  # floating square
             self.true_desired_state = np.zeros((12, 5))
@@ -577,7 +615,8 @@ class SpaceProblem:
 
         if challenge_id == SpaceEnvironments.BACKANDFORTH:  # individual axis
             self.magnets = [self.magnets[i] for i in [0, 1]]
-
+            self.magnets[0][1] += 1e-15
+            self.magnets[1][1] += 1e-15
 
             self.true_desired_state = np.zeros((12, 3))
 
@@ -598,6 +637,251 @@ class SpaceProblem:
             self.desired_state = self.true_desired_state
             self.times = [100] * self.desired_state.shape[1]
             self.start_state[1] = 1e-15
+            
+        if challenge_id == SpaceEnvironments.CENTER:  # Command to go to center
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+           # self.magnets[0][1] += 1e-15
+           # self.magnets[1][1] += 1e-15
+            self.start_state[0,0] = 0.1
+            self.start_state[1,0] = 0.1
+            self.start_state[2,0] = 0.1
+            self.true_desired_state = np.zeros((12, 1))
+            self.desired_state = self.true_desired_state
+            self.times = [self.centertime] * self.desired_state.shape[1]
+            
+        if challenge_id == SpaceEnvironments.CENTER2:  # Command to go to center
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.03
+            self.start_state[1,0] = 0.03
+            self.start_state[2,0] = -0.03
+            self.true_desired_state = np.zeros((12, 1))
+            self.desired_state = self.true_desired_state
+            self.times = [self.centertime] * self.desired_state.shape[1]
+            
+        if challenge_id == SpaceEnvironments.CENTER3:  # Command to go to center
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.03
+            self.start_state[1,0] = -0.03
+            self.start_state[2,0] = 0.03
+            self.true_desired_state = np.zeros((12, 1))
+            self.desired_state = self.true_desired_state
+            self.times = [self.centertime] * self.desired_state.shape[1]
+            
+        if challenge_id == SpaceEnvironments.CENTER4:  # Command to go to center
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.03
+            self.start_state[1,0] = -0.03
+            self.start_state[2,0] = -0.03
+            self.true_desired_state = np.zeros((12, 1))
+            self.desired_state = self.true_desired_state
+            self.times = [self.centertime] * self.desired_state.shape[1]
+            
+        if challenge_id == SpaceEnvironments.CENTER5:  # Command to go to center
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = -0.03
+            self.start_state[1,0] = 0.03
+            self.start_state[2,0] = 0.03
+            self.true_desired_state = np.zeros((12, 1))
+            self.desired_state = self.true_desired_state
+            self.times = [self.centertime] * self.desired_state.shape[1]
+            
+        if challenge_id == SpaceEnvironments.CENTER6:  # Command to go to center
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = -0.03
+            self.start_state[1,0] = 0.03
+            self.start_state[2,0] = -0.03
+            self.true_desired_state = np.zeros((12, 1))
+            self.desired_state = self.true_desired_state
+            self.times = [self.centertime] * self.desired_state.shape[1]
+            
+        if challenge_id == SpaceEnvironments.CENTER7:  # Command to go to center
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = -0.03
+            self.start_state[1,0] = -0.03
+            self.start_state[2,0] = 0.03
+            self.true_desired_state = np.zeros((12, 1))
+            self.desired_state = self.true_desired_state
+            self.times = [self.centertime] * self.desired_state.shape[1]
+            
+        if challenge_id == SpaceEnvironments.CENTER8:  # Command to go to center
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = -0.03
+            self.start_state[1,0] = -0.03
+            self.start_state[2,0] = -0.03
+            self.true_desired_state = np.zeros((12, 1))
+            self.desired_state = self.true_desired_state
+            self.times = [self.centertime] * self.desired_state.shape[1]
+            
+        if challenge_id == SpaceEnvironments.CENTER9:  # Command to go to center
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.052
+            self.start_state[1,0] = 0.0
+            self.start_state[2,0] = 0.00001
+            self.true_desired_state = np.zeros((12, 1))
+            self.desired_state = self.true_desired_state
+            self.times = [self.centertime] * self.desired_state.shape[1]
+            
+        if challenge_id == SpaceEnvironments.CENTER10:  # Command to go to center
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = -0.052
+            self.start_state[1,0] = 0.0
+            self.start_state[2,0] = 0.00001
+            self.true_desired_state = np.zeros((12, 1))
+            self.desired_state = self.true_desired_state
+            self.times = [self.centertime] * self.desired_state.shape[1]
+            
+        if challenge_id == SpaceEnvironments.CENTER11:  # Command to go to center
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.0
+            self.start_state[1,0] = 0.052
+            self.start_state[2,0] = 0.00001
+            self.true_desired_state = np.zeros((12, 1))
+            self.desired_state = self.true_desired_state
+            self.times = [self.centertime] * self.desired_state.shape[1]
+            
+        if challenge_id == SpaceEnvironments.CENTER12:  # Command to go to center
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.0
+            self.start_state[1,0] = -0.052
+            self.start_state[2,0] = 0.00001
+            self.true_desired_state = np.zeros((12, 1))
+            self.desired_state = self.true_desired_state
+            self.times = [self.centertime] * self.desired_state.shape[1]
+            
+        if challenge_id == SpaceEnvironments.CENTER13:  # Command to go to center
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.0
+            self.start_state[1,0] = 0.00001
+            self.start_state[2,0] = 0.052
+            self.true_desired_state = np.zeros((12, 1))
+            self.desired_state = self.true_desired_state
+            self.times = [self.centertime] * self.desired_state.shape[1]
+            
+        if challenge_id == SpaceEnvironments.CENTER14:  # Command to go to center
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.0
+            self.start_state[1,0] = 0.00001
+            self.start_state[2,0] = -0.052
+            self.true_desired_state = np.zeros((12, 1))
+            self.desired_state = self.true_desired_state
+            self.times = [self.centertime] * self.desired_state.shape[1]
+            
+        if challenge_id == SpaceEnvironments.REGULATOR2:
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.0643
+            self.start_state[1,0] = 0.0643
+            self.start_state[2,0] = 0.0643
+            self.true_desired_state = np.zeros((12, 2))
+            self.desired_state = self.true_desired_state
+            self.times = [2, self.regtime]
+        if challenge_id == SpaceEnvironments.REGULATOR3:
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.0643
+            self.start_state[1,0] = -0.0643
+            self.start_state[2,0] = 0.0643
+            self.true_desired_state = np.zeros((12, 2))
+            self.desired_state = self.true_desired_state
+            self.times = [2, self.regtime]
+        if challenge_id == SpaceEnvironments.REGULATOR4:
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.0643
+            self.start_state[1,0] = -0.0643
+            self.start_state[2,0] = -0.0643
+            self.true_desired_state = np.zeros((12, 2))
+            self.desired_state = self.true_desired_state
+            self.times = [2, self.regtime]
+        if challenge_id == SpaceEnvironments.REGULATOR5:
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.0643
+            self.start_state[1,0] = 0.0643
+            self.start_state[2,0] = -0.0643
+            self.true_desired_state = np.zeros((12, 2))
+            self.desired_state = self.true_desired_state
+            self.times = [2, self.regtime]
+        if challenge_id == SpaceEnvironments.REGULATOR6:
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = -0.0643
+            self.start_state[1,0] = 0.0643
+            self.start_state[2,0] = 0.0643
+            self.true_desired_state = np.zeros((12, 2))
+            self.desired_state = self.true_desired_state
+            self.times = [2, self.regtime]
+        if challenge_id == SpaceEnvironments.REGULATOR7:
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = -0.0643
+            self.start_state[1,0] = -0.0643
+            self.start_state[2,0] = 0.0643
+            self.true_desired_state = np.zeros((12, 2))
+            self.desired_state = self.true_desired_state
+            self.times = [2, self.regtime]
+        if challenge_id == SpaceEnvironments.REGULATOR8:
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = -0.0643
+            self.start_state[1,0] = -0.0643
+            self.start_state[2,0] = -0.0643
+            self.true_desired_state = np.zeros((12, 2))
+            self.desired_state = self.true_desired_state
+            self.times = [2, self.regtime]
+        if challenge_id == SpaceEnvironments.REGULATOR9:
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = -0.0643
+            self.start_state[1,0] = 0.0643
+            self.start_state[2,0] = -0.0643
+            self.true_desired_state = np.zeros((12, 2))
+            self.desired_state = self.true_desired_state
+            self.times = [2, self.regtime]
+        if challenge_id == SpaceEnvironments.REGULATOR10:
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.1113
+            self.start_state[1,0] = 0.0
+            self.start_state[2,0] = 0.0
+            self.true_desired_state = np.zeros((12, 2))
+            self.desired_state = self.true_desired_state
+            self.times = [2, self.regtime]
+        if challenge_id == SpaceEnvironments.REGULATOR11:
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = -0.1113
+            self.start_state[1,0] = 0.0
+            self.start_state[2,0] = 0.0
+            self.true_desired_state = np.zeros((12, 2))
+            self.desired_state = self.true_desired_state
+            self.times = [2, self.regtime]
+        if challenge_id == SpaceEnvironments.REGULATOR12:
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.0
+            self.start_state[1,0] = 0.1113
+            self.start_state[2,0] = 0.0
+            self.true_desired_state = np.zeros((12, 2))
+            self.desired_state = self.true_desired_state
+            self.times = [2, self.regtime]
+        if challenge_id == SpaceEnvironments.REGULATOR13:
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.0
+            self.start_state[1,0] = -0.1113
+            self.start_state[2,0] = 0.0
+            self.true_desired_state = np.zeros((12, 2))
+            self.desired_state = self.true_desired_state
+            self.times = [2, self.regtime]
+        if challenge_id == SpaceEnvironments.REGULATOR14:
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.0
+            self.start_state[1,0] = 0.0
+            self.start_state[2,0] = 0.1113
+            self.true_desired_state = np.zeros((12, 2))
+            self.desired_state = self.true_desired_state
+            self.times = [2, self.regtime]
+        if challenge_id == SpaceEnvironments.REGULATOR15:
+            self.magnets = [self.magnets[i] for i in [0, 1]]
+            self.start_state[0,0] = 0.0
+            self.start_state[1,0] = 0.0
+            self.start_state[2,0] = -0.1113
+            self.true_desired_state = np.zeros((12, 2))
+            self.desired_state = self.true_desired_state
+            self.times = [2, self.regtime]
+    
+            
+       
+            
 
     def spiral_helper(self, t):
         xyz = np.zeros((12))
