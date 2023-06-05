@@ -48,12 +48,10 @@ cylinder_parameters = {
 
 
 def sphere_optimize(prob):
-    try:
-        solver = NewtonMethod(problem=prob, **sphere_parameters)
-        result = solver.optimize(prob.initial_solution, max_iterations=25)
-        return result
-    except:
-        return False
+    solver = NewtonMethod(problem=prob, **sphere_parameters)
+    result = solver.optimize(prob.initial_solution, max_iterations=25)
+    return result
+
 
 
 def cylinder_optimize(prob):

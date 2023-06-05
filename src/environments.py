@@ -773,7 +773,7 @@ class SpaceProblem:
             self.start_state[2,0] = 0.0643
             self.true_desired_state = np.zeros((12, 2))
             self.desired_state = self.true_desired_state
-            self.times = [2, self.regtime]
+            self.times = [0, self.regtime]
         if challenge_id == SpaceEnvironments.REGULATOR3:
             self.magnets = [self.magnets[i] for i in [0, 1]]
             self.start_state[0,0] = 0.0643
@@ -781,7 +781,7 @@ class SpaceProblem:
             self.start_state[2,0] = 0.0643
             self.true_desired_state = np.zeros((12, 2))
             self.desired_state = self.true_desired_state
-            self.times = [2, self.regtime]
+            self.times = [0, self.regtime]
         if challenge_id == SpaceEnvironments.REGULATOR4:
             self.magnets = [self.magnets[i] for i in [0, 1]]
             self.start_state[0,0] = 0.0643
@@ -789,7 +789,7 @@ class SpaceProblem:
             self.start_state[2,0] = -0.0643
             self.true_desired_state = np.zeros((12, 2))
             self.desired_state = self.true_desired_state
-            self.times = [2, self.regtime]
+            self.times = [0, self.regtime]
         if challenge_id == SpaceEnvironments.REGULATOR5:
             self.magnets = [self.magnets[i] for i in [0, 1]]
             self.start_state[0,0] = 0.0643
@@ -797,7 +797,7 @@ class SpaceProblem:
             self.start_state[2,0] = -0.0643
             self.true_desired_state = np.zeros((12, 2))
             self.desired_state = self.true_desired_state
-            self.times = [2, self.regtime]
+            self.times = [0, self.regtime]
         if challenge_id == SpaceEnvironments.REGULATOR6:
             self.magnets = [self.magnets[i] for i in [0, 1]]
             self.start_state[0,0] = -0.0643
@@ -805,7 +805,7 @@ class SpaceProblem:
             self.start_state[2,0] = 0.0643
             self.true_desired_state = np.zeros((12, 2))
             self.desired_state = self.true_desired_state
-            self.times = [2, self.regtime]
+            self.times = [0, self.regtime]
         if challenge_id == SpaceEnvironments.REGULATOR7:
             self.magnets = [self.magnets[i] for i in [0, 1]]
             self.start_state[0,0] = -0.0643
@@ -813,7 +813,7 @@ class SpaceProblem:
             self.start_state[2,0] = 0.0643
             self.true_desired_state = np.zeros((12, 2))
             self.desired_state = self.true_desired_state
-            self.times = [2, self.regtime]
+            self.times = [0, self.regtime]
         if challenge_id == SpaceEnvironments.REGULATOR8:
             self.magnets = [self.magnets[i] for i in [0, 1]]
             self.start_state[0,0] = -0.0643
@@ -821,7 +821,7 @@ class SpaceProblem:
             self.start_state[2,0] = -0.0643
             self.true_desired_state = np.zeros((12, 2))
             self.desired_state = self.true_desired_state
-            self.times = [2, self.regtime]
+            self.times = [0, self.regtime]
         if challenge_id == SpaceEnvironments.REGULATOR9:
             self.magnets = [self.magnets[i] for i in [0, 1]]
             self.start_state[0,0] = -0.0643
@@ -829,7 +829,7 @@ class SpaceProblem:
             self.start_state[2,0] = -0.0643
             self.true_desired_state = np.zeros((12, 2))
             self.desired_state = self.true_desired_state
-            self.times = [2, self.regtime]
+            self.times = [0, self.regtime]
         if challenge_id == SpaceEnvironments.REGULATOR10:
             self.magnets = [self.magnets[i] for i in [0, 1]]
             self.start_state[0,0] = 0.1113
@@ -837,7 +837,7 @@ class SpaceProblem:
             self.start_state[2,0] = 0.0
             self.true_desired_state = np.zeros((12, 2))
             self.desired_state = self.true_desired_state
-            self.times = [2, self.regtime]
+            self.times = [0, self.regtime]
         if challenge_id == SpaceEnvironments.REGULATOR11:
             self.magnets = [self.magnets[i] for i in [0, 1]]
             self.start_state[0,0] = -0.1113
@@ -845,7 +845,7 @@ class SpaceProblem:
             self.start_state[2,0] = 0.0
             self.true_desired_state = np.zeros((12, 2))
             self.desired_state = self.true_desired_state
-            self.times = [2, self.regtime]
+            self.times = [0, self.regtime]
         if challenge_id == SpaceEnvironments.REGULATOR12:
             self.magnets = [self.magnets[i] for i in [0, 1]]
             self.start_state[0,0] = 0.0
@@ -853,7 +853,7 @@ class SpaceProblem:
             self.start_state[2,0] = 0.0
             self.true_desired_state = np.zeros((12, 2))
             self.desired_state = self.true_desired_state
-            self.times = [2, self.regtime]
+            self.times = [0, self.regtime]
         if challenge_id == SpaceEnvironments.REGULATOR13:
             self.magnets = [self.magnets[i] for i in [0, 1]]
             self.start_state[0,0] = 0.0
@@ -861,7 +861,7 @@ class SpaceProblem:
             self.start_state[2,0] = 0.0
             self.true_desired_state = np.zeros((12, 2))
             self.desired_state = self.true_desired_state
-            self.times = [2, self.regtime]
+            self.times = [0, self.regtime]
         if challenge_id == SpaceEnvironments.REGULATOR14:
             self.magnets = [self.magnets[i] for i in [0, 1]]
             self.start_state[0,0] = 0.0
@@ -869,7 +869,7 @@ class SpaceProblem:
             self.start_state[2,0] = 0.1113
             self.true_desired_state = np.zeros((12, 2))
             self.desired_state = self.true_desired_state
-            self.times = [2, self.regtime]
+            self.times = [0, self.regtime]
         if challenge_id == SpaceEnvironments.REGULATOR15:
             self.magnets = [self.magnets[i] for i in [0, 1]]
             self.start_state[0,0] = 0.0
@@ -877,7 +877,7 @@ class SpaceProblem:
             self.start_state[2,0] = -0.1113
             self.true_desired_state = np.zeros((12, 2))
             self.desired_state = self.true_desired_state
-            self.times = [2, self.regtime]
+            self.times = [0, self.regtime]
     
             
        
