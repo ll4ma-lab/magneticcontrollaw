@@ -110,7 +110,11 @@ def simulate_experiment(
             adaptive.step(state_noise(state), control)
         states.append(state)
         state = simulator.simulate(true_wrench, control.seconds)
-
+        
+        if np.isnan(state[0]).any() or np.isnan(state[1]).any() or np.isnan(state[2]).any():
+            print('Found Nans in state')
+            break
+    
     if debug_prints:
         run_time = time.time() - start
         print(run_time)
@@ -127,7 +131,7 @@ def simulate_experiment(
 
 class DiscreteTimeSimulator:
     def __init__(self, state, object_properties):
-        self.dt = 0.002
+        self.dt = 0.0001
 
         body_to_world = build_tf(state[:3, 0], state[3:6, 0])
 

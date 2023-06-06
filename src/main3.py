@@ -398,7 +398,7 @@ if __name__ == "__main__":
         cheat = False
     
         run_adaptive = False and use_sphere
-        inverse_dynamics = True and use_sphere and not cheat and not use_special_case_solver
+        inverse_dynamics = False and use_sphere and not cheat and not use_special_case_solver
     
         simulate_boat = False
     
@@ -498,7 +498,7 @@ if __name__ == "__main__":
             controller = PDController(env.start_state, kp, 0.000, kd, 0.0, 0.0, 0.0)
         else:
             controller = PDController(
-                env.start_state, kp, 0.000001, kd, 0.000002, 0.0, 0.000
+                env.start_state, kp, 0.00, kd, 0.00, 0.0, 0.000
             )
         simulator = DiscreteTimeSimulator(env.start_state, object_properties)
         velocity_profile = SplineProfile.SplineProfile(env, env.times)
