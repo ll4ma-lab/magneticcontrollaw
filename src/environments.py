@@ -421,7 +421,7 @@ class SpaceProblem:
         self.az = -43
         self.el = -160
         self.centertime = 500
-        self.regtime = 1000
+        self.regtime = 3000
         self.lims = [
             (-width / 2, width / 2),
             (-length / 2, length / 2),
