@@ -482,7 +482,7 @@ if __name__ == "__main__":
         #         env.start_state, 0.0005, 0.000001, 0.0005, 0.000002, 0.0, 0.000
         #     )
     
-        alpha = 0.85
+        alpha = 0.9
         if special_case_solver == 'DevinSolver':
             T = 4
         elif special_case_solver == 'DevinSolver2':
