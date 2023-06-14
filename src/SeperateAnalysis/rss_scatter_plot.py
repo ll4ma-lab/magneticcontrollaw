@@ -26,10 +26,10 @@ results = []
 font = font
 plt.rcParams["font.size"] = font
 
-fig, ax = plt.subplots(figsize=(8, 11.5))
+fig, ax = plt.subplots(figsize=(8, 8))
 results.append(
     [
-        "Cu Pham et al.",
+        "Cu Pham et al.(2021)",
         [
             0.0034751467707221655,
             0.006260436771122923,
@@ -48,49 +48,49 @@ results.append(
 )
 results.append(
     [
-        "Cu known object  ",
+        "Cu known object wrench ",
         [0.0020667575767537396, 0.0020880214072635313, 0.002065432514759025],
         [0.17612697791853424, 0.13891845171811004, 0.17450872824627833],
     ]
 )
 results.append(
     [
-        "Cu adaptive no prior",
+        "Cu adap. wrench no prior",
         [0.008954000939082827, 0.007858609691721604, 0.007928749353677668],
         [0.14053674510060915, 0.21380164210790242, 0.11589210833286683],
     ]
 )
 results.append(
     [
-        "Al adaptive no prior",
+        "Al adap. wrench no prior",
         [0.0033948371927969663, 0.01512484879101682, 0.004144067485888561],
         [0.19631518719586386, 0.3385688026148828, 0.16355532397926],
     ]
 )
 results.append(
     [
-        "Cu adaptive prior",
+        "Cu adap. wrench prior",
         [0.0032358634869498926, 0.0031393903934275936, 0.006126581811968283],
         [0.14740721837891907, 0.10988155114259628, 0.16221349074015595],
     ]
 )
 results.append(
     [
-        "Al adaptive prior",
+        "Al adap. wrench prior",
         [0.0019067190093799325, 0.002830869341140554, 0.001562406400880411],
         [0.22735228062511195, 0.2114839338072715, 0.12270952101138954],
     ]
 )
 results.append(
     [
-        "Cu adaptive inverse",
+        "Cu adap. inv. dyn. prior",
         [0.0011529285401641934, 0.001209218842829189, 0.0010743175376532338],
         [0.039498122765024964, 0.06331761434548187, 0.08380498589826933],
     ]
 )
 results.append(
     [
-        "Al adaptive inverse",
+        "Al adap. inv. dyn. prior",
         [0.0030648790802203013, 0.0029801878646089006, 0.0028325917370792546],
         [0.13928064485428823, 0.13126056814411885, 0.1502124119730013],
     ]
@@ -173,7 +173,7 @@ results.append(
     ]
 )
 
-mode = "nonsphere"
+mode = "sphere"
 
 if mode == "sphere":
     results = results[:8]
