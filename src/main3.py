@@ -40,355 +40,355 @@ from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID
 if __name__ == "__main__":
 
 
-    for i in range(29,42):
+    for i in range(42, 43):
         if i == 0:
             special_case_solver = 'DevinSolver'
             ex_filename =     'excelfiles/ds1_c1.csv'
             vel_ex_filename = 'excelfiles/ds1_c1_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR2)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR1)
             use_special_case_solver = True
         elif i == 1:
             special_case_solver = 'DevinSolver'
             ex_filename =     'excelfiles/ds1_c2.csv'
             vel_ex_filename = 'excelfiles/ds1_c2_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR3)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR2)
             use_special_case_solver = True
         elif i == 2:
             special_case_solver = 'DevinSolver'
             ex_filename =     'excelfiles/ds1_c3.csv'
             vel_ex_filename = 'excelfiles/ds1_c3_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR4)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR3)
             use_special_case_solver = True
         elif i == 3:
             special_case_solver = 'DevinSolver'
             ex_filename =     'excelfiles/ds1_c4.csv'
             vel_ex_filename = 'excelfiles/ds1_c4_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR5)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR4)
             use_special_case_solver = True
         elif i == 4:
             special_case_solver = 'DevinSolver'
             ex_filename =     'excelfiles/ds1_c5.csv'
             vel_ex_filename = 'excelfiles/ds1_c5_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR6)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR5)
             use_special_case_solver = True
         elif i == 5:
             special_case_solver = 'DevinSolver'
             ex_filename =     'excelfiles/ds1_c6.csv'
             vel_ex_filename = 'excelfiles/ds1_c6_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR7)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR6)
             use_special_case_solver = True
         elif i == 6:
             special_case_solver = 'DevinSolver'
             ex_filename =     'excelfiles/ds1_c7.csv'
             vel_ex_filename = 'excelfiles/ds1_c7_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR8)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR7)
             use_special_case_solver = True
         elif i == 7:
             special_case_solver = 'DevinSolver'
             ex_filename =     'excelfiles/ds1_c8.csv'
             vel_ex_filename = 'excelfiles/ds1_c8_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR9)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR8)
             use_special_case_solver = True
         elif i == 8:
             special_case_solver = 'DevinSolver'
             ex_filename =     'excelfiles/ds1_f1.csv'
             vel_ex_filename = 'excelfiles/ds1_f1_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR10)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR9)
             use_special_case_solver = True
         elif i == 9:
             special_case_solver = 'DevinSolver'
             ex_filename =     'excelfiles/ds1_f2.csv'
             vel_ex_filename = 'excelfiles/ds1_f2_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR11)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR10)
             use_special_case_solver = True
         elif i == 10:
             special_case_solver = 'DevinSolver'
             ex_filename =     'excelfiles/ds1_f3.csv'
             vel_ex_filename = 'excelfiles/ds1_f3_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR12)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR11)
             use_special_case_solver = True
         elif i == 11:
             special_case_solver = 'DevinSolver'
             ex_filename =     'excelfiles/ds1_f4.csv'
             vel_ex_filename = 'excelfiles/ds1_f4_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR13)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR12)
             use_special_case_solver = True
         elif i == 12:
             special_case_solver = 'DevinSolver'
             ex_filename =     'excelfiles/ds1_f5.csv'
             vel_ex_filename = 'excelfiles/ds1_f5_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR14)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR13)
             use_special_case_solver = True
         elif i == 13:
             special_case_solver = 'DevinSolver'
             ex_filename =     'excelfiles/ds1_f6.csv'
             vel_ex_filename = 'excelfiles/ds1_f6_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR15)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR14)
             use_special_case_solver = True
         elif i == 14:
             special_case_solver = 'DevinSolver2'
             ex_filename =     'excelfiles/ds2_c1.csv'
             vel_ex_filename = 'excelfiles/ds2_c1_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR2)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR1)
             use_special_case_solver = True
         elif i == 15:
             special_case_solver = 'DevinSolver2'
             ex_filename =     'excelfiles/ds2_c2.csv'
             vel_ex_filename = 'excelfiles/ds2_c2_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR3)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR2)
             use_special_case_solver = True
         elif i == 16:
             special_case_solver = 'DevinSolver2'
             ex_filename =     'excelfiles/ds2_c3.csv'
             vel_ex_filename = 'excelfiles/ds2_c3_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR4)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR3)
             use_special_case_solver = True
         elif i == 17:
             special_case_solver = 'DevinSolver2'
             ex_filename =     'excelfiles/ds2_c4.csv'
             vel_ex_filename = 'excelfiles/ds2_c4_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR5)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR4)
             use_special_case_solver = True
         elif i == 18:
             special_case_solver = 'DevinSolver2'
             ex_filename =     'excelfiles/ds2_c5.csv'
             vel_ex_filename = 'excelfiles/ds2_c5_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR6)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR5)
             use_special_case_solver = True
         elif i == 19:
             special_case_solver = 'DevinSolver2'
             ex_filename =     'excelfiles/ds2_c6.csv'
             vel_ex_filename = 'excelfiles/ds2_c6_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR7)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR6)
             use_special_case_solver = True
         elif i == 20:
             special_case_solver = 'DevinSolver2'
             ex_filename =     'excelfiles/ds2_c7.csv'
             vel_ex_filename = 'excelfiles/ds2_c7_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR8)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR7)
             use_special_case_solver = True
         elif i == 21:
             special_case_solver = 'DevinSolver2'
             ex_filename =     'excelfiles/ds2_c8.csv'
             vel_ex_filename = 'excelfiles/ds2_c8_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR9)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR8)
             use_special_case_solver = True
         elif i == 22:
             special_case_solver = 'DevinSolver2'
             ex_filename =     'excelfiles/ds2_f1.csv'
             vel_ex_filename = 'excelfiles/ds2_f1_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR10)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR9)
             use_special_case_solver = True
         elif i == 23:
             special_case_solver = 'DevinSolver2'
             ex_filename =     'excelfiles/ds2_f2.csv'
             vel_ex_filename = 'excelfiles/ds2_f2_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR11)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR10)
             use_special_case_solver = True
         elif i == 24:
             special_case_solver = 'DevinSolver2'
             ex_filename =     'excelfiles/ds2_f3.csv'
             vel_ex_filename = 'excelfiles/ds2_f3_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR12)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR11)
             use_special_case_solver = True
         elif i == 25:
             special_case_solver = 'DevinSolver2'
             ex_filename =     'excelfiles/ds2_f4.csv'
             vel_ex_filename = 'excelfiles/ds2_f4_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR13)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR12)
             use_special_case_solver = True
         elif i == 26:
             special_case_solver = 'DevinSolver2'
             ex_filename =     'excelfiles/ds2_f5.csv'
             vel_ex_filename = 'excelfiles/ds2_f5_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR14)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR13)
             use_special_case_solver = True
         elif i == 27:
             special_case_solver = 'DevinSolver2'
             ex_filename =     'excelfiles/ds2_f6.csv'
             vel_ex_filename = 'excelfiles/ds2_f6_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR15)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR14)
             use_special_case_solver = True
         elif i == 28:
             ex_filename =     'excelfiles/g_c1.csv'
             vel_ex_filename = 'excelfiles/g_c1_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR2)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR1)
             use_special_case_solver = False
             env.trajectory_dimensions = 'xyz'
             special_case_solver = 'griffin'
         elif i == 29:
             ex_filename =     'excelfiles/g_c2.csv'
             vel_ex_filename = 'excelfiles/g_c2_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR3)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR2)
             use_special_case_solver = False
             env.trajectory_dimensions = 'xyz'
             special_case_solver = 'griffin'
         elif i == 30:
             ex_filename =     'excelfiles/g_c3.csv'
             vel_ex_filename = 'excelfiles/g_c3_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR4)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR3)
             use_special_case_solver = False
             env.trajectory_dimensions = 'xyz'
             special_case_solver = 'griffin'
         elif i == 31:
             ex_filename =     'excelfiles/g_c4.csv'
             vel_ex_filename = 'excelfiles/g_c4_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR5)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR4)
             use_special_case_solver = False
             env.trajectory_dimensions = 'xyz'
             special_case_solver = 'griffin'
         elif i == 32:
             ex_filename =     'excelfiles/g_c5.csv'
             vel_ex_filename = 'excelfiles/g_c5_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR6)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR5)
             use_special_case_solver = False
             env.trajectory_dimensions = 'xyz'
             special_case_solver = 'griffin'
         elif i == 33:
             ex_filename =     'excelfiles/g_c6.csv'
             vel_ex_filename = 'excelfiles/g_c6_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR7)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR6)
             use_special_case_solver = False
             env.trajectory_dimensions = 'xyz'
             special_case_solver = 'griffin'
         elif i == 34:
             ex_filename =     'excelfiles/g_c7.csv'
             vel_ex_filename = 'excelfiles/g_c7_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR8)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR7)
             use_special_case_solver = False
             env.trajectory_dimensions = 'xyz'
             special_case_solver = 'griffin'
         elif i == 35:
             ex_filename =     'excelfiles/g_c8.csv'
             vel_ex_filename = 'excelfiles/g_c8_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR9)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR8)
             use_special_case_solver = False
             env.trajectory_dimensions = 'xyz'
             special_case_solver = 'griffin'
         elif i == 36:
             ex_filename =     'excelfiles/g_f1.csv'
             vel_ex_filename = 'excelfiles/g_f1_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR10)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR9)
             use_special_case_solver = False
             env.trajectory_dimensions = 'xyz'
             special_case_solver = 'griffin'
         elif i == 37:
             ex_filename =     'excelfiles/g_f2.csv'
             vel_ex_filename = 'excelfiles/g_f2_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR11)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR10)
             use_special_case_solver = False
             env.trajectory_dimensions = 'xyz'
             special_case_solver = 'griffin'
         elif i == 38:
             ex_filename =     'excelfiles/g_f3.csv'
             vel_ex_filename = 'excelfiles/g_f3_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR12)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR11)
             use_special_case_solver = False
             env.trajectory_dimensions = 'xyz'
             special_case_solver = 'griffin'
         elif i == 39:
             ex_filename =     'excelfiles/g_f4.csv'
             vel_ex_filename = 'excelfiles/g_f4_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR13)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR12)
             use_special_case_solver = False
             env.trajectory_dimensions = 'xyz'
             special_case_solver = 'griffin'
         elif i == 40:
             ex_filename =     'excelfiles/g_f5.csv'
             vel_ex_filename = 'excelfiles/g_f5_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR14)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR13)
             use_special_case_solver = False
             env.trajectory_dimensions = 'xyz'
             special_case_solver = 'griffin'
         elif i == 41:
             ex_filename =     'excelfiles/g_f6.csv'
             vel_ex_filename = 'excelfiles/g_f6_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR15)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR14)
             use_special_case_solver = False
             env.trajectory_dimensions = 'xyz'
             special_case_solver = 'griffin'
         elif i == 42:
             ex_filename =     'excelfiles/g2_c1.csv'
             vel_ex_filename = 'excelfiles/g2_c1_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR2)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR1)
             use_special_case_solver = False
             special_case_solver = 'griffin'
         elif i == 43:
             ex_filename =     'excelfiles/g2_c2.csv'
             vel_ex_filename = 'excelfiles/g2_c2_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR3)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR2)
             use_special_case_solver = False
             special_case_solver = 'griffin'
         elif i == 44:
             ex_filename =     'excelfiles/g2_c3.csv'
             vel_ex_filename = 'excelfiles/g2_c3_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR4)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR3)
             use_special_case_solver = False
             special_case_solver = 'griffin'
         elif i == 45:
             ex_filename =     'excelfiles/g2_c4.csv'
             vel_ex_filename = 'excelfiles/g2_c4_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR5)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR4)
             use_special_case_solver = False
             special_case_solver = 'griffin'
         elif i == 46:
             ex_filename =     'excelfiles/g2_c5.csv'
             vel_ex_filename = 'excelfiles/g2_c5_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR6)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR5)
             use_special_case_solver = False
             special_case_solver = 'griffin'
         elif i == 47:
             ex_filename =     'excelfiles/g2_c6.csv'
             vel_ex_filename = 'excelfiles/g2_c6_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR7)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR6)
             use_special_case_solver = False
             special_case_solver = 'griffin'
         elif i == 48:
             ex_filename =     'excelfiles/g2_c7.csv'
             vel_ex_filename = 'excelfiles/g2_c7_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR8)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR7)
             use_special_case_solver = False
             special_case_solver = 'griffin'
         elif i == 49:
             ex_filename =     'excelfiles/g2_c8.csv'
             vel_ex_filename = 'excelfiles/g2_c8_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR9)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR8)
             use_special_case_solver = False
             special_case_solver = 'griffin'
         elif i == 50:
             ex_filename =     'excelfiles/g2_f1.csv'
             vel_ex_filename = 'excelfiles/g2_f1_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR10)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR9)
             use_special_case_solver = False
             special_case_solver = 'griffin'
         elif i == 51:
             ex_filename =     'excelfiles/g2_f2.csv'
             vel_ex_filename = 'excelfiles/g2_f2_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR11)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR10)
             use_special_case_solver = False
             special_case_solver = 'griffin'
         elif i == 52:
             ex_filename =     'excelfiles/g2_f3.csv'
             vel_ex_filename = 'excelfiles/g2_f3_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR12)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR11)
             use_special_case_solver = False
             special_case_solver = 'griffin'
         elif i == 53:
             ex_filename =     'excelfiles/g2_f4.csv'
             vel_ex_filename = 'excelfiles/g2_f4_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR13)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR12)
             use_special_case_solver = False
             special_case_solver = 'griffin'
         elif i == 54:
             ex_filename =     'excelfiles/g2_f5.csv'
             vel_ex_filename = 'excelfiles/g2_f5_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR14)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR13)
             use_special_case_solver = False
             special_case_solver = 'griffin'
         elif i == 55:
             ex_filename =     'excelfiles/g2_f6.csv'
             vel_ex_filename = 'excelfiles/g2_f6_r.csv'
-            env = SpaceProblem(SpaceEnvironments.REGULATOR15)
+            env = SpaceProblem(SpaceEnvironments.REGULATOR14)
             use_special_case_solver = False
             special_case_solver = 'griffin'
 
@@ -410,7 +410,7 @@ if __name__ == "__main__":
         env.magnets = env.magnets[:]
 
     
-        sim_time = 997#np.sum(env.times)
+        sim_time = 1000#np.sum(env.times)
     
         sigma_copper = 5.87e07
         sigma_al = 3.77e07

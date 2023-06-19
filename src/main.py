@@ -39,10 +39,10 @@ from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID
 
 if __name__ == "__main__":
 
-    use_special_case_solver = True
-    special_case_solver = 'DevinSolver2'
-    ex_filename =     'excelfiles/ds1_c1.csv'
-    vel_ex_filename = 'excelfiles/ds1_c1_r.csv'
+    use_special_case_solver = False
+    special_case_solver = 'DevinSolver'
+    ex_filename =     'excelfiles/test.csv'
+    vel_ex_filename = 'excelfiles/test.csv'
     use_sphere = True
     cheat = False
 
@@ -58,9 +58,9 @@ if __name__ == "__main__":
 
     env = SpaceProblem(SpaceEnvironments.REGULATOR2)
     env.magnets = env.magnets[:]
-    env.trajectory_dimensions = 'xyz'
+    #env.trajectory_dimensions = 'xyz'
 
-    sim_time = np.sum(env.times)
+    sim_time = 500#np.sum(env.times)
 
     sigma_copper = 5.87e07
     sigma_al = 3.77e07
@@ -252,8 +252,7 @@ if __name__ == "__main__":
     
     
 
-    np.savetxt(ex_filename, positions, delimiter=",")
-    np.savetxt(vel_ex_filename, rotational_velocity, delimiter=",")
+
     import dataloader
     from datetime import datetime
 
@@ -262,3 +261,5 @@ if __name__ == "__main__":
         [globals()],
     )
     
+    np.savetxt(ex_filename, positions, delimiter=",")
+    np.savetxt(vel_ex_filename, rotational_velocity, delimiter=",")
