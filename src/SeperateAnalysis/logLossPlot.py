@@ -53,7 +53,7 @@ fig.tight_layout()
 
 
 fig, ax1 = plt.subplots(1, 1, figsize=(3, 2))
-ax1.plot(force[0], np.log(force[1]), label="Force", color=Lanc3)
+ax1.plot(force[0], np.log(force[1]), label="Wrench", color=Lanc3)
 ax1.plot(
     accel[0],
     np.log(accel[1]) + np.log(force[1, 959] / accel[1, 959]),
