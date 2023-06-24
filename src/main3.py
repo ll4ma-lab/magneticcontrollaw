@@ -42,8 +42,8 @@ if __name__ == "__main__":
     task_id_offset = 24
     for task_id in range(14):
         task = SpaceEnvironments(task_id_offset+task_id)
-        env = SpaceProblem(task)
         for controller_name in ['ds1','ds2','g1','g2'] :
+            env = SpaceProblem(task)
             if controller_name == 'ds1':
                 use_special_case_solver = True
                 special_case_solver = 'DevinSolver'
