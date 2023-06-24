@@ -250,12 +250,12 @@ if __name__ == "__main__":
     #     
     #         visualization.plot_stuff(plots, "Controller")
     #     
-            plots = {
-                "Position Error(m)": np.abs(np.transpose(remaining_error[:, :3, 0])),
-                "Orientation Error(radians)": -np.transpose(remaining_error[:, 3:6, 0]),
-            }
-        
-            visualization.plot_stuff(plots, "Error")
+    #        plots = {
+    #            "Position Error(m)": np.abs(np.transpose(remaining_error[:, :3, 0])),
+    #            "Orientation Error(radians)": -np.transpose(remaining_error[:, 3:6, 0]),
+    #        }
+    #    
+    #        visualization.plot_stuff(plots, "Error")
     #     
     #         plots = {
     #             "desired Position(m)": np.array(desired_states)[:, :3, 0].T,
