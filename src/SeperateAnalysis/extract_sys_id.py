@@ -21,7 +21,7 @@ def extract_sys_id_data(
     file_name, alt_rotational_velocity=False, skip_end=0, skip_beginning=0
 ):
     dataloader.load(file_name, globals())
-    global controls, mass, i, numSteps, radius, object_properties_approximate, initial_object_properties, sigma_copper, boat_properties
+    global controls, mass, i, numSteps, radius, object_properties_approximate, initial_object_properties, sigma_copper, boat_properties, sim_time
 
     transform_modify_function = lambda x: x
 
@@ -49,7 +49,10 @@ def extract_sys_id_data(
     try:
         num_steps = numSteps
     except:
-        num_steps = i
+        try:
+            num_steps = sim_time
+        except:
+            num_steps = i
 
     try:
         initial_object_properties

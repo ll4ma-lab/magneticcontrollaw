@@ -517,9 +517,9 @@ class SpaceProblem:
             self.desired_state = self.true_desired_state
             self.times = [1200, 600]
         if challenge_id == SpaceEnvironments.CUBE:  # floating square
-            self.magnets = [self.magnets[i] for i in [0, 1]]
-            self.magnets[0][1] += 1e-15
-            self.magnets[1][1] += 1e-15
+            #self.magnets = [self.magnets[i] for i in [0, 1]]
+            #self.magnets[0][1] += 1e-15
+            #self.magnets[1][1] += 1e-15
 
             self.true_desired_state = np.zeros((12, 9))
             r = 0.025
@@ -536,7 +536,7 @@ class SpaceProblem:
             self.true_desired_state[:3, 8] = [r, -r, -r]
 
             self.desired_state = self.true_desired_state
-            self.times = [50] * self.desired_state.shape[1]
+            self.times = [180] * self.desired_state.shape[1]
         if challenge_id == SpaceEnvironments.CUBE_ROTATE:  # floating square
             self.true_desired_state = np.zeros((12, 18))
             r = 0.075

@@ -42,8 +42,8 @@ if __name__ == "__main__":
     use_sphere = True
     cheat = False
 
-    run_adaptive = True and use_sphere and not cheat
-    inverse_dynamics = True and use_sphere and not cheat and not use_special_case_solver
+    run_adaptive = False and use_sphere and not cheat
+    inverse_dynamics = False and use_sphere and not cheat and not use_special_case_solver
 
     simulate_boat = False
 
@@ -52,10 +52,10 @@ if __name__ == "__main__":
     vel_noise = False
     control_noise = False
 
-    num_magnets = 2
-    env = SpaceProblem(SpaceEnvironments.REGULATOR, num_magnets)
+    num_magnets = 6
+    env = SpaceProblem(SpaceEnvironments.CUBE_ROTATE, num_magnets)
     # env.magnets = env.magnets[:4]
-    # env.trajectoryDimensions = 'xyz'
+    # env.trajectory_dimensions = 'xyz'
 
     sim_time = np.sum(env.times)
 
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     )
 
     # controller object
-    initial_radius_guess = 0.01
+    initial_radius_guess = 0.02
     mass_initial, moi_initial = compute_sphere_properties(8940, radius)
     object_properties_approximate = ObjectProperties(
         mass=mass_initial,

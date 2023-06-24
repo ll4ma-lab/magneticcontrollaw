@@ -266,8 +266,8 @@ def animate_2d_path(
     ):
         # num = num + states.shape[1]/2
         update_axes_with_tf(transforms[num], axis_lines)
-        traj_plot.set_data(np.transpose(positions[: num + 1, 0:2]))
-        traj_plot.set_3d_properties(positions[: num + 1, 2])
+        #traj_plot.set_data(np.transpose(positions[: num + 1, 0:2]))
+        #traj_plot.set_3d_properties(positions[: num + 1, 2])
 
         if object_parameters_over_time:
             global current_sphere
@@ -290,7 +290,9 @@ def animate_2d_path(
             cube = cubes[i]
             # print(controls[num][0],i)
             cube.set_facecolor(colorinfo)
-
+        dipole_axis_line.set_data(np.array([[0],[0]]))
+        dipole_axis_line.set_3d_properties(np.array([0]))
+        
         seconds = num + 1
         traj_plot.set_zorder(4)
 
@@ -320,26 +322,27 @@ def animate_2d_path(
         positions[0:1, 0], positions[0:1, 1], positions[0:1, 2], linewidth=2, color="k"
     )[0]
 
+    axis_width = 6
     axis_lines = [
         ax.plot(
             positions[0:1, 0],
             positions[0:1, 1],
             positions[0:1, 2],
-            linewidth=2,
+            linewidth=axis_width,
             color=Lanc1,
         )[0],
         ax.plot(
             positions[0:1, 0],
             positions[0:1, 1],
             positions[0:1, 2],
-            linewidth=2,
+            linewidth=axis_width,
             color=Lanc2,
         )[0],
         ax.plot(
             positions[0:1, 0],
             positions[0:1, 1],
             positions[0:1, 2],
-            linewidth=2,
+            linewidth=axis_width,
             color=Lanc3,
         )[0],
     ]
@@ -348,25 +351,25 @@ def animate_2d_path(
             positions[0:1, 0],
             positions[0:1, 1],
             positions[0:1, 2],
-            linewidth=2,
+            linewidth=axis_width,
             color=Lanc1,
         )[0],
         ax.plot(
             positions[0:1, 0],
             positions[0:1, 1],
             positions[0:1, 2],
-            linewidth=2,
+            linewidth=axis_width,
             color=Lanc2,
         )[0],
         ax.plot(
             positions[0:1, 0],
             positions[0:1, 1],
             positions[0:1, 2],
-            linewidth=2,
+            linewidth=axis_width,
             color=Lanc3,
         )[0],
     ]
-    update_axes_with_tf(transforms[0], starting_axis_lines)
+    update_axes_with_tf(np.eye(4), starting_axis_lines, 0.05)
     dipole_axis_line = ax.plot(
         positions[0:1, 0],
         positions[0:1, 1],

@@ -30,7 +30,7 @@ def rms(error, axis=None):
     return np.sqrt(np.mean(error**2, axis=axis))
 
 
-folder = "sphere_inv"
+folder = "pile_easy"
 parent_folder = "C:\\Users\\tabor\\Downloads\\IJRR\\IJRR\\"
 mypath = parent_folder + folder + "/"
 
@@ -110,6 +110,8 @@ for fileName in onlyfiles:
                     [adaptive.parameters[0]] * 30 + adaptive.parameters
                 )
                 all_adaptive_params.append(adaptive_parameters)
+                             
+                
                 # parameter_ax[0].plot(adaptive_parameters[:,0],'k',alpha=0.6)
                 # parameter_ax[1].plot(adaptive_parameters[:,1],c=Lanc1,alpha=0.6)
                 print(adaptive_parameters.shape)
@@ -143,13 +145,13 @@ adaptive_plot_max_t = 1500
 
 # parameter_ax[1].plot([0,adaptive_plot_max_t],[3.77E+07,3.77E+07],'k--')
 # parameter_fig.suptitle('Adapted parameters over time')
-parameter_ax[0].set_ylabel("Radius (cm)")
+parameter_ax[0].set_ylabel("Radius (mm)")
 parameter_ax[1].set_ylabel("Conductivity")
 
 
-r_mulitplier = 100
-# parameter_ax[0].plot([0, adaptive_plot_max_t], [0.02*r_mulitplier, 0.02*r_mulitplier], "k--")
-# parameter_ax[1].plot([0, adaptive_plot_max_t], [5.8e07, 5.8e07], "k--")
+r_mulitplier = 1000
+#parameter_ax[0].plot([0, adaptive_plot_max_t], [0.02*r_mulitplier, 0.02*r_mulitplier], "k--")
+#parameter_ax[1].plot([0, adaptive_plot_max_t], [5.8e07, 5.8e07], "k--")
 if True:
     np_adaptive_params = np.array(all_adaptive_params)
     # average_params = np.mean(np_adaptive_params, 0)

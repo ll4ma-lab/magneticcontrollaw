@@ -18,8 +18,9 @@ from visualization import Lanc1, Lanc2, Lanc3
 
 sim_time = 0
 input_folder = "/home/tabor/Downloads"
+input_folder = 'C:/Users/tabor/Downloads/IJRR_sim4'
 
-mags = 2
+mags = 4
 magnet_data_map = {
     2: input_folder + "/IJRR_sim4/sim_1800s_2023-05-24 13.43.29.561066",
     3: input_folder + "/IJRR_sim4/sim_1800s_2023-05-24 13.48.25.239666",
@@ -184,13 +185,13 @@ def error_plot(axis):
     axs_3[0].set_xlim([0, sim_time / 60])
 
 
-def l2_data_plot(axis, dataset):
+def l2_data_plot(axis, dataset, lims):
     ax2 = axis.twinx()  # instantiate a second axes that shares the same x-axis
     axs_2 = (axis, ax2)
     thickness = 1.5
     plots = []
     l2_colors = [Lanc1, Lanc3]
-    l2_names = ["Position (m)", "Rotation (rad)"]
+    l2_names = ["Position (m)", "Orientation (rad)"]
     for i in range(2):
         plots.append(
             axs_2[i].plot(
@@ -205,6 +206,8 @@ def l2_data_plot(axis, dataset):
         axs_2[i].yaxis.label.set_color(l2_colors[i])
         axs_2[i].tick_params(axis="y", colors=l2_colors[i])
         # axs_2[i].spines['left'].set_color(l2_colors[i])
+        axs_2[i].set_ylim(lims[i])
+
 
     axs_2[0].legend(handles=plots[:3], loc="upper right", ncol=1)
     axs_2[0].set_xlabel("Time (minutes)")
@@ -225,6 +228,8 @@ def l2_data_plot(axis, dataset):
     axs_2[0].spines["left"].set_linewidth(thickness)  # y axis line
     axs_2[0].spines["top"].set_linewidth(thickness)  # y axis line
     axs_2[0].spines["bottom"].set_linewidth(thickness)  # y axis line
+    
+    
 
 
 fig, axs = plt.subplots(1, 2)
@@ -245,7 +250,7 @@ fig_3.set_size_inches(7.5, 2.5)
 plt.tight_layout()
 
 fig_4, axis = plt.subplots()
-l2_data_plot(axis, remaining_error)
+l2_data_plot(axis, remaining_error,[[-0.01,0.08],[-0.2,1.6]])
 fig_4.set_size_inches(5, 2.5)
 plt.tight_layout()
 
@@ -269,7 +274,7 @@ anim, anim_fig = visualization.animate_2d_path(
     object_parameters_over_time=object_parameters_over_time,
     name="",
     save_plot_steps=[1] + velocity_profile.switching_times,
-    save_location=False,
+    save_location=folder,
     mag_color=[164 / 256.0, 159 / 256.0, 12 / 256.0, 0.2],
 )
 
@@ -279,12 +284,12 @@ fig = plt.figure(figsize=plt.figaspect(2.0))
 
 # First subplot
 ax = fig.add_subplot(1, 2, 1)
-l2_data_plot(ax, remaining_error)
-ax.title.set_text("Distance To Final Pose")
+l2_data_plot(ax, remaining_error, [[-0.0,0.08],[-0,2.0]])
+ax.title.set_text("Pose Error")
 
 ax = fig.add_subplot(1, 2, 2)
-l2_data_plot(ax, comparison_error)
-ax.title.set_text("Distance to Nominal Trajectory")
+l2_data_plot(ax, comparison_error,[[-0.000,0.004],[-0.0,0.1]])
+ax.title.set_text("Trajectory Error")
 
 fig.set_size_inches(6.5, 3)
 

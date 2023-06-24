@@ -60,8 +60,24 @@ from ObjectProperties import (
 
 file_name = "/home/tabor/Downloads/IJRR/known_sphere/real_2023-03-07 16:03:45.715925_MultiMagSolver"
 file_name = "/home/tabor/Downloads/IJRR/known_sphere/real_2023-03-07 14:10:43.061701_MultiMagSolver"
-file_name = "/home/tabor/Downloads/IJRR/known_sphere/real_2023-03-07 15:11:55.936480_MultiMagSolver"
+file_name = "C://Users//tabor//Downloads//IJRR/IJRR//known_sphere//real_2023-03-07 15_11_55.936480_MultiMagSolver"
 
+
+mode =  3
+
+turn_off_prior = mode%2
+mini_batch = mode//2
+
+
+if mini_batch:
+    skip_end = 10
+    skip_beginning = 2353
+else:
+    skip_end = 0
+    skip_beginning = 0  
+
+if not turn_off_prior and not mini_batch:
+    a=b
 
 (
     linear_velocity,
@@ -74,8 +90,8 @@ file_name = "/home/tabor/Downloads/IJRR/known_sphere/real_2023-03-07 15:11:55.93
 ) = extract_sys_id_data(
     file_name,
     alt_rotational_velocity=False,
-    skip_end=0,
-    skip_beginning=0,
+    skip_end=skip_end,
+    skip_beginning=skip_beginning,
 )
 
 # boat = False
@@ -156,13 +172,14 @@ prob.update_vals(
 )
 
 results = []
-prob.regularization_multiplier = 0
+if turn_off_prior:
+    prob.regularization_multiplier = 0
 try:
-    for i in tqdm(range(25)):
+    for i in tqdm(range(100)):
         initial_solution = np.random.uniform(
             prob.min_bounds, prob.max_bounds, (prob.size(), 1)
         )
-        result = optimizer.optimize(initial_solution, max_iterations=40)
+        result = optimizer.optimize(initial_solution, max_iterations=150)
         results.append(result)
 except KeyboardInterrupt:
     print("keyboard")
@@ -191,7 +208,7 @@ if prob.size() == 2:
             ]
         ).reshape((-1, 1))
         iterates.append(iterate)
-    _ = prob.visualize_optimization(iterates, func=np.log, show_costs=True)
+    _ = prob.visualize_optimization(iterates, func=np.log, show_costs=False,make_heatmap=True)
 
     print("brute time ", time.time() - s)
 else:
@@ -204,23 +221,37 @@ solution = result.solution
 
 print("solution ", solution)
 
-prob.visualize_predicted_acceleration(
-    solution, show_measured=False, start=250, end=1250, paper_version=False
-)
-
-# positions = np.array([state[0][:3, 3] for state in states])
-# linear_velocity = np.array(
-#     [np.dot(state[0][:3, :3], state[2][:, 0]) for state in states]
+# prob.visualize_predicted_acceleration(
+#     solution, show_measured=False, start=250, end=1250, paper_version=False
 # )
-# rotational_velocity = np.array(
-#     [np.dot(state[0][:3, :3], state[1][:, 0]) for state in states]
-# )
-import visualization
 
-plots = {
-    "Position (m)": np.transpose(positions),
-    "Velocity (m/s)": np.transpose(linear_velocity),
-    "Rot velocity (_/s)": np.transpose(rotational_velocity),
-}
+# # positions = np.array([state[0][:3, 3] for state in states])
+# # linear_velocity = np.array(
+# #     [np.dot(state[0][:3, :3], state[2][:, 0]) for state in states]
+# # )
+# # rotational_velocity = np.array(
+# #     [np.dot(state[0][:3, :3], state[1][:, 0]) for state in states]
+# # )
+# import visualization
 
-visualization.plot_stuff(plots, "Controller")
+# plots = {
+#     "Position (m)": np.transpose(positions),
+#     "Velocity (m/s)": np.transpose(linear_velocity),
+#     "Rot velocity (_/s)": np.transpose(rotational_velocity),
+# }
+
+# visualization.plot_stuff(plots, "Controller")
+
+save_folder = "..\\ijrr\\sysid\\"
+
+if mini_batch and not turn_off_prior:
+    save_folder += 'mini-batch-prior'
+elif turn_off_prior and mini_batch:
+    save_folder += 'mini-batch'
+else:
+    save_folder += 'full-dataset'
+
+
+_ = prob.visualize_optimization(iterates, func=lambda x: np.log(np.log(x)), make_heatmap=True,samples=200,save_location=save_folder,magic_divider=1e7)
+
+
