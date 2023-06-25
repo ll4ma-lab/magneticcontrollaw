@@ -21,7 +21,7 @@ import DummyProfile
 import SplineProfile
 import TrapProfile
 from Adaptive import Adaptive
-
+import os
 
 
 from models import MultiMagModel
@@ -38,7 +38,7 @@ from ObjectProperties import (
 from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID
 
 if __name__ == "__main__":
-
+    redo_all_experiments = False
     task_id_offset = 24
     for task_id in range(14):
         task = SpaceEnvironments(task_id_offset+task_id)
@@ -67,6 +67,9 @@ if __name__ == "__main__":
             ex_filename = file_name + '.csv'
             vel_ex_filename = file_name + 'r.csv'
             
+            if os.path.isfile(ex_filename) and not redo_all_experiments:
+                print('skipping ' + ex_filename)
+                continue
 
             use_sphere = True
             cheat = False
