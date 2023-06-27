@@ -40,7 +40,7 @@ from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID
 if __name__ == "__main__":
 
 
-    for i in range(42, 43):
+    for i in range(14):
         if i == 0:
             special_case_solver = 'DevinSolver'
             ex_filename =     'excelfiles/ds1_c1.csv'
@@ -410,7 +410,7 @@ if __name__ == "__main__":
         env.magnets = env.magnets[:]
 
     
-        sim_time = 1000#np.sum(env.times)
+        sim_time = 700#np.sum(env.times)
     
         sigma_copper = 5.87e07
         sigma_al = 3.77e07
@@ -482,7 +482,7 @@ if __name__ == "__main__":
         #         env.start_state, 0.0005, 0.000001, 0.0005, 0.000002, 0.0, 0.000
         #     )
     
-        alpha = 0.9
+        alpha = 0.95
         if special_case_solver == 'DevinSolver':
             T = 4
         elif special_case_solver == 'DevinSolver2':

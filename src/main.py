@@ -40,7 +40,7 @@ from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID
 if __name__ == "__main__":
 
     use_special_case_solver = False
-    special_case_solver = 'DevinSolver'
+    special_case_solver = 'DevinSolver2'
     ex_filename =     'excelfiles/test.csv'
     vel_ex_filename = 'excelfiles/test.csv'
     use_sphere = True
@@ -56,11 +56,11 @@ if __name__ == "__main__":
     vel_noise = False
     control_noise = False
 
-    env = SpaceProblem(SpaceEnvironments.REGULATOR2)
+    env = SpaceProblem(SpaceEnvironments.REGULATOR1)
     env.magnets = env.magnets[:]
-    #env.trajectory_dimensions = 'xyz'
+    env.trajectory_dimensions = 'xyz'
 
-    sim_time = 500#np.sum(env.times)
+    sim_time = 700#np.sum(env.times)
 
     sigma_copper = 5.87e07
     sigma_al = 3.77e07
@@ -131,11 +131,11 @@ if __name__ == "__main__":
     #     controller = PDController(
     #         env.start_state, 0.0005, 0.000001, 0.0005, 0.000002, 0.0, 0.000
     #     )
-    alpha = 0.9
+    alpha = 0.95
     if special_case_solver == 'DevinSolver':
-        T = 4
+        T = 1
     else:
-        T = 2
+        T = 1
     totalmass = mass_initial + 0.056
     kp = (totalmass)/(T**2)*(alpha**2 -2*alpha + 1)
     kd = (4*(totalmass)*(1-alpha) - kp*T**2)/(2*T)

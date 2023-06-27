@@ -131,7 +131,7 @@ def simulate_experiment(
 
 class DiscreteTimeSimulator:
     def __init__(self, state, object_properties):
-        self.dt = 0.0001
+        self.dt = 0.005
 
         body_to_world = build_tf(state[:3, 0], state[3:6, 0])
 
