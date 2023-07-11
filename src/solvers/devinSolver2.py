@@ -313,323 +313,83 @@ class DevinSolver2:
 
     def solve_wrench(self, position, desired_wrench):
         start = time.time()
-        model_id = self.count % (len(self.model.magnets))
-        switcher_flag = self.count % 2
-        self.count += 1
-        if self.count == 1:
-            cointoss = random.random()
-            if cointoss <= 0.5:
-                if model_id == 0:
-                    (
-                        F,
-                        T,
-                        w1,
-                        w2,
-                        mag1,
-                        mag2,
-                        m1_set,
-                        m2_set,
-                        d1,
-                        d2,
-                    ) = self.calculate_duty_cycling_and_angles(position, desired_wrench)
-                    # print(m1_set, m2_set, m3_set, m3_set, d_yz, d_x)
-                    mags = [mag1, mag2]
+        (
+            F,
+            T,
+            w1,
+            w2,
+            mag1,
+            mag2,
+            m1_set,
+            m2_set,
+            d1,
+            d2,
+        ) = self.calculate_duty_cycling_and_angles(position, desired_wrench)
+        # print(m1_set, m2_set, m3_set, m3_set, d_yz, d_x)
+        mags = [mag1, mag2]
 
-                    # rescale everything so a magnet is on for increments of self.duty_percent of the time
-                    scale_factor_t1 = 1
-                    scale_factor_t2 = 1
+        # rescale everything so a magnet is on for increments of self.duty_percent of the time
+        scale_factor_t1 = 1
+        scale_factor_t2 = 1
 
-                    """if np.isnan(d1) or np.isnan(d2):
-                        d_x = 0 if np.isnan(d_x) else d_x
-                        d_yz = 0 if np.isnan(d_yz) else d_yz
-                        self.T1 = d_yz
-                        self.T2 = d_x
-                    else:
-                        #rescale smaller one down, then adjust accordingly
-                        """
-                    if d1 < d2:
-                        self.t1 = self.duty_percent * int(d1 / self.duty_percent)
-                        self.t2 = 1 - self.t1
-                        if self.t2 < 0.5:
-                            scale_factor_t2 = np.sqrt((d2 * self.t1) / (d1 * self.t2))
-                    else:
-                        self.t2 = self.duty_percent * int(d2 / self.duty_percent)
-                        self.t1 = 1 - self.t2
-                        if self.t1 < 0.5:
-                            scale_factor_t1 = np.sqrt((d1 * self.t2) / (d2 * self.t1))
+        """if np.isnan(d1) or np.isnan(d2):
+            d_x = 0 if np.isnan(d_x) else d_x
+            d_yz = 0 if np.isnan(d_yz) else d_yz
+            self.T1 = d_yz
+            self.T2 = d_x
+        else:
+            #rescale smaller one down, then adjust accordingly
+            """
+        if d1 < d2:
+            self.t1 = self.duty_percent * int(d1 / self.duty_percent)
+            self.t2 = 1 - self.t1
+            if self.t2 < 0.5:
+                scale_factor_t2 = np.sqrt((d2 * self.t1) / (d1 * self.t2))
+        else:
+            self.t2 = self.duty_percent * int(d2 / self.duty_percent)
+            self.t1 = 1 - self.t2
+            if self.t1 < 0.5:
+                scale_factor_t1 = np.sqrt((d1 * self.t2) / (d2 * self.t1))
 
-                    dipole_1 = m1_set * scale_factor_t1
-                    dipole_2 = m2_set * scale_factor_t2
+        dipole_1 = m1_set * scale_factor_t1
+        dipole_2 = m2_set * scale_factor_t2
 
-                    self.dipoles = [dipole_1, dipole_2]
-                    self.omegas = [w1 / np.linalg.norm(w1), w2 / np.linalg.norm(w2)]
-                    self.controls = []
+        self.dipoles = [dipole_1, dipole_2]
+        self.omegas = [w1 / np.linalg.norm(w1), w2 / np.linalg.norm(w2)]
+        controls = []
 
-                    actual_wrench = np.zeros((6, 1))
+        actual_wrench = np.zeros((6, 1))
 
-                    #print("")
-                    #print("")
-                    #print("Times")
-                    #print(self.t1)
-                    #print(self.t2)
-                    #print("")
-                    #print("")
+        #print("")
+        #print("")
+        #print("Times")
+        #print(self.t1)
+        #print(self.t2)
+        #print("")
+        #print("")
 
-                    for i in range(len(self.model.magnets)):
-                        angles = deconstruct_omega(self.omegas[i])
+        for i in range(len(self.model.magnets)):
+            angles = deconstruct_omega(self.omegas[i])
 
-                        control = SphereControlCommand(
-                            mag_num=mags[i],
-                            dipole_strength=self.dipoles[i],
-                            psi=angles[0],
-                            xi=angles[1],
-                        )
-                        if i == 0:
-                            control.seconds = self.t1 * self.duty_time
-                        else:
-                            control.seconds = self.t2 * self.duty_time
-
-                        #actual_wrench += (
-                        #    self.model.forwardSphere(position, control) * control.seconds
-                        #)
-                        # print(F*self.duty_time,T*self.duty_time)
-                        self.controls.append(control)
+            control = SphereControlCommand(
+                mag_num=mags[i],
+                dipole_strength=self.dipoles[i],
+                psi=angles[0],
+                xi=angles[1],
+            )
+            if i == 0:
+                control.seconds = self.t1 * self.duty_time
             else:
-                if model_id == 0:
-                    (
-                        F,
-                        T,
-                        w2,
-                        w1,
-                        mag2,
-                        mag1,
-                        m2_set,
-                        m1_set,
-                        d2,
-                        d1,
-                    ) = self.calculate_duty_cycling_and_angles(position, desired_wrench)
-                    # print(m1_set, m2_set, m3_set, m3_set, d_yz, d_x)
-                    mags = [mag1, mag2]
+                control.seconds = self.t2 * self.duty_time
 
-                    # rescale everything so a magnet is on for increments of self.duty_percent of the time
-                    scale_factor_t1 = 1
-                    scale_factor_t2 = 1
+            #actual_wrench += (
+            #    self.model.forwardSphere(position, control) * control.seconds
+            #)
+            # print(F*self.duty_time,T*self.duty_time)
+            controls.append(control)
 
-                    """if np.isnan(d1) or np.isnan(d2):
-                        d_x = 0 if np.isnan(d_x) else d_x
-                        d_yz = 0 if np.isnan(d_yz) else d_yz
-                        self.T1 = d_yz
-                        self.T2 = d_x
-                    else:
-                        #rescale smaller one down, then adjust accordingly
-                        """
-                    if d1 < d2:
-                        self.t1 = self.duty_percent * int(d1 / self.duty_percent)
-                        self.t2 = 1 - self.t1
-                        if self.t2 < 0.5:
-                            scale_factor_t2 = np.sqrt((d2 * self.t1) / (d1 * self.t2))
-                    else:
-                        self.t2 = self.duty_percent * int(d2 / self.duty_percent)
-                        self.t1 = 1 - self.t2
-                        if self.t1 < 0.5:
-                            scale_factor_t1 = np.sqrt((d1 * self.t2) / (d2 * self.t1))
-
-                    dipole_1 = m1_set * scale_factor_t1
-                    dipole_2 = m2_set * scale_factor_t2
-
-                    self.dipoles = [dipole_1, dipole_2]
-                    self.omegas = [w1 / np.linalg.norm(w1), w2 / np.linalg.norm(w2)]
-                    self.controls = []
-
-                    actual_wrench = np.zeros((6, 1))
-
-                    #print("")
-                    #print("")
-                    #print("Times")
-                    #print(self.t1)
-                    #print(self.t2)
-                    #print("")
-                    #print("")
-
-                    for i in range(len(self.model.magnets)):
-                        angles = deconstruct_omega(self.omegas[i])
-
-                        control = SphereControlCommand(
-                            mag_num=mags[i],
-                            dipole_strength=self.dipoles[i],
-                            psi=angles[0],
-                            xi=angles[1],
-                        )
-                        if i == 0:
-                            control.seconds = self.t1 * self.duty_time
-                        else:
-                            control.seconds = self.t2 * self.duty_time
-
-                        #actual_wrench += (
-                        #    self.model.forwardSphere(position, control) * control.seconds
-                        #)
-                        # print(F*self.duty_time,T*self.duty_time)
-                        self.controls.append(control)
-        else:            
-            if self.outcount % 2 == 0:
-                if model_id == 0:
-                    (
-                        F,
-                        T,
-                        w1,
-                        w2,
-                        mag1,
-                        mag2,
-                        m1_set,
-                        m2_set,
-                        d1,
-                        d2,
-                    ) = self.calculate_duty_cycling_and_angles(position, desired_wrench)
-                    # print(m1_set, m2_set, m3_set, m3_set, d_yz, d_x)
-                    mags = [mag1, mag2]
-    
-                    # rescale everything so a magnet is on for increments of self.duty_percent of the time
-                    scale_factor_t1 = 1
-                    scale_factor_t2 = 1
-    
-                    """if np.isnan(d1) or np.isnan(d2):
-                        d_x = 0 if np.isnan(d_x) else d_x
-                        d_yz = 0 if np.isnan(d_yz) else d_yz
-                        self.T1 = d_yz
-                        self.T2 = d_x
-                    else:
-                        #rescale smaller one down, then adjust accordingly
-                        """
-                    if d1 < d2:
-                        self.t1 = self.duty_percent * int(d1 / self.duty_percent)
-                        self.t2 = 1 - self.t1
-                        if self.t2 < 0.5:
-                            scale_factor_t2 = np.sqrt((d2 * self.t1) / (d1 * self.t2))
-                    else:
-                        self.t2 = self.duty_percent * int(d2 / self.duty_percent)
-                        self.t1 = 1 - self.t2
-                        if self.t1 < 0.5:
-                            scale_factor_t1 = np.sqrt((d1 * self.t2) / (d2 * self.t1))
-    
-                    dipole_1 = m1_set * scale_factor_t1
-                    dipole_2 = m2_set * scale_factor_t2
-    
-                    self.dipoles = [dipole_1, dipole_2]
-                    self.omegas = [w1 / np.linalg.norm(w1), w2 / np.linalg.norm(w2)]
-                    self.controls = []
-    
-                    actual_wrench = np.zeros((6, 1))
-    
-                    #print("")
-                    #print("")
-                    #print("Times")
-                    #print(self.t1)
-                    #print(self.t2)
-                    #print("")
-                    #print("")
-    
-                    for i in range(len(self.model.magnets)):
-                        angles = deconstruct_omega(self.omegas[i])
-    
-                        control = SphereControlCommand(
-                            mag_num=mags[i],
-                            dipole_strength=self.dipoles[i],
-                            psi=angles[0],
-                            xi=angles[1],
-                        )
-                        if i == 0:
-                            control.seconds = self.t1 * self.duty_time
-                        else:
-                            control.seconds = self.t2 * self.duty_time
-    
-                        #actual_wrench += (
-                        #    self.model.forwardSphere(position, control) * control.seconds
-                        #)
-                        # print(F*self.duty_time,T*self.duty_time)
-                        self.controls.append(control)
-            else:
-                if model_id == 0:
-                    (
-                        F,
-                        T,
-                        w2,
-                        w1,
-                        mag2,
-                        mag1,
-                        m2_set,
-                        m1_set,
-                        d2,
-                        d1,
-                    ) = self.calculate_duty_cycling_and_angles(position, desired_wrench)
-                    # print(m1_set, m2_set, m3_set, m3_set, d_yz, d_x)
-                    mags = [mag1, mag2]
-    
-                    # rescale everything so a magnet is on for increments of self.duty_percent of the time
-                    scale_factor_t1 = 1
-                    scale_factor_t2 = 1
-    
-                    """if np.isnan(d1) or np.isnan(d2):
-                        d_x = 0 if np.isnan(d_x) else d_x
-                        d_yz = 0 if np.isnan(d_yz) else d_yz
-                        self.T1 = d_yz
-                        self.T2 = d_x
-                    else:
-                        #rescale smaller one down, then adjust accordingly
-                        """
-                    if d1 < d2:
-                        self.t1 = self.duty_percent * int(d1 / self.duty_percent)
-                        self.t2 = 1 - self.t1
-                        if self.t2 < 0.5:
-                            scale_factor_t2 = np.sqrt((d2 * self.t1) / (d1 * self.t2))
-                    else:
-                        self.t2 = self.duty_percent * int(d2 / self.duty_percent)
-                        self.t1 = 1 - self.t2
-                        if self.t1 < 0.5:
-                            scale_factor_t1 = np.sqrt((d1 * self.t2) / (d2 * self.t1))
-    
-                    dipole_1 = m1_set * scale_factor_t1
-                    dipole_2 = m2_set * scale_factor_t2
-    
-                    self.dipoles = [dipole_1, dipole_2]
-                    self.omegas = [w1 / np.linalg.norm(w1), w2 / np.linalg.norm(w2)]
-                    self.controls = []
-    
-                    actual_wrench = np.zeros((6, 1))
-    
-                    #print("")
-                    #print("")
-                    #print("Times")
-                    #print(self.t1)
-                    #print(self.t2)
-                    #print("")
-                    #print("")
-    
-                    for i in range(len(self.model.magnets)):
-                        angles = deconstruct_omega(self.omegas[i])
-    
-                        control = SphereControlCommand(
-                            mag_num=mags[i],
-                            dipole_strength=self.dipoles[i],
-                            psi=angles[0],
-                            xi=angles[1],
-                        )
-                        if i == 0:
-                            control.seconds = self.t1 * self.duty_time
-                        else:
-                            control.seconds = self.t2 * self.duty_time
-    
-                        #actual_wrench += (
-                        #    self.model.forwardSphere(position, control) * control.seconds
-                        #)
-                        # print(F*self.duty_time,T*self.duty_time)
-                        self.controls.append(control)
-        if switcher_flag == 0:
-            self.outcount += 1
-            
-
-
-        control = self.controls[model_id]
+        random.shuffle(controls)
 
         # print('chosen control',control)
         self.time += time.time() - start
-        return control
+        return controls

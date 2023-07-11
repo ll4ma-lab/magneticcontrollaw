@@ -65,8 +65,7 @@ def simulate_experiment(
     iterates = range(1, sim_time + 1)
     if debug_prints:
         iterates = tqdm(iterates)
-
-    for i in iterates:
+    for iterate in iterates:
         # if i == 300 and runAdaptive:
         #    model.cylinderModel.object_properties.radius *=1.5
         # arbitrarily change radius without updating mass
@@ -77,8 +76,9 @@ def simulate_experiment(
 
         desired_states.append(desired_state)
         desired_wrenchs.append(desired_wrench)
-        if cheat:
+        states.append(state)
 
+        if cheat:
             if inverse_dynamics:
                 inverted_accel = np.zeros(desired_wrench.shape)
                 inverted_accel[:3] = desired_wrench[3:]
@@ -91,25 +91,35 @@ def simulate_experiment(
             else:
                 true_wrench = desired_wrench
                 control = SphereControlCommand()
+            env.problem_specific_modification(state, true_wrench)
+            state = simulator.simulate(true_wrench, control.seconds)
 
         else:
-            control = solver.solve_wrench(state[0][:3, 3], desired_wrench)
-            true_wrench = model.forward_pass(state[0][:3, 3], control)
-            #true_wrench[3:]=0
-            wrench_error = true_wrench - desired_wrench
+            current_controls = solver.solve_wrench(state[0][:3, 3], desired_wrench)
+            total_true_wrench = np.zeros((6,1))
+            for control in current_controls:
+            # if True:
+            #     control= current_controls[0]
+                
+                true_wrench = model.forward_pass(state[0][:3, 3], control)
+                env.problem_specific_modification(state, true_wrench)
+                total_true_wrench += true_wrench
+
+                if run_adaptive:
+                    if len(current_controls)>1:
+                        print('adaptive control with multiple control actions is untested')
+                    adaptive.step(state_noise(state), control)
+                state = simulator.simulate(true_wrench, control.seconds)
+                wrenches.append(true_wrench)
+                controls.append(control)
+            times.append(simulator.simulator_time)
+            wrench_error = total_true_wrench - desired_wrench
             cost = np.sum((wrench_error[:3, :] ** 2)) + 200 * np.sum(
                 (wrench_error[3:, :] ** 2)
             )
             minimization_costs.append(cost)
-        wrenches.append(true_wrench)
-        controls.append(control)
-        times.append(simulator.simulator_time)
+                
 
-        env.problem_specific_modification(state, true_wrench)
-        if run_adaptive:
-            adaptive.step(state_noise(state), control)
-        states.append(state)
-        state = simulator.simulate(true_wrench, control.seconds)
         
         if np.isnan(state[0]).any() or np.isnan(state[1]).any() or np.isnan(state[2]).any():
             print('Found Nans in state')
@@ -131,7 +141,7 @@ def simulate_experiment(
 
 class DiscreteTimeSimulator:
     def __init__(self, state, object_properties):
-        self.dt = 0.005
+        self.dt = 0.0001
 
         body_to_world = build_tf(state[:3, 0], state[3:6, 0])
 

@@ -338,7 +338,7 @@ class MultiMagSolver:
         timestep = time.time() - s
         self.times.append(timestep)
         self.time += timestep
-        return control
+        return [control]
 
     def solve_wrench(self, position, desired_wrench):
         if self.use_sphere_model:
@@ -380,7 +380,7 @@ class MultiMagSolver:
         timestep = time.time() - s
         self.times.append(timestep)
         self.time += timestep
-        return control
+        return [control]
 
     def brute_sphere_solver(self, position, desired_wrench):
         self.modify_problems(desired_wrench, position)
@@ -411,4 +411,4 @@ class MultiMagSolver:
             psi=variables[1, 0],
             xi=variables[2, 0],
         )
-        return control
+        return [control]

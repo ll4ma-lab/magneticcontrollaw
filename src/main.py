@@ -131,11 +131,8 @@ if __name__ == "__main__":
     #     controller = PDController(
     #         env.start_state, 0.0005, 0.000001, 0.0005, 0.000002, 0.0, 0.000
     #     )
-    alpha = 0.9
-    if special_case_solver == 'DevinSolver':
-        T = 1
-    else:
-        T = 1
+    alpha = 0.95
+    T=1
     totalmass = mass_initial
     kp = (totalmass)/(T**2)*(alpha**2 -2*alpha + 1)
     kd = (4*(totalmass)*(1-alpha) - kp*T**2)/(2*T)
