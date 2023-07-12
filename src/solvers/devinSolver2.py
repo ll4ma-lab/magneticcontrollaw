@@ -340,6 +340,8 @@ class DevinSolver2:
         else:
             #rescale smaller one down, then adjust accordingly
             """
+        self.t1 = d1
+        self.t2 = 1 - self.t1
         if d1 < d2:
             self.t1 = self.duty_percent * int(d1 / self.duty_percent)
             self.t2 = 1 - self.t1

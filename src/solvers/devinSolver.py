@@ -68,11 +68,11 @@ class DevinSolver:
         w1hat = np.cross(fhat_des_perp,ix)
         w2hat = np.cross(ix,fhat_des_perp)
         w3hat = np.array([1, 0, 0])
-        w3bhat = np.array([-1, 0, 0])
+        w4hat = np.array([-1, 0, 0])
         w1 = self.max_frequency * w1hat
         w2 = self.max_frequency * w2hat
         w3 = self.max_frequency * w3hat
-        w3b = self.max_frequency * w3bhat
+        w4 = self.max_frequency * w4hat
 
         # print('')
         # print('')
@@ -85,7 +85,7 @@ class DevinSolver:
         # print(w1)
         # print(w2)
         # print(w3)
-        # print(w3b)
+        # print(w4)
         # print('')
         # print('')
 
@@ -93,7 +93,7 @@ class DevinSolver:
         theta1 = np.arctan2(np.linalg.norm(np.cross(w1hat, p1)), np.dot(w1hat, p1))
         theta2 = np.arctan2(np.linalg.norm(np.cross(w2hat, p2)), np.dot(w2hat, p2))
         theta3 = np.arctan2(np.linalg.norm(np.cross(w3hat, p3)), np.dot(w3hat, p3))
-        theta3b = np.arctan2(np.linalg.norm(np.cross(w3bhat, p3)), np.dot(w3bhat, p3))
+        theta4 = np.arctan2(np.linalg.norm(np.cross(w4hat, p3)), np.dot(w4hat, p3))
 
         # Construct unit rho, theta, and phi vectors
         ip1 = p1 / np.linalg.norm(p1)
@@ -105,12 +105,12 @@ class DevinSolver:
         iphi1 = np.cross(w1hat, p1) / np.linalg.norm(np.cross(w1hat, p1))
         iphi2 = np.cross(w2hat, p2) / np.linalg.norm(np.cross(w2hat, p2))
         iphi3 = np.cross(w3hat, p3) / np.linalg.norm(np.cross(w3hat, p3))
-        iphi3b = np.cross(w3bhat, p3) / np.linalg.norm(np.cross(w3bhat, p3))
+        iphi4 = np.cross(w4hat, p3) / np.linalg.norm(np.cross(w4hat, p3))
         
         itheta1 = np.cross(iphi1, ip1)
         itheta2 = np.cross(iphi2, ip2)
         itheta3 = np.cross(iphi3, ip3)
-        itheta3b = np.cross(iphi3b, ip3)
+        itheta4 = np.cross(iphi4, ip3)
 
         # can just get these values from model
         f1_p0, t1_p0, f1_p90, f1_phi90, t1_theta90 = self.model.sphere_model.model_call(
@@ -129,17 +129,17 @@ class DevinSolver:
         f1_p = -(f1_p90 - f1_p0) / 2 * np.cos(2 * theta1) + (f1_p90 + f1_p0) / 2
         f2_p = -(f2_p90 - f2_p0) / 2 * np.cos(2 * theta2) + (f2_p90 + f2_p0) / 2
         f3_p = -(f3_p90 - f3_p0) / 2 * np.cos(2 * theta3) + (f3_p90 + f3_p0) / 2
-        f3b_p = -(f3_p90 - f3_p0) / 2 * np.cos(2 * theta3b) + (f3_p90 + f3_p0) / 2
+        f4_p = -(f3_p90 - f3_p0) / 2 * np.cos(2 * theta4) + (f3_p90 + f3_p0) / 2
         f1_phi = f1_phi90 * np.sin(theta1)
         f2_phi = f2_phi90 * np.sin(theta2)
         t1_p = t1_p0 * np.cos(theta1)
         t2_p = t2_p0 * np.cos(theta2)
         t3_p = t3_p0 * np.cos(theta3)
-        t3b_p = t3_p0 * np.cos(theta3b)
+        t4_p = t3_p0 * np.cos(theta4)
         t1_theta = t1_theta90 * np.sin(theta1)
         t2_theta = t2_theta90 * np.sin(theta2)
         t3_theta = t3_theta90 * np.sin(theta3)
-        t3b_theta = t3_theta90 * np.sin(theta3b)
+        t4_theta = t3_theta90 * np.sin(theta4)
 
         # Calculate the total force from each omnimagnet
         if np.isnan(iphi1).any():
@@ -155,7 +155,7 @@ class DevinSolver:
                 f2_p * np.transpose(ip2) + f2_phi * np.transpose(iphi2)
             ) * self.max_dipole_strength**2
         f3 = f3_p * np.transpose(ip3) * self.max_dipole_strength**2
-        f3b = f3b_p * np.transpose(ip3) * self.max_dipole_strength**2
+        f4 = f4_p * np.transpose(ip3) * self.max_dipole_strength**2
         if np.isnan(itheta1).any():
             t1 = (t1_p * np.transpose(ip1)) * self.max_dipole_strength**2
         else:
@@ -174,14 +174,14 @@ class DevinSolver:
             t3 = (
                 t3_p * np.transpose(ip3) + t3_theta * np.transpose(itheta3)
             ) * self.max_dipole_strength**2
-        if np.isnan(itheta3b).any():
-            t3b = (t3b_p * np.transpose(ip3)) * self.max_dipole_strength**2
+        if np.isnan(itheta4).any():
+            t4 = (t4_p * np.transpose(ip3)) * self.max_dipole_strength**2
         else:
-            t3b = (
-                t3b_p * np.transpose(ip3) + t3b_theta * np.transpose(itheta3b)
+            t4 = (
+                t4_p * np.transpose(ip3) + t4_theta * np.transpose(itheta4)
             ) * self.max_dipole_strength**2
 
-        # this is identical for f1,f2,f3, not sure what f3b is supposed to be
+        # this is identical for f1,f2,f3, not sure what f4 is supposed to be
         # but you can figure that out and delete a lot of code
 
         # this function expects a numpy array of dipole strengths, psi+xi angles,
@@ -214,8 +214,8 @@ class DevinSolver:
         fx = np.linalg.norm(f3)
         d_x = (fxd * fyz) / (fyzd * fx + fxd * fyz)
         d_yz = 1 - d_x
-        fmax = f3 * d_x / 2 + f3b * d_x / 2 + (f1 + f2) * d_yz
-        tmax = t3 * d_x / 2 + t3b * d_x / 2 + (t1 + t2) * d_yz
+        fmax = f3 * d_x / 2 + f4 * d_x / 2 + (f1 + f2) * d_yz
+        tmax = t3 * d_x / 2 + t4 * d_x / 2 + (t1 + t2) * d_yz
 
         # Manipulate mx and myz to get force magnitude correct if desired force
         # magnitude is possible else give max force values
@@ -226,7 +226,7 @@ class DevinSolver:
                 w1,
                 w2,
                 w3,
-                w3b,
+                w4,
                 0,
                 1,
                 mag3,
@@ -259,7 +259,7 @@ class DevinSolver:
                     f2_p * np.transpose(ip2) + f2_phi * np.transpose(iphi2)
                 ) * m2_set**2
             f3 = f3_p * np.transpose(ip3) * m3_set**2
-            f3b = f3b_p * np.transpose(ip3) * m3_set**2
+            f4 = f4_p * np.transpose(ip3) * m3_set**2
             if np.isnan(itheta1).any():
                 t1 = (t1_p * np.transpose(ip1)) * m1_set**2
             else:
@@ -278,22 +278,22 @@ class DevinSolver:
                 t3 = (
                     t3_p * np.transpose(ip3) + t3_theta * np.transpose(itheta3)
                 ) * m3_set**2
-            if np.isnan(itheta3b).any():
-                t3b = (t3b_p * np.transpose(ip3)) * m3_set**2
+            if np.isnan(itheta4).any():
+                t4 = (t4_p * np.transpose(ip3)) * m3_set**2
             else:
-                t3b = (
-                    t3b_p * np.transpose(ip3) + t3b_theta * np.transpose(itheta3b)
+                t4 = (
+                    t4_p * np.transpose(ip3) + t4_theta * np.transpose(itheta4)
                 ) * m3_set**2
 
-            F = f3 * d_x / 2 + f3b * d_x / 2 + (f1 + f2) * d_yz
-            T = t3 * d_x / 2 + t3b * d_x / 2 + (t1 + t2) * d_yz
+            F = f3 * d_x / 2 + f4 * d_x / 2 + (f1 + f2) * d_yz
+            T = t3 * d_x / 2 + t4 * d_x / 2 + (t1 + t2) * d_yz
             return (
                 F,
                 T,
                 w1,
                 w2,
                 w3,
-                w3b,
+                w4,
                 0,
                 1,
                 mag3,
@@ -317,7 +317,7 @@ class DevinSolver:
             w1,
             w2,
             w3,
-            w3b,
+            w4,
             mag1,
             mag2,
             mag3,
@@ -343,17 +343,8 @@ class DevinSolver:
             self.t1 = d_yz
             self.t2 = d_x
         else:
-            # rescale smaller one down, then adjust accordingly
-            if d_yz < d_x:
-                self.t1 = self.duty_percent * int(d_yz / self.duty_percent)
-                self.t2 = 1 / 2 - self.t1
-                if self.t2 < 0.5:
-                    scale_factor_t2 = np.sqrt((d_x * self.t1) / (d_yz * self.t2))
-            else:
-                self.t2 = self.duty_percent * int(d_x / self.duty_percent)
-                self.t1 = 1 / 2 - self.t2
-                if self.t1 < 0.5:
-                    scale_factor_t1 = np.sqrt((d_yz * self.t2) / (d_x * self.t1))
+            self.t1 = d_yz
+            self.t2 = 1-self.t1
 
         dipole_1 = m1_set * scale_factor_t1
         dipole_2 = m2_set * scale_factor_t1
@@ -365,7 +356,7 @@ class DevinSolver:
             w1 / np.linalg.norm(w1),
             w2 / np.linalg.norm(w2),
             w3 / np.linalg.norm(w3),
-            w3b / np.linalg.norm(w3b),
+            w4 / np.linalg.norm(w4),
         ]
         controls = []
 
