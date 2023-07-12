@@ -342,16 +342,7 @@ class DevinSolver2:
             """
         self.t1 = d1
         self.t2 = 1 - self.t1
-        if d1 < d2:
-            self.t1 = self.duty_percent * int(d1 / self.duty_percent)
-            self.t2 = 1 - self.t1
-            if self.t2 < 0.5:
-                scale_factor_t2 = np.sqrt((d2 * self.t1) / (d1 * self.t2))
-        else:
-            self.t2 = self.duty_percent * int(d2 / self.duty_percent)
-            self.t1 = 1 - self.t2
-            if self.t1 < 0.5:
-                scale_factor_t1 = np.sqrt((d1 * self.t2) / (d2 * self.t1))
+
 
         dipole_1 = m1_set * scale_factor_t1
         dipole_2 = m2_set * scale_factor_t2
