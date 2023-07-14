@@ -25,7 +25,7 @@ class DevinSolver2:
 
         self.mu0 = 4 * np.pi * 10**-7
 
-        self.duty_time = 2
+        self.duty_time = 1
         min_full_rotations = 3
         self.duty_percent = min_full_rotations / (self.max_frequency * self.duty_time)
 
