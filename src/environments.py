@@ -22,6 +22,7 @@ class PlanarEnvironments(Enum):
     INFINITY = 8
     OMEGA = 9
     U = 10
+    REGULATOR = 13
 
 
 class SpaceEnvironments(Enum):
@@ -83,13 +84,13 @@ class PlanarProblem:
             (-height / 2, height / 2),
         ]
 
-        z_value = 0.15
+        z_value = 0.0
         magnets = np.array(
             [
-                (0.1, 0.1, z_value),  # marker 0.365m away
-                (-0.1, 0.1, z_value),
-                (-0.1, -0.1, z_value),
-                (0.1, -0.1, z_value),
+                ( 0.2, 0,z_value) 
+                ,(-0.2, 0.125,z_value)
+                ,(-0.2, 0.0, z_value)
+                ,(0.2, -0.125, z_value)
             ]
         )
         self.magnets = magnets.tolist()
@@ -102,7 +103,7 @@ class PlanarProblem:
         self.tolerances = (linear_tolerance, rotational_tolerance)
 
         self.start_state = np.zeros((12, 1))
-        square_radius = 0.075
+        square_radius = 0.07
         if challenge_id == PlanarEnvironments.LINE:  # line
             self.true_desired_state = np.zeros((12, 2))
             self.true_desired_state[:3, 0] = [square_radius, -square_radius, 0]
@@ -373,7 +374,11 @@ class PlanarProblem:
             self.times[17] = short_time
             self.times[13] = short_time
             self.times[9] = short_time
-
+        if challenge_id == PlanarEnvironments.REGULATOR:
+            self.true_desired_state = np.zeros((12, 2))
+            self.desired_state = self.true_desired_state
+            self.times = [0, 600]
+            
             # self.trajectoryDimensions = 'xy'
         import warnings
 
@@ -474,7 +479,7 @@ class SpaceProblem:
             self.true_desired_state[:3, 4] = [0.075, -0.075, 0]
 
             self.desired_state = self.true_desired_state
-            self.times = [480] * self.desired_state.shape[1]
+            self.times = [600] * self.desired_state.shape[1]
 
         if challenge_id == SpaceEnvironments.AXIS:  # individual axis
             self.true_desired_state = np.zeros((12, 12))
