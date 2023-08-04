@@ -46,17 +46,17 @@ from extract_sys_id import extract_sys_id_data
     boat,
     env,
 ) = extract_sys_id_data(
-    "/media/tabor/ESD-ISO/data/updated/real_2023-01-25 23_45_58.252761"
+    "/home/tabor/Downloads/IJRR/known_sphere/real_2023-03-07 14:10:43.061701_MultiMagSolver"
 )
 
 magnets = env.magnets
 sysID_type = RadiusSysid
-optimizer_type = NewtonMethod
-reset = False
-use_stein = False
-end_early = False
+optimizer_type = GradientDescent
+reset = True
+use_stein = True
+end_early = True
 print_result = False
-max_iterations = 40 if reset else 2
+max_iterations = 1000 if reset else 2
 
 
 print("optimizer ", optimizer_type)
@@ -92,12 +92,12 @@ if optimizer_type is Momentum:
 
 
 prob = sysID_type(
-    build_acceleration_q(env.trajectoryDimensions),
+    build_acceleration_q(env.trajectory_dimensions),
     object_properties=initial_object_properties,
     boat=boat,
 )  # built with M(0.04) Q M(0.04)
 
-stein_problem = SteinWrapper(prob, 25, 5)
+stein_problem = SteinWrapper(prob, 250, 1e3)
 
 if use_stein:
     optimizer = optimizer_type(problem=stein_problem, **optimizerParams)
@@ -105,7 +105,7 @@ else:
     optimizer = optimizer_type(problem=prob, **optimizerParams)
 
 
-batch_size = 25
+batch_size = 1500
 start_index = -batch_size
 end_index = -1
 
@@ -128,7 +128,6 @@ for i in tqdm(range(1, len(controls) - batch_size)):
         selected_positions,
         selected_linear_velocities,
         selected_rotation_velocities,
-        (0.0, 5.4),
     )
     # check cost with updated data but old parameters
     initial_costs.append(prob.cost(prob.initial_solution))
@@ -194,7 +193,6 @@ prob.update_vals(
     positions,
     linear_velocity,
     rotational_velocity,
-    (0.0, 5.4),
 )
 
 anim = prob.visualize_optimization(

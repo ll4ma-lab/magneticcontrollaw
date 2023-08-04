@@ -395,7 +395,7 @@ class RadiusSysid(Problem):
             scat = plt.scatter(
                 points[:, 0],
                 points[:, 1] * self.sigma_multiplier,
-                linewidths=10,
+                linewidths=1,
                 c="orange",
             )
             scat.set_offsets(points)
@@ -409,13 +409,15 @@ class RadiusSysid(Problem):
             if show_costs:
                 ax.view_init(elev=ax.elev, azim=ax.azim + 1 / 3)
             points = iterates[num].reshape((-1, 2))
-            costs = [
-                [min(func(self.cost(point.reshape((-1, 1)))), clip_value)]
-                for point in points
-            ]
-            points_3d = np.concatenate((points, np.array(costs)), 1)
+
             # print(points_3d.shape)
             if show_costs:
+                costs = [
+                    [min(func(self.cost(point.reshape((-1, 1)))), clip_value)]
+                    for point in points
+                ]
+                points_3d = np.concatenate((points, np.array(costs)), 1)
+                
                 scat._offsets3d = (
                     points_3d[:, 0],
                     points_3d[:, 1] * self.sigma_multiplier,
