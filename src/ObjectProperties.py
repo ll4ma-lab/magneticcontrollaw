@@ -24,12 +24,12 @@ class ObjectProperties:
         sigma = self.sigma + o.sigma
         return ObjectProperties(mass=mass, MOI=MOI, radius=radius, sigma=sigma)
 
-    def torch(self):
+    def torch(self,make_tensor= torch.tensor):
         return ObjectProperties(
-            mass=torch.tensor(self.mass),
-            MOI=torch.tensor(self.MOI),
-            radius=torch.tensor(self.radius),
-            sigma=torch.tensor(self.sigma),
+            mass=make_tensor(np.eye(1) * self.mass),
+            MOI=make_tensor(self.MOI),
+            radius=make_tensor(self.radius),
+            sigma=make_tensor(self.sigma),
         )
 
 
@@ -37,7 +37,7 @@ def build_mass_matrix(object_properties, library=np, torque_top=True):
     mass = object_properties.mass
     MOI = object_properties.MOI
 
-    mass_component = library.diag(library.stack([mass, mass, mass]))
+    mass_component = library.diag(library.stack([mass, mass, mass]).reshape((-1)))
     off_diagonal = library.zeros_like(MOI)
 
     if torque_top:
@@ -53,10 +53,19 @@ def build_mass_matrix(object_properties, library=np, torque_top=True):
 def compute_sphere_properties(density, radius, library=np):
     if torch.is_tensor(density) and library == np:
         density = density.numpy()
-    volume = 4.0 / 3 * np.pi * (radius**3)
-    mass = volume * density
-    I = library.eye(3) * (2.0 / 5) * mass * (radius**2)
-    return mass, I
+    
+    
+    if library is torch:
+        I = library.eye(3,device = density.device, dtype = density.dtype)
+    else:
+        I = library.eye(3)
+
+        
+    volume = 4.0 / 3 * library.pi * (radius**3)
+    mass = volume * density    
+    
+    MOI = I * (2.0 / 5) * mass * (radius**2)
+    return mass, MOI
 
 
 def compute_boat_properties(cylinder_mass, radius, cylinder_height, base_mass):

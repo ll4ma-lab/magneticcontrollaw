@@ -12,6 +12,7 @@ sys.path.append("..")  # Adds higher directory to python modules path.
 
 import dataloader
 import numpy as np
+import torch
 import time
 
 
@@ -63,7 +64,7 @@ file_name = "/home/tabor/Downloads/IJRR/known_sphere/real_2023-03-07 14:10:43.06
 file_name = "C://Users//tabor//Downloads//IJRR/IJRR//known_sphere//real_2023-03-07 15_11_55.936480_MultiMagSolver"
 
 
-mode =  3
+mode =  0
 
 turn_off_prior = mode%2
 mini_batch = mode//2
@@ -77,7 +78,8 @@ else:
     skip_beginning = 0  
 
 if not turn_off_prior and not mini_batch:
-    a=b
+    #a=b
+    pass
 
 (
     linear_velocity,
@@ -107,7 +109,7 @@ import matplotlib.pyplot as plt
 add_noise = False
 magnets = env.magnets
 sysID_type = RadiusSysid
-optimizer_type = NewtonMethod
+optimizer_type = Momentum
 
 
 if add_noise:
@@ -131,13 +133,13 @@ if optimizer_type is NewtonMethod:
         "min_alpha": 1e-10,
     }
 elif optimizer_type is GradientDescent or optimizer_type is Momentum:
-    step = 1e-11
+    step = 1e-9
     optimizerParams = {
         "alpha": step,
-        "rho": 0.9,
-        "c1": 1e-11,
+        "rho": 0.5,
+        "c1": 1e-14,
         "FP_PRECISION": 1e-16,
-        "min_alpha": step * 1e-20,
+        "min_alpha": step * 1e-22
     }
 elif optimizer_type is BFGSMethod:
     optimizerParams = {
@@ -149,19 +151,27 @@ elif optimizer_type is BFGSMethod:
     }
 if optimizer_type is Momentum:
     optimizerParams["momentum"] = 0.9
+    optimizerParams["FP_PRECISION"] = -1
 
 
 if sysID_type is MassOnlySysid:
     optimizerParams["FP_PRECISION"] = 1e-13
+
+library = np
+GPU = True 
+
+    
 
 
 prob = sysID_type(
     build_acceleration_q("xyt"),
     object_properties=initial_object_properties,
     boat=boat,
-    drag_terms=(8.12e-3, 2.15, 1.13e-5, 1.90e-4),
+    drag_terms=(8.12e-3, 2.15, 1.13e-5, 1.90e-4),GPU=GPU,
 )  # built with M(0.04) Q M(0.04)
-optimizer = optimizer_type(problem=prob, **optimizerParams)
+
+
+optimizer = optimizer_type(problem=prob, **optimizerParams, library= library)
 s = time.time()
 prob.update_vals(
     selected_controls,
@@ -171,15 +181,24 @@ prob.update_vals(
     noisy_rotational_velocity,
 )
 
+np.random.seed(1)
 results = []
 if turn_off_prior:
     prob.regularization_multiplier = 0
 try:
-    for i in tqdm(range(100)):
-        initial_solution = np.random.uniform(
-            prob.min_bounds, prob.max_bounds, (prob.size(), 1)
-        )
-        result = optimizer.optimize(initial_solution, max_iterations=150)
+    for i in tqdm(range(10)):
+
+        
+        if library == torch:
+            initial_solution = torch.distributions.Uniform(
+                prob.min_bounds, prob.max_bounds, (prob.size(), 1)
+            ).sample()
+        else:
+            initial_solution = library.random.uniform(
+                prob.min_bounds, prob.max_bounds, (prob.size(), 1)
+            )
+        
+        result = optimizer.optimize(initial_solution, max_iterations=100)
         results.append(result)
 except KeyboardInterrupt:
     print("keyboard")
@@ -208,7 +227,7 @@ if prob.size() == 2:
             ]
         ).reshape((-1, 1))
         iterates.append(iterate)
-    _ = prob.visualize_optimization(iterates, func=np.log, show_costs=False,make_heatmap=True)
+    #_ = prob.visualize_optimization(iterates, func=np.log, show_costs=False,make_heatmap=True)
 
     print("brute time ", time.time() - s)
 else:
@@ -252,6 +271,6 @@ else:
     save_folder += 'full-dataset'
 
 
-_ = prob.visualize_optimization(iterates, func=lambda x: np.log(np.log(x)), make_heatmap=True,samples=200,save_location=save_folder,magic_divider=1e7)
+_ = prob.visualize_optimization(iterates, func=lambda x: np.log(np.log(x)), make_heatmap=True,samples=50,save_location=save_folder)
 
 

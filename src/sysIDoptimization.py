@@ -31,16 +31,30 @@ from visualization import Lanc1, Lanc2, Lanc3
 class RadiusSysid(Problem):
     def __init__(
         self, weights, object_properties=None, boat=None, drag_terms=(0, 0, 0, 0),
-        force_mode=False
+        force_mode=False, GPU = False
     ):
         super().__init__()
+
+        
+        torch_dtype_func = torch.FloatTensor
+
+
+        if GPU:
+            self.make_tensor = lambda x:torch_dtype_func(x).cuda()
+            self.device = 'cuda'
+        else:
+            self.make_tensor = lambda x:torch_dtype_func(x)
+
+        
+
+
 
         self.single_model = SphereModel(1)
         self.sigma_multiplier = 1e9
 
         self.error_multiplier = 1e6
 
-        self.regularization_multiplier = 1e10
+        self.regularization_multiplier = 1e11
         self.reset_current_solution(object_properties)
 
         self.min_bounds[0] = 1e-3
@@ -52,8 +66,10 @@ class RadiusSysid(Problem):
         self.prior = self.make_tensor((self.max_bounds - self.min_bounds) / 2)
 
         self.weights = self.make_tensor(weights)
+        
         if boat:
-            self.boat = boat.torch()
+            self.boat = boat.torch(self.make_tensor)
+            print(self.boat.mass.device)
         else:
             self.boat = boat
 
@@ -64,7 +80,15 @@ class RadiusSysid(Problem):
         self.force_mode = force_mode
         self.drag_terms = drag_terms
 
-        # self.make_tensor = lambda x:torch.Tensor(x).cuda()
+        # never got this option to work
+        # if library == torch:
+        #     self.unmake_tensor = lambda x:x
+        #     self.min_bounds = self.make_tensor(self.min_bounds)
+        #     self.max_bounds = self.make_tensor(self.max_bounds)
+        #     self.initial_solution = self.make_tensor(self.initial_solution)
+        #     self.create_tensor = self.make_tensor
+        #     self.make_tensor = self.unmake_tensor
+
 
     def reset_current_solution(self, object_properties=None):
         if object_properties:
@@ -405,7 +429,7 @@ class RadiusSysid(Problem):
 
         def update(num, scat, scat2, iterates, show_costs, ax, save_location):
 
-            # ax.set_title(num)
+            ax.set_title(num)
             if show_costs:
                 ax.view_init(elev=ax.elev, azim=ax.azim + 1 / 3)
             points = iterates[num].reshape((-1, 2))

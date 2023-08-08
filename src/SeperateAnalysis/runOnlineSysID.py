@@ -46,7 +46,7 @@ from extract_sys_id import extract_sys_id_data
     boat,
     env,
 ) = extract_sys_id_data(
-    "/home/tabor/Downloads/IJRR/known_sphere/real_2023-03-07 14:10:43.061701_MultiMagSolver"
+ "C://Users//tabor//Downloads//IJRR/IJRR//known_sphere//real_2023-03-07 15_11_55.936480_MultiMagSolver"
 )
 
 magnets = env.magnets
@@ -71,12 +71,12 @@ if optimizer_type is NewtonMethod:
         "min_alpha": 1e-20,
     }
 elif optimizer_type is GradientDescent or optimizer_type is Momentum:
-    step = 1e-12
+    step = 3e-12
     optimizerParams = {
         "alpha": step,
         "rho": 0.9,
         "c1": 1e-9,
-        "FP_PRECISION": 1e-10,
+        "FP_PRECISION": 1e-11,
         "min_alpha": step * 1e-10,
     }
 elif optimizer_type is BFGSMethod:
@@ -90,14 +90,17 @@ elif optimizer_type is BFGSMethod:
 if optimizer_type is Momentum:
     optimizerParams["momentum"] = 0.9
 
+GPU = False
+
 
 prob = sysID_type(
     build_acceleration_q(env.trajectory_dimensions),
     object_properties=initial_object_properties,
     boat=boat,
+    GPU = GPU
 )  # built with M(0.04) Q M(0.04)
 
-stein_problem = SteinWrapper(prob, 250, 1e3)
+stein_problem = SteinWrapper(prob, 100, 1e7)
 
 if use_stein:
     optimizer = optimizer_type(problem=stein_problem, **optimizerParams)
@@ -105,7 +108,7 @@ else:
     optimizer = optimizer_type(problem=prob, **optimizerParams)
 
 
-batch_size = 1500
+batch_size = 1000
 start_index = -batch_size
 end_index = -1
 
@@ -132,9 +135,12 @@ for i in tqdm(range(1, len(controls) - batch_size)):
     # check cost with updated data but old parameters
     initial_costs.append(prob.cost(prob.initial_solution))
 
+    start = time.time()
     result = optimizer.optimize(
         optimizer.problem.initial_solution, max_iterations=max_iterations
     )
+    end_time = time.time()
+    print(end_time-start)
     results.append(result)
 
     if not reset:
@@ -195,22 +201,25 @@ prob.update_vals(
     rotational_velocity,
 )
 
-anim = prob.visualize_optimization(
-    np.array([result.solution for result in results]),
-    samples=100,
-    show_costs=True,
-    func=np.log,
-)
+# anim = prob.visualize_optimization(
+#     np.array([result.solution for result in results]),
+#     samples=100,
+#     show_costs=True,
+#     func=np.log,
+# )
 
-anim_2d = prob.visualize_optimization(
-    np.array([result.solution for result in results]),
-    samples=2,
-    show_costs=False,
-    func=np.log,
-)
+# anim_2d = prob.visualize_optimization(
+#     np.array([result.solution for result in results]),
+#     samples=2,
+#     show_costs=False,
+#     func=np.log,
+# )
 last_anim_2d = prob.visualize_optimization(
     np.array(result.iterates), samples=2, show_costs=False, func=np.log
 )
+
+
+
 
 print("optimizer ", optimizer_type)
 print("reset ", reset)
