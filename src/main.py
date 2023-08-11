@@ -42,8 +42,8 @@ if __name__ == "__main__":
     use_sphere = True
     cheat = False
 
-    run_adaptive = False and use_sphere and not cheat
-    inverse_dynamics = False and use_sphere and not cheat and not use_special_case_solver
+    run_adaptive = True and use_sphere and not cheat
+    inverse_dynamics = True and use_sphere and not cheat and not use_special_case_solver
 
     simulate_boat = False
 
@@ -52,8 +52,8 @@ if __name__ == "__main__":
     vel_noise = False
     control_noise = False
 
-    num_magnets = 6
-    env = SpaceProblem(SpaceEnvironments.CUBE_ROTATE, num_magnets)
+    num_magnets = 4
+    env = SpaceProblem(SpaceEnvironments.REGULATOR, num_magnets)
     # env.magnets = env.magnets[:4]
     # env.trajectory_dimensions = 'xyz'
 
@@ -190,7 +190,7 @@ if __name__ == "__main__":
         positions,
         transforms,
         controls,
-        object_parameters_over_time=object_parameters_over_time,
+        object_parameters_over_time=False,
         name="",
         save_plot_steps=velocity_profile.switching_times,
         save_location=False,

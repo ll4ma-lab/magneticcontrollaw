@@ -29,6 +29,8 @@ from models import (
 )
 from ObjectProperties import build_mass_matrix
 
+from Stein import ExpectationControlOptimization
+
 torch.set_default_tensor_type(torch.DoubleTensor)
 
 sphere_parameters = {
@@ -63,7 +65,7 @@ def cylinder_optimize(prob):
 
 
 def build_acceleration_q(state_cost_string):
-    return build_q(state_cost_string, 2e5, 1e2)
+    return build_q(state_cost_string, 2e5, 1e1)
 
 
 def build_force_q(state_cost_string):
@@ -213,6 +215,7 @@ class MultiMagSolver:
         inverse_dynamics=False,
         boat=None,
         num_processes=8,
+        stein=False
     ):
         self.model = model
         self.problems = []
@@ -228,6 +231,9 @@ class MultiMagSolver:
         self.gradient_time = 0
         self.hessian_time = 0
 
+
+        
+
         if inverse_dynamics:
             qweights = build_acceleration_q(state_cost_string)
         else:
@@ -237,7 +243,10 @@ class MultiMagSolver:
         if sphere_model:
             for i in range(2 * len(model.magnets)):
                 if inverse_dynamics:
-                    prob = SphericalAccelOptimization(qweights)
+                    if stein:
+                        prob = ExpectationControlOptimization(qweights)
+                    else:
+                        prob = SphericalAccelOptimization(qweights)
                 else:
                     prob = SphericalOptimization(qweights)
                 if i % 2 == 0:
@@ -354,7 +363,7 @@ class MultiMagSolver:
 
         s = time.time()
         self.modify_problems(desired_wrench, position)
-        # results = [sphere_optimize(prob) for prob in self.problems]
+        #results = [sphere_optimize(prob) for prob in self.problems]
         results = self.pool.map(sphere_optimize, self.problems)
 
         iterations = [result.iterates.shape[0] for result in results]

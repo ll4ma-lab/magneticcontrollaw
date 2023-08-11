@@ -33,6 +33,10 @@ from tqdm import tqdm
 from scipy.spatial.transform import Rotation as R
 from extract_sys_id import extract_sys_id_data
 
+
+
+from Stein import SteinSysid as SteinWrapper
+
 # dataloader.load('C:/Users/tabor/OneDrive/Documents/magneticcontrollaw/data/sim_2160s_2022-09-27 17.51.31.467776',globals())
 # dataloader.load('/home/tabor/Documents/magneticcontrollaw/data/sim_5400s_2022-09-27 13.29.32.114902',globals())
 # dataloader.load('/home/tabor/Documents/magneticcontrollaw/data/sim_2160s_2022-09-27 15.42.16.145535',globals())
@@ -46,8 +50,10 @@ from extract_sys_id import extract_sys_id_data
     boat,
     env,
 ) = extract_sys_id_data(
- "C://Users//tabor//Downloads//IJRR/IJRR//known_sphere//real_2023-03-07 15_11_55.936480_MultiMagSolver"
+# "C://Users//tabor//Downloads//IJRR/IJRR//known_sphere//real_2023-03-07 15_11_55.936480_MultiMagSolver"
+ "C:/Users/tabor/OneDrive/Documents/magneticcontrollaw/data/sim_1800s_2023-08-10 09.54.50.649527"
 )
+boat = False
 
 magnets = env.magnets
 sysID_type = RadiusSysid
@@ -56,7 +62,7 @@ reset = True
 use_stein = True
 end_early = True
 print_result = False
-max_iterations = 1000 if reset else 2
+max_iterations = 600 if reset else 2
 
 
 print("optimizer ", optimizer_type)
@@ -71,13 +77,13 @@ if optimizer_type is NewtonMethod:
         "min_alpha": 1e-20,
     }
 elif optimizer_type is GradientDescent or optimizer_type is Momentum:
-    step = 3e-12
+    step = 3e-8
     optimizerParams = {
         "alpha": step,
-        "rho": 0.9,
+        "rho": 0.5,
         "c1": 1e-9,
-        "FP_PRECISION": 1e-11,
-        "min_alpha": step * 1e-10,
+        "FP_PRECISION": 1e-7,
+        "min_alpha": step * 1e-7,
     }
 elif optimizer_type is BFGSMethod:
     optimizerParams = {
@@ -100,7 +106,7 @@ prob = sysID_type(
     GPU = GPU
 )  # built with M(0.04) Q M(0.04)
 
-stein_problem = SteinWrapper(prob, 100, 1e7)
+stein_problem = SteinWrapper(prob, 20, 1e3)
 
 if use_stein:
     optimizer = optimizer_type(problem=stein_problem, **optimizerParams)
@@ -108,7 +114,7 @@ else:
     optimizer = optimizer_type(problem=prob, **optimizerParams)
 
 
-batch_size = 1000
+batch_size = 30
 start_index = -batch_size
 end_index = -1
 

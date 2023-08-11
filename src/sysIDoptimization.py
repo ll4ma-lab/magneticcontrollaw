@@ -36,7 +36,7 @@ class RadiusSysid(Problem):
         super().__init__()
 
         
-        torch_dtype_func = torch.FloatTensor
+        torch_dtype_func = torch.DoubleTensor
 
 
         if GPU:
@@ -54,7 +54,7 @@ class RadiusSysid(Problem):
 
         self.error_multiplier = 1e6
 
-        self.regularization_multiplier = 1e11
+        self.regularization_multiplier = 1e7
         self.reset_current_solution(object_properties)
 
         self.min_bounds[0] = 1e-3

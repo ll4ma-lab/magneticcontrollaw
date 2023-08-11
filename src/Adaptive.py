@@ -10,7 +10,7 @@ from ll4ma_opt.solvers import Momentum, NewtonMethod
 from solvers.modelOptimization import build_acceleration_q
 import numpy as np
 import matplotlib.pyplot as plt
-
+from Stein import SteinSysid
 
 class Adaptive:
     def __init__(
@@ -28,13 +28,13 @@ class Adaptive:
         self.object_properties = object_properties
         Q = build_acceleration_q(dimensions)
         print("adaptive weights ", Q)
-        self.problem = internal_sys_id(
+        self.problem = SteinSysid(internal_sys_id(
             Q, object_properties, boat=boat, drag_terms=drag_terms
-        )
+        ),30,1e3)
         self.current_solution = self.problem.initial_solution
         optimizer_params = {"alpha": 1, "rho": 0.9, "min_alpha": 1e-20, "c1": 1e-30}
 
-        step = 1e-12  # / batch_size
+        step = 1e-9  # / batch_size
 
         optimizer_params = {
             "alpha": step,
@@ -95,7 +95,7 @@ class Adaptive:
         self.current_solution = result.solution
         self.parameters.append(self.current_solution)
 
-        updated_properties = self.problem.get_object_properties(result.solution, np)
+        updated_properties = self.problem.get_object_properties(result.solution[:2], np)
         self.object_properties.radius = updated_properties.radius
         self.object_properties.sigma = updated_properties.sigma
         self.object_properties.mass = updated_properties.mass
