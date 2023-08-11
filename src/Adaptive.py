@@ -22,15 +22,20 @@ class Adaptive:
         internal_sys_id=sysIDoptimization.RadiusSysid,
         boat=False,
         drag_terms=(0, 0, 0, 0),
+        stein=False
     ):
 
         self.magnets = magnets
         self.object_properties = object_properties
         Q = build_acceleration_q(dimensions)
         print("adaptive weights ", Q)
-        self.problem = SteinSysid(internal_sys_id(
+        prob = internal_sys_id(
             Q, object_properties, boat=boat, drag_terms=drag_terms
-        ),30,1e3)
+        )
+        if stein:
+            self.problem = SteinSysid(prob,30,1e3)
+        else:
+            self.problem = prob
         self.current_solution = self.problem.initial_solution
         optimizer_params = {"alpha": 1, "rho": 0.9, "min_alpha": 1e-20, "c1": 1e-30}
 

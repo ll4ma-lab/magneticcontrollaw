@@ -29,8 +29,6 @@ from models import (
 )
 from ObjectProperties import build_mass_matrix
 
-from Stein import ExpectationControlOptimization
-
 torch.set_default_tensor_type(torch.DoubleTensor)
 
 sphere_parameters = {
@@ -50,12 +48,10 @@ cylinder_parameters = {
 
 
 def sphere_optimize(prob):
-    try:
         solver = NewtonMethod(problem=prob, **sphere_parameters)
         result = solver.optimize(prob.initial_solution, max_iterations=25)
         return result
-    except:
-        return False
+
 
 
 def cylinder_optimize(prob):
@@ -199,7 +195,54 @@ class SphericalAccelOptimization(SphericalOptimization):
         error = 1e5 * (self.desired - self.mass_matrix_inv @ selected_wrench)[0]
         weighted_error = torch.sqrt(self.weights) @ error
         return weighted_error
+    
+class ExpectationControlOptimization(SphericalAccelOptimization):
+    def __init__(self, weights):
+        super().__init__(weights)
+        self.mass_matrix_inv = torch.eye(6)
 
+    def tensor_cost(self, x):
+        selected_wrench = self.get_wrench(x)
+        
+        desired_matrix = self.desired.unsqueeze(1).expand((6,selected_wrench.shape[0],1))
+        predicted_acceleration = torch.bmm(self.mass_matrix_inv,selected_wrench).transpose(0,1)
+        error = 1e12 * (desired_matrix - predicted_acceleration)
+        
+        right =  (self.weights @ error.squeeze()).unsqueeze(2).transpose(0,1)
+        left = error.transpose(0,1).transpose(1,2)
+        
+        cost = torch.sum(torch.bmm(left,right))
+        return cost
+
+    def tensor_error(self, x):
+        #needs a sum across batch dimension
+        selected_wrench = self.get_wrench(x)
+
+        desired_matrix = self.desired.unsqueeze(1).expand((6,selected_wrench.shape[0],1))
+        predicted_acceleration = torch.bmm(self.mass_matrix_inv,selected_wrench).transpose(0,1)
+        error = 1e12 * (desired_matrix - predicted_acceleration)
+        weighted_error = torch.sqrt(self.weights) @ error
+        return weighted_error
+    
+    def get_wrench(self, x):
+        particles = self.frho0.shape[0]
+        
+        dipole_strength = x[:1,0]
+        angles = x[1:,0]
+
+        dipole_strengths = dipole_strength.expand((particles))
+        angles_array = angles.unsqueeze(1).expand((2,particles))
+        
+        rhos = self.rho.expand((3,particles))
+        zeros = self.zero.expand(particles)
+        return model_call_rotated_wrench(
+            dipole_strengths,
+            angles_array,
+            (self.frho0, self.trho0, self.frho90, self.fphi90, self.ttheta90),
+            rhos,
+            library=torch,
+            zero=zeros,
+        )
 
 def get_cost(iterate):
     return iterate["problem"].cost(iterate["variables"])
@@ -363,8 +406,8 @@ class MultiMagSolver:
 
         s = time.time()
         self.modify_problems(desired_wrench, position)
-        #results = [sphere_optimize(prob) for prob in self.problems]
-        results = self.pool.map(sphere_optimize, self.problems)
+        results = [sphere_optimize(prob) for prob in self.problems]
+        #results = self.pool.map(sphere_optimize, self.problems)
 
         iterations = [result.iterates.shape[0] for result in results]
         # self.cost_time += np.sum([result[4] for result in results])
