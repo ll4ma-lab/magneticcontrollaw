@@ -79,6 +79,7 @@ class RadiusSysid(Problem):
         ]
         self.force_mode = force_mode
         self.drag_terms = drag_terms
+        self.material_density = self.make_tensor([8940.0])[0]
 
         # never got this option to work
         # if library == torch:
@@ -180,7 +181,6 @@ class RadiusSysid(Problem):
         self.drag_wrenches = self.make_tensor(np.hstack((-drag_force, -drag_torque)))
         self.accelerations = self.make_tensor(np_a.T)
 
-        self.material_density = self.make_tensor([8940.0])[0]
 
     def forward_acceleration(
         self, x, object_properties, dists, dipole_strengths, angles, rhos, zero

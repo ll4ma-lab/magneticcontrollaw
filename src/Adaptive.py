@@ -37,6 +37,17 @@ class Adaptive:
         else:
             self.problem = prob
         self.current_solution = self.problem.initial_solution
+        
+        updated_properties = self.problem.get_object_properties(self.current_solution, np)
+        self.object_properties.radius = updated_properties.radius
+        self.object_properties.sigma = updated_properties.sigma
+        self.object_properties.mass = updated_properties.mass
+        self.object_properties.MOI = updated_properties.MOI
+        
+        
+        
+        
+        
         optimizer_params = {"alpha": 1, "rho": 0.9, "min_alpha": 1e-20, "c1": 1e-30}
 
         step = 1e-9  # / batch_size
@@ -100,7 +111,7 @@ class Adaptive:
         self.current_solution = result.solution
         self.parameters.append(self.current_solution)
 
-        updated_properties = self.problem.get_object_properties(result.solution[:2], np)
+        updated_properties = self.problem.get_object_properties(result.solution, np)
         self.object_properties.radius = updated_properties.radius
         self.object_properties.sigma = updated_properties.sigma
         self.object_properties.mass = updated_properties.mass

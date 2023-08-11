@@ -48,10 +48,12 @@ cylinder_parameters = {
 
 
 def sphere_optimize(prob):
+    try:
         solver = NewtonMethod(problem=prob, **sphere_parameters)
         result = solver.optimize(prob.initial_solution, max_iterations=25)
         return result
-
+    except:
+        return False
 
 
 def cylinder_optimize(prob):
@@ -406,8 +408,8 @@ class MultiMagSolver:
 
         s = time.time()
         self.modify_problems(desired_wrench, position)
-        results = [sphere_optimize(prob) for prob in self.problems]
-        #results = self.pool.map(sphere_optimize, self.problems)
+        #results = [sphere_optimize(prob) for prob in self.problems]
+        results = self.pool.map(sphere_optimize, self.problems)
 
         iterations = [result.iterates.shape[0] for result in results]
         # self.cost_time += np.sum([result[4] for result in results])

@@ -59,7 +59,7 @@ if __name__ == "__main__":
     # env.magnets = env.magnets[:4]
     # env.trajectory_dimensions = 'xyz'
 
-    sim_time = np.sum(env.times)
+    sim_time = 500#np.sum(env.times)
 
     sigma_copper = 5.87e07
     sigma_al = 3.77e07
@@ -113,7 +113,7 @@ if __name__ == "__main__":
             inverse_dynamics=inverse_dynamics,
             boat=controller_boat,
             num_processes=10,
-            stein=False
+            stein=stein
         )
 
     if inverse_dynamics:
