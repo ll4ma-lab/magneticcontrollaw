@@ -24,7 +24,6 @@ class Adaptive:
         drag_terms=(0, 0, 0, 0),
         stein=False
     ):
-
         self.magnets = magnets
         self.object_properties = object_properties
         Q = build_acceleration_q(dimensions)

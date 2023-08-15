@@ -64,10 +64,10 @@ file_name = "/home/tabor/Downloads/IJRR/known_sphere/real_2023-03-07 14:10:43.06
 file_name = "C://Users//tabor//Downloads//IJRR/IJRR//known_sphere//real_2023-03-07 15_11_55.936480_MultiMagSolver"
 
 
-mode =  0
+mode = 0
 
-turn_off_prior = mode%2
-mini_batch = mode//2
+turn_off_prior = mode % 2
+mini_batch = mode // 2
 
 
 if mini_batch:
@@ -75,10 +75,10 @@ if mini_batch:
     skip_beginning = 2353
 else:
     skip_end = 0
-    skip_beginning = 0  
+    skip_beginning = 0
 
 if not turn_off_prior and not mini_batch:
-    #a=b
+    # a=b
     pass
 
 (
@@ -139,7 +139,7 @@ elif optimizer_type is GradientDescent or optimizer_type is Momentum:
         "rho": 0.5,
         "c1": 1e-14,
         "FP_PRECISION": 1e-16,
-        "min_alpha": step * 1e-22
+        "min_alpha": step * 1e-22,
     }
 elif optimizer_type is BFGSMethod:
     optimizerParams = {
@@ -158,20 +158,19 @@ if sysID_type is MassOnlySysid:
     optimizerParams["FP_PRECISION"] = 1e-13
 
 library = np
-GPU = True 
-
-    
+GPU = True
 
 
 prob = sysID_type(
     build_acceleration_q("xyt"),
     object_properties=initial_object_properties,
     boat=boat,
-    drag_terms=(8.12e-3, 2.15, 1.13e-5, 1.90e-4),GPU=GPU,
+    drag_terms=(8.12e-3, 2.15, 1.13e-5, 1.90e-4),
+    GPU=GPU,
 )  # built with M(0.04) Q M(0.04)
 
 
-optimizer = optimizer_type(problem=prob, **optimizerParams, library= library)
+optimizer = optimizer_type(problem=prob, **optimizerParams, library=library)
 s = time.time()
 prob.update_vals(
     selected_controls,
@@ -187,8 +186,6 @@ if turn_off_prior:
     prob.regularization_multiplier = 0
 try:
     for i in tqdm(range(10)):
-
-        
         if library == torch:
             initial_solution = torch.distributions.Uniform(
                 prob.min_bounds, prob.max_bounds, (prob.size(), 1)
@@ -197,7 +194,7 @@ try:
             initial_solution = library.random.uniform(
                 prob.min_bounds, prob.max_bounds, (prob.size(), 1)
             )
-        
+
         result = optimizer.optimize(initial_solution, max_iterations=100)
         results.append(result)
 except KeyboardInterrupt:
@@ -227,7 +224,7 @@ if prob.size() == 2:
             ]
         ).reshape((-1, 1))
         iterates.append(iterate)
-    #_ = prob.visualize_optimization(iterates, func=np.log, show_costs=False,make_heatmap=True)
+    # _ = prob.visualize_optimization(iterates, func=np.log, show_costs=False,make_heatmap=True)
 
     print("brute time ", time.time() - s)
 else:
@@ -264,13 +261,17 @@ print("solution ", solution)
 save_folder = "..\\ijrr\\sysid\\"
 
 if mini_batch and not turn_off_prior:
-    save_folder += 'mini-batch-prior'
+    save_folder += "mini-batch-prior"
 elif turn_off_prior and mini_batch:
-    save_folder += 'mini-batch'
+    save_folder += "mini-batch"
 else:
-    save_folder += 'full-dataset'
+    save_folder += "full-dataset"
 
 
-_ = prob.visualize_optimization(iterates, func=lambda x: np.log(np.log(x)), make_heatmap=True,samples=50,save_location=save_folder)
-
-
+_ = prob.visualize_optimization(
+    iterates,
+    func=lambda x: np.log(np.log(x)),
+    make_heatmap=True,
+    samples=50,
+    save_location=save_folder,
+)

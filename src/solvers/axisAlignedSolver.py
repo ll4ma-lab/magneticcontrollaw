@@ -66,7 +66,6 @@ class AxisAlignedSolver:
                 )
             for theta in [0, 90, 180, -90]:
                 for i in range(len(self.model.magnets)):
-
                     self.controls_possible.append(
                         CylinderControlCommand(
                             mag_num=i, model_num=2, dipole_strength=1, theta=theta

@@ -37,13 +37,14 @@ from ObjectProperties import (
 from sysIDoptimization import RadiusSysid, SeperateRadiusSysid, MassSysID
 
 if __name__ == "__main__":
-
     use_special_case_solver = False
     use_sphere = True
     cheat = False
 
-    run_adaptive = True and use_sphere and not cheat
-    inverse_dynamics = True and use_sphere and not cheat and not use_special_case_solver
+    run_adaptive = False and use_sphere and not cheat
+    inverse_dynamics = (
+        False and use_sphere and not cheat and not use_special_case_solver
+    )
 
     simulate_boat = False
 
@@ -59,7 +60,7 @@ if __name__ == "__main__":
     # env.magnets = env.magnets[:4]
     # env.trajectory_dimensions = 'xyz'
 
-    sim_time = 500#np.sum(env.times)
+    sim_time = 100  # np.sum(env.times)
 
     sigma_copper = 5.87e07
     sigma_al = 3.77e07

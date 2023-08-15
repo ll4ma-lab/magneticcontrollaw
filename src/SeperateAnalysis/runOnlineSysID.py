@@ -103,7 +103,7 @@ prob = sysID_type(
     build_acceleration_q(env.trajectory_dimensions),
     object_properties=initial_object_properties,
     boat=boat,
-    GPU = GPU
+    GPU=GPU,
 )  # built with M(0.04) Q M(0.04)
 
 stein_problem = SteinWrapper(prob, 20, 1e3)
@@ -122,7 +122,6 @@ results = []
 initial_costs = []
 
 for i in tqdm(range(1, len(controls) - batch_size)):
-
     start_index = i
     end_index = i + batch_size if len(controls) > i + batch_size else len(controls)
 
@@ -146,7 +145,7 @@ for i in tqdm(range(1, len(controls) - batch_size)):
         optimizer.problem.initial_solution, max_iterations=max_iterations
     )
     end_time = time.time()
-    print(end_time-start)
+    print(end_time - start)
     results.append(result)
 
     if not reset:
@@ -223,8 +222,6 @@ prob.update_vals(
 last_anim_2d = prob.visualize_optimization(
     np.array(result.iterates), samples=2, show_costs=False, func=np.log
 )
-
-
 
 
 print("optimizer ", optimizer_type)

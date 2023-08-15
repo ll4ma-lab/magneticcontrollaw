@@ -56,7 +56,6 @@ costs = []
 thetas = range(-180, 180)
 fts = []
 for theta in thetas:
-
     rotatedVector = evaluateTheta(theta)
     fts.append(rotatedVector)
     cost = 1e10 * np.linalg.norm(desired[:, 0] - rotatedVector) ** 2

@@ -307,7 +307,8 @@ class MultiMagSolver:
         ctx = multiprocessing.get_context("spawn")
         if len(self.problems) < num_processes:
             num_processes = len(self.problems)
-        self.pool = ctx.Pool(processes=num_processes)
+        if num_processes > 1:
+            self.pool = ctx.Pool(processes=num_processes)
 
         self.iterations = []
         self.times = []
@@ -405,7 +406,6 @@ class MultiMagSolver:
             return self.solve_wrench_cylinder(position, desired_wrench)
 
     def solve_wrench_sphere(self, position, desired_wrench):
-
         s = time.time()
         self.modify_problems(desired_wrench, position)
         #results = [sphere_optimize(prob) for prob in self.problems]
@@ -449,7 +449,6 @@ class MultiMagSolver:
             for i in range(-180, 180, 3):
                 for j in range(-180, 180, 3):
                     for k in range(0, 40):
-
                         iterate = {
                             "problem": self.problems[mag * 2],
                             "variables": np.array((k, i, j)).reshape((3, 1)),

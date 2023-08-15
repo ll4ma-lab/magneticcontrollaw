@@ -24,7 +24,7 @@ class ObjectProperties:
         sigma = self.sigma + o.sigma
         return ObjectProperties(mass=mass, MOI=MOI, radius=radius, sigma=sigma)
 
-    def torch(self,make_tensor= torch.tensor):
+    def torch(self, make_tensor=torch.tensor):
         return ObjectProperties(
             mass=make_tensor(np.eye(1) * self.mass),
             MOI=make_tensor(self.MOI),
@@ -62,17 +62,15 @@ def build_mass_matrix(object_properties, library=np, torque_top=True):
 def compute_sphere_properties(density, radius, library=np):
     if torch.is_tensor(density) and library == np:
         density = density.numpy()
-    
-    
+
     if library is torch:
-        I = library.eye(3,device = density.device, dtype = density.dtype)
+        I = library.eye(3, device=density.device, dtype=density.dtype)
     else:
         I = library.eye(3)
 
-        
     volume = 4.0 / 3 * library.pi * (radius**3)
-    mass = volume * density    
-    
+    mass = volume * density
+
     MOI = I * (2.0 / 5) * mass * (radius**2)
     return mass, MOI
 

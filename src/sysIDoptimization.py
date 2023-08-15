@@ -30,24 +30,24 @@ from visualization import Lanc1, Lanc2, Lanc3
 
 class RadiusSysid(Problem):
     def __init__(
-        self, weights, object_properties=None, boat=None, drag_terms=(0, 0, 0, 0),
-        force_mode=False, GPU = False
+        self,
+        weights,
+        object_properties=None,
+        boat=None,
+        drag_terms=(0, 0, 0, 0),
+        force_mode=False,
+        GPU=False,
     ):
         super().__init__()
 
         
         torch_dtype_func = torch.DoubleTensor
 
-
         if GPU:
-            self.make_tensor = lambda x:torch_dtype_func(x).cuda()
-            self.device = 'cuda'
+            self.make_tensor = lambda x: torch_dtype_func(x).cuda()
+            self.device = "cuda"
         else:
-            self.make_tensor = lambda x:torch_dtype_func(x)
-
-        
-
-
+            self.make_tensor = lambda x: torch_dtype_func(x)
 
         self.single_model = SphereModel(1)
         self.sigma_multiplier = 1e9
@@ -66,7 +66,7 @@ class RadiusSysid(Problem):
         self.prior = self.make_tensor((self.max_bounds - self.min_bounds) / 2)
 
         self.weights = self.make_tensor(weights)
-        
+
         if boat:
             self.boat = boat.torch(self.make_tensor)
             print(self.boat.mass.device)
@@ -89,7 +89,6 @@ class RadiusSysid(Problem):
         #     self.initial_solution = self.make_tensor(self.initial_solution)
         #     self.create_tensor = self.make_tensor
         #     self.make_tensor = self.unmake_tensor
-
 
     def reset_current_solution(self, object_properties=None):
         if object_properties:
@@ -185,7 +184,6 @@ class RadiusSysid(Problem):
     def forward_acceleration(
         self, x, object_properties, dists, dipole_strengths, angles, rhos, zero
     ):
-
         mass_matrix = self.construct_mass_matrix(object_properties, torch)
         model_vals = self.single_model.model_call(
             dists, 1, radii=object_properties.radius, sigma=object_properties.sigma
@@ -235,10 +233,10 @@ class RadiusSysid(Problem):
             self.zero,
         )
         error = (self.accelerations - modeled_accelerations) * self.error_multiplier
-        
+
         if self.force_mode:
-            error = self.construct_mass_matrix(object_properties,torch) @ error
-        
+            error = self.construct_mass_matrix(object_properties, torch) @ error
+
         left = (error.T @ self.weights).unsqueeze(1)
         right = error.T.unsqueeze(2)
         cost = (
@@ -360,15 +358,15 @@ class RadiusSysid(Problem):
 
         ax.set_xlim(self.min_bounds[0], self.max_bounds[0])
         ax.set_ylim(
-            self.min_bounds[1] * self.sigma_multiplier ,
-            self.max_bounds[1] * self.sigma_multiplier ,
+            self.min_bounds[1] * self.sigma_multiplier,
+            self.max_bounds[1] * self.sigma_multiplier,
         )
         ax.set_xlabel(self.param_names[0])
         ax.set_ylabel(self.param_names[1])
 
         ax.set_xticks(np.arange(0.01, 0.11, step=0.02))
         ax.set_yticks(np.arange(1e7, 8e7, step=1e7))
-        ax.set_yticklabels([str(i)+'e7' for i in range(1,8)])
+        ax.set_yticklabels([str(i) + "e7" for i in range(1, 8)])
 
         points = iterates[0].reshape((-1, 2))
         costs = [
@@ -384,17 +382,21 @@ class RadiusSysid(Problem):
                 cmap="RdBu",
             )
             # set the limits of the plot to the limits of the data
-            ax.set_xlim(( -self.min_bounds[0],
-                    self.max_bounds[0] + 2*self.min_bounds[0]))
-            ax.set_ylim((
-                    (self.min_bounds[1] - 0.0014) * self.sigma_multiplier ,
-                    (self.max_bounds[1] + 0.0014) * self.sigma_multiplier ))
+            ax.set_xlim(
+                (-self.min_bounds[0], self.max_bounds[0] + 2 * self.min_bounds[0])
+            )
+            ax.set_ylim(
+                (
+                    (self.min_bounds[1] - 0.0014) * self.sigma_multiplier,
+                    (self.max_bounds[1] + 0.0014) * self.sigma_multiplier,
+                )
+            )
 
             fig.colorbar(c, ax=ax)
 
         if show_costs:
             ax.scatter(
-                xs, ys * self.sigma_multiplier , possible_costs, color=(0, 0, 1, 0.5)
+                xs, ys * self.sigma_multiplier, possible_costs, color=(0, 0, 1, 0.5)
             )
             # ax.set_zlim(0, clip_value)
             points_3d = np.concatenate((points, np.array(costs)), 1)
@@ -428,7 +430,6 @@ class RadiusSysid(Problem):
             fig.savefig("../../" + save_location + "/" + "initial.pdf")
 
         def update(num, scat, scat2, iterates, show_costs, ax, save_location):
-
             ax.set_title(num)
             if show_costs:
                 ax.view_init(elev=ax.elev, azim=ax.azim + 1 / 3)
@@ -441,7 +442,7 @@ class RadiusSysid(Problem):
                     for point in points
                 ]
                 points_3d = np.concatenate((points, np.array(costs)), 1)
-                
+
                 scat._offsets3d = (
                     points_3d[:, 0],
                     points_3d[:, 1] * self.sigma_multiplier,
@@ -819,7 +820,6 @@ def sys_id_demo(
     sys_id_type=RadiusSysid,
     boat=None,
 ):
-
     optimizer_params = {
         "alpha": 1,
         "rho": 0.9,

@@ -50,7 +50,6 @@ if __name__ == "__main__":
     for desired_wrench, state in tqdm(
         zip(desiredWrenchs[:500], states[:500]), total=len(states[:500])
     ):
-
         s = time.time()
         control1 = sphereSolver.solveWrench(state[0][:3, 3], desired_wrench)
         sphereTime.append(time.time() - s)

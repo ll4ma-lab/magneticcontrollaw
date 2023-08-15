@@ -39,7 +39,6 @@ splines = [
 ]
 data = [npStates[:, 0], npStates[:, 1], npStates[:, 5]]
 for index in range(len(nameList)):
-
     axs[index].set_title(nameList[index])
     axs[index].plot(ts, data[index], "ro", ms=5)
 

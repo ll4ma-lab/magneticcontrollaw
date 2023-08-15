@@ -94,7 +94,7 @@ model = MultiMagModel(env.magnets, object_properties, True)
 # control = [1,2,np.random.random()*40,np.random.random()*360-180]
 control = [5, 2, 38, 173]
 control = SphereControlCommand(5, 2, 38, 173)
-print(model.forward_pass(np.zeros((3, 1)), control))
+# print(model.forward_pass(np.zeros((3, 1)), control))
 # np.random.seed(473)
 
 # desired_wrench = (np.random.random((6,1))-0.5)*1e-4
@@ -118,13 +118,14 @@ if __name__ == "__main__":
         state_cost_string=env.trajectory_dimensions,
         object_properties=object_properties,
         sphere_model=True,
+        num_processes=0,
     )
 
     for _ in range(100):
-        np.random.seed(_)
+        # np.random.seed(_)
         desired_wrench = 2 * (np.random.random((6, 1)) - 0.5) * 1e-4
         desired_wrench[3:, 0] *= 1e-1
-        desired_wrench[1, 0] *= 2
+        desired_wrench[1, 0] *= -2
         print(desired_wrench)
 
         builder.modify_problems(desired_wrench, np.zeros((3, 1)))
@@ -250,7 +251,6 @@ if __name__ == "__main__":
                 ax.scatter(
                     y[indices], z[indices], npCosts[indices], s=1, c=npc[indices]
                 )
-                plt.show()
 
                 if saveAnimation:
 
@@ -281,19 +281,20 @@ if __name__ == "__main__":
                         markersize=200,
                         linewidth=6,
                     )
-
+            # plt.show()
+        plt.show()
+        break
         # print('elapsed time ',time.time()-s)
 
-        producedControl = SphereControlCommand(
-            0, result.solution[0, 0], result.solution[1, 0], result.solution[2, 0]
-        )
-        bestWrench = model.forward_pass(np.zeros((3, 1)), producedControl)
+        # producedControl = SphereControlCommand(
+        #     0, result.solution[0, 0], result.solution[1, 0], result.solution[2, 0]
+        # )
+        # bestWrench = model.forward_pass(np.zeros((3, 1)), producedControl)
         # print(bestWrench)
         # print(desired_wrench)
 
-        producedControl2 = SphereControlCommand(
-            0, result2.solution[0, 0], result2.solution[1, 0], result2.solution[2, 0]
-        )
-        bestWrench2 = model.forward_pass(np.zeros((3, 1)), producedControl2)
+        # producedControl2 = SphereControlCommand(
+        #     0, result2.solution[0, 0], result2.solution[1, 0], result2.solution[2, 0]
+        # )
+        # bestWrench2 = model.forward_pass(np.zeros((3, 1)), producedControl2)
         # print(bestWrench2)
-        break

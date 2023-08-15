@@ -14,7 +14,6 @@ from se3Utils import build_tf
 
 
 def state_noise(state):
-
     transform = np.copy(state[0])
 
     current_linear_velocity = transform[:3, :3] @ state[2]
@@ -78,7 +77,6 @@ def simulate_experiment(
         desired_states.append(desired_state)
         desired_wrenchs.append(desired_wrench)
         if cheat:
-
             if inverse_dynamics:
                 inverted_accel = np.zeros(desired_wrench.shape)
                 inverted_accel[:3] = desired_wrench[3:]

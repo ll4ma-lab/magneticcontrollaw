@@ -60,7 +60,6 @@ class PDController:
         return np.concatenate((linear_error_w, rotation_error_w))
 
     def get_desired_wrench(self, current, desired):
-
         current_tf = current[0]
         desired_tf = build_tf(desired[:3, 0], desired[3:6, 0])
 

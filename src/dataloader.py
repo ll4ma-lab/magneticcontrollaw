@@ -11,7 +11,6 @@ def save(filename, variable_dicts):
     my_shelf = shelve.open(filename, "n")  # 'n' for new
 
     for variable_dict in variable_dicts:
-
         for key in variable_dict.keys():
             try:
                 my_shelf[key] = variable_dict[key]

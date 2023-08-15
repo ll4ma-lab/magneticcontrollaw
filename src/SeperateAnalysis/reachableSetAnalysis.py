@@ -35,7 +35,6 @@ from models import MultiMagModel
 from modelOptimization import multiMagSolver
 
 if __name__ == "__main__":
-
     env = SpaceProblem(6)
     env.magnets = env.magnets[:-3]
     env.trajectory_dimensions = "xyz"

@@ -3,7 +3,6 @@ import math
 
 
 def force_finder(w, m, material, fea__exp, r, lambda1):
-
     mu0 = 4 * math.pi * 10**-7
     m_loc_start = np.array([[lambda1, 0, 0]])
     obj_loc_start = np.array([0, 0, 0])

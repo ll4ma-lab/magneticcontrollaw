@@ -355,7 +355,6 @@ class PlanarProblem:
             )
 
     def problem_specific_modification(self, state, wrench=None):
-
         # note state has TF and body frame velocity, trying to modify vel
         # means probably rotating to world frame
         body_to_world = state[0][:3, :3]
@@ -517,9 +516,9 @@ class SpaceProblem:
             self.desired_state = self.true_desired_state
             self.times = [1200, 600]
         if challenge_id == SpaceEnvironments.CUBE:  # floating square
-            #self.magnets = [self.magnets[i] for i in [0, 1]]
-            #self.magnets[0][1] += 1e-15
-            #self.magnets[1][1] += 1e-15
+            # self.magnets = [self.magnets[i] for i in [0, 1]]
+            # self.magnets[0][1] += 1e-15
+            # self.magnets[1][1] += 1e-15
 
             self.true_desired_state = np.zeros((12, 9))
             r = 0.025
