@@ -253,7 +253,8 @@ class MultiMagSolver:
         ctx = multiprocessing.get_context("spawn")
         if len(self.problems) < num_processes:
             num_processes = len(self.problems)
-        self.pool = ctx.Pool(processes=num_processes)
+        if num_processes > 1:
+            self.pool = ctx.Pool(processes=num_processes)
 
         self.iterations = []
         self.times = []
