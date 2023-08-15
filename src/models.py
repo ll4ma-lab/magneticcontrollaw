@@ -102,7 +102,6 @@ def vector_norm(vector, library):
 
 # sphere model helper
 def compute_theta_and_frame(omega, rho, library=np):
-
     omega = library.swapaxes(omega, 0, 1)
     rho = library.swapaxes(rho, 0, 1)  # libraries dont like 3,n and prefer n,3
 

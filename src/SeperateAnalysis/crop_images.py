@@ -145,13 +145,25 @@ if redo_sysid_heat:
         pass
 
     crop_tasks = [
-        (['full-dataset/0.pdf','mini-batch/0.pdf','mini-batch-prior/0.pdf'],(10, 25, 183, 65)),
-        (['full-dataset/4.pdf','mini-batch/4.pdf','mini-batch-prior/3.pdf'],(90, 25, 183, 65)),
-        (['full-dataset/10.pdf','mini-batch/10.pdf','mini-batch-prior/5.pdf'],(90, 25, 183, 65)),
-        (['full-dataset/20.pdf','mini-batch/49.pdf','mini-batch-prior/14.pdf'],(90, 25, 50, 65)),
-                 ]
+        (
+            ["full-dataset/0.pdf", "mini-batch/0.pdf", "mini-batch-prior/0.pdf"],
+            (10, 25, 183, 65),
+        ),
+        (
+            ["full-dataset/4.pdf", "mini-batch/4.pdf", "mini-batch-prior/3.pdf"],
+            (90, 25, 183, 65),
+        ),
+        (
+            ["full-dataset/10.pdf", "mini-batch/10.pdf", "mini-batch-prior/5.pdf"],
+            (90, 25, 183, 65),
+        ),
+        (
+            ["full-dataset/20.pdf", "mini-batch/49.pdf", "mini-batch-prior/14.pdf"],
+            (90, 25, 50, 65),
+        ),
+    ]
     output_file_names = []
-    for file_names,crop_box in crop_tasks:
+    for file_names, crop_box in crop_tasks:
         for file_name in file_names:
             pdf = PdfReader(folder + sub_folder + file_name).pages[0]
 
@@ -161,45 +173,53 @@ if redo_sysid_heat:
             pdf.cropbox.setUpperLeft(PIL_crop[:2])
             pdf.cropbox.setLowerRight(PIL_crop[2:])
             writer = PdfWriter()
-        
-            writer.add_page(pdf) 
-            
-            output_file = output_folder + file_name.replace('/','-')
+
+            writer.add_page(pdf)
+
+            output_file = output_folder + file_name.replace("/", "-")
             output_file_names.append(output_file)
-            with open(output_file,'wb') as fp:
-                writer.write(fp) 
+            with open(output_file, "wb") as fp:
+                writer.write(fp)
 
     if merge_heatmap:
         for i in range(3):
             pdf_filenames = output_file_names[i::3]
-        
-        
-            inputs = [PdfFileReader(open(pdf_filenames, "rb"), strict=False) for pdf_filenames in pdf_filenames]
-        
+
+            inputs = [
+                PdfFileReader(open(pdf_filenames, "rb"), strict=False)
+                for pdf_filenames in pdf_filenames
+            ]
+
             total_width = sum([pdf.getPage(0).cropbox.width for pdf in inputs])
             total_height = max([pdf.getPage(0).cropbox.height for pdf in inputs])
-        
+
             new_page = PageObject.createBlankPage(None, total_width, total_height)
-        
+
             current_x = 0
-        
+
             for pdf in inputs:
                 curr_page = pdf.getPage(0)
                 curr_cropbox = curr_page.cropbox
-                new_page.mergeTranslatedPage(curr_page,current_x-curr_cropbox.left, -curr_cropbox.bottom)
-                current_x += curr_cropbox.width 
-        
-        
+                new_page.mergeTranslatedPage(
+                    curr_page, current_x - curr_cropbox.left, -curr_cropbox.bottom
+                )
+                current_x += curr_cropbox.width
+
             output = PdfFileWriter()
             output.addPage(new_page)
-            output_filename = pdf_filenames[0].split('/')[-1][:-4] + '_' + \
-            '_'.join([file_name.split('/')[-1][:-4].split('-')[-1] for file_name in pdf_filenames[1:]]) + '.pdf'
-            
-            
+            output_filename = (
+                pdf_filenames[0].split("/")[-1][:-4]
+                + "_"
+                + "_".join(
+                    [
+                        file_name.split("/")[-1][:-4].split("-")[-1]
+                        for file_name in pdf_filenames[1:]
+                    ]
+                )
+                + ".pdf"
+            )
+
             output.write(open(output_filename, "wb"))
-
-
-    
 
 
 redo_extra = True

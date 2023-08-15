@@ -27,7 +27,6 @@ class DevinSolver2:
         self.duty_percent = min_full_rotations / (self.max_frequency * self.duty_time)
 
     def calculate_duty_cycling_and_angles(self, position, wrench):
-
         # Grab the desired Force
         fdes = np.copy(wrench[:3, 0])
 
@@ -103,7 +102,6 @@ class DevinSolver2:
                 k3 = fhat_des_perp[2]
 
                 while dtheta > dtheta_precision:
-
                     vt = 1 - math.cos(math.pi / 2 - theta)
                     ct = math.cos(math.pi / 2 - theta)
                     st = math.sin(math.pi / 2 - theta)
@@ -213,7 +211,6 @@ class DevinSolver2:
 
             # Now all forces not within the cone of one rotating dipole field
             else:
-
                 w2hat = w1hat
                 w2hat[1] = -w2hat[1]
                 w2hat[2] = -w2hat[2]
@@ -248,7 +245,6 @@ class DevinSolver2:
                         return F, T, w1, w2, mag, mag2, m1_set, m1_set, 0.5, 0.5
 
                 else:
-
                     d1 = 0.6
                     d2 = 1 - d1
 

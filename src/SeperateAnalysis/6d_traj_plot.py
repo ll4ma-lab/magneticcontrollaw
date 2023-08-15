@@ -18,7 +18,7 @@ from visualization import Lanc1, Lanc2, Lanc3
 
 sim_time = 0
 input_folder = "/home/tabor/Downloads"
-input_folder = 'C:/Users/tabor/Downloads/IJRR_sim4'
+input_folder = "C:/Users/tabor/Downloads/IJRR_sim4"
 
 mags = 4
 magnet_data_map = {
@@ -85,7 +85,6 @@ dashedalpha = 0
 
 
 def double_plot(axs):
-
     plots = []
 
     # .set_title('position (m)')
@@ -120,7 +119,7 @@ def shared_plot(axis):
     axs_2 = (axis, ax2)
 
     plots = []
-    for ((linestyle, dataset), axis) in zip(
+    for (linestyle, dataset), axis in zip(
         zip(
             ["solid", "dashed"], [remaining_error[:, :3, 0], remaining_error[:, 3:, 0]]
         ),
@@ -154,7 +153,7 @@ def error_plot(axis):
     plots = []
     ax2 = axis.twinx()  # instantiate a second axes that shares the same x-axis
     axs_3 = (axis, ax2)
-    for ((linestyle, dataset), axis) in zip(
+    for (linestyle, dataset), axis in zip(
         zip(
             ["solid", "dashed"],
             [comparison_error[:, :3, 0], comparison_error[:, 3:, 0]],
@@ -208,7 +207,6 @@ def l2_data_plot(axis, dataset, lims):
         # axs_2[i].spines['left'].set_color(l2_colors[i])
         axs_2[i].set_ylim(lims[i])
 
-
     axs_2[0].legend(handles=plots[:3], loc="upper right", ncol=1)
     axs_2[0].set_xlabel("Time (minutes)")
     # axs_2[1].set_ylabel("Orientation (rad)")
@@ -228,8 +226,6 @@ def l2_data_plot(axis, dataset, lims):
     axs_2[0].spines["left"].set_linewidth(thickness)  # y axis line
     axs_2[0].spines["top"].set_linewidth(thickness)  # y axis line
     axs_2[0].spines["bottom"].set_linewidth(thickness)  # y axis line
-    
-    
 
 
 fig, axs = plt.subplots(1, 2)
@@ -250,7 +246,7 @@ fig_3.set_size_inches(7.5, 2.5)
 plt.tight_layout()
 
 fig_4, axis = plt.subplots()
-l2_data_plot(axis, remaining_error,[[-0.01,0.08],[-0.2,1.6]])
+l2_data_plot(axis, remaining_error, [[-0.01, 0.08], [-0.2, 1.6]])
 fig_4.set_size_inches(5, 2.5)
 plt.tight_layout()
 
@@ -284,11 +280,11 @@ fig = plt.figure(figsize=plt.figaspect(2.0))
 
 # First subplot
 ax = fig.add_subplot(1, 2, 1)
-l2_data_plot(ax, remaining_error, [[-0.0,0.08],[-0,2.0]])
+l2_data_plot(ax, remaining_error, [[-0.0, 0.08], [-0, 2.0]])
 ax.title.set_text("Pose Error")
 
 ax = fig.add_subplot(1, 2, 2)
-l2_data_plot(ax, comparison_error,[[-0.000,0.004],[-0.0,0.1]])
+l2_data_plot(ax, comparison_error, [[-0.000, 0.004], [-0.0, 0.1]])
 ax.title.set_text("Trajectory Error")
 
 fig.set_size_inches(6.5, 3)

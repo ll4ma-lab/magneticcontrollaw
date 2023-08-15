@@ -20,7 +20,7 @@ from torch.autograd import Variable
 from environments import PlanarProblem, SpaceProblem, SpaceEnvironments
 import SplineProfile
 from discreteTimeSimulator import DiscreteTimeSimulator
-from ObjectProperties import compute_sphere_properties,ObjectProperties
+from ObjectProperties import compute_sphere_properties, ObjectProperties
 
 from models import MultiMagModel
 from solvers.modelOptimization import MultiMagSolver
@@ -40,11 +40,10 @@ object_properties = ObjectProperties(
 
 if __name__ == "__main__":
     position = np.zeros((3, 1))
-    model = MultiMagModel(env.magnets,object_properties,True)
+    model = MultiMagModel(env.magnets, object_properties, True)
     solver = MultiMagSolver(model, "all", True)
     # np.random.seed(473)
     for i in range(5):
-
         desired_wrench = (np.random.random((6, 1)) - 0.5) * 1e-4
         s = time.time()
 

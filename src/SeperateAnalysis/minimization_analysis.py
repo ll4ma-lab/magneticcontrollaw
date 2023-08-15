@@ -118,11 +118,11 @@ if __name__ == "__main__":
         state_cost_string=env.trajectory_dimensions,
         object_properties=object_properties,
         sphere_model=True,
-        num_processes=0
+        num_processes=0,
     )
 
     for _ in range(100):
-        #np.random.seed(_)
+        # np.random.seed(_)
         desired_wrench = 2 * (np.random.random((6, 1)) - 0.5) * 1e-4
         desired_wrench[3:, 0] *= 1e-1
         desired_wrench[1, 0] *= -2
@@ -281,7 +281,7 @@ if __name__ == "__main__":
                         markersize=200,
                         linewidth=6,
                     )
-            #plt.show()
+            # plt.show()
         plt.show()
         break
         # print('elapsed time ',time.time()-s)

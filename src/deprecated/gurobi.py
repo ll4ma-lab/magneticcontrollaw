@@ -10,6 +10,7 @@ import numpy as np
 import time
 from pythonModel import pythonModel
 
+
 # matrix multiply
 class gurobiSolver:
     def __init__(self, dims, allowedDimsPerStep=None):
@@ -67,7 +68,6 @@ class gurobiSolver:
         return u, u, u, u
 
     def buildQ(self, stateCostString, loops=1):
-
         activated = [0] * (loops * 6)
         if "all" in stateCostString:
             activated = [1] * (loops * 6)

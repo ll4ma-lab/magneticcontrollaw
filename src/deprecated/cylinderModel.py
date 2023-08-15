@@ -12,7 +12,6 @@ import numpy as np
 
 
 def buildQ(stateCostString, objectProperties, tolerances, loops=1):
-
     activated = [0] * (loops * 6)
     if "all" in stateCostString:
         activated = [1] * (loops * 6)
@@ -74,7 +73,6 @@ def getOmniFrame(pos, use_tf=False):
 
 class cylinderSolver:
     def __init__(self, magnets):
-
         self.time = 0
         self.magnets = magnets
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
@@ -107,14 +105,12 @@ class cylinderSolver:
         self.magPoses = magPoses
         self.allowedModels = 3
         for i in range(len(self.magnets)):
-
             chosenMagnetPose = magPoses[i]
             omniFrame = getOmniFrame(chosenMagnetPose, True)
             _, cart = model.modelCall(chosenMagnetPose, 1, use_tf=True)
             omniFrame_t = tf.convert_to_tensor(omniFrame)
             # cart = tf.stack([tf.stack(cart[i].tolist()) for i in range(6)])
             for j in range(self.allowedModels):
-
                 powerPercent = tf.Variable(0, dtype=tf.float64)
                 clippedPower = tf.sigmoid(powerPercent) * 40
                 if j == 0:

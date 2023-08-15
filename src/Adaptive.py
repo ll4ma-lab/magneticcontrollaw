@@ -23,7 +23,6 @@ class Adaptive:
         boat=False,
         drag_terms=(0, 0, 0, 0),
     ):
-
         self.magnets = magnets
         self.object_properties = object_properties
         Q = build_acceleration_q(dimensions)

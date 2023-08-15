@@ -142,7 +142,6 @@ def draw_sphere(center, radius, ax, color="orange"):
 
 
 def visualize_2d_path(environment, positions, controls, name="path"):
-
     fig = plt.figure(figsize=(12, 12))
     ax = p3.Axes3D(fig)
     ax.set_xlim(*environment.visualization_boundary_y)
@@ -266,8 +265,8 @@ def animate_2d_path(
     ):
         # num = num + states.shape[1]/2
         update_axes_with_tf(transforms[num], axis_lines)
-        #traj_plot.set_data(np.transpose(positions[: num + 1, 0:2]))
-        #traj_plot.set_3d_properties(positions[: num + 1, 2])
+        # traj_plot.set_data(np.transpose(positions[: num + 1, 0:2]))
+        # traj_plot.set_3d_properties(positions[: num + 1, 2])
 
         if object_parameters_over_time:
             global current_sphere
@@ -290,9 +289,9 @@ def animate_2d_path(
             cube = cubes[i]
             # print(controls[num][0],i)
             cube.set_facecolor(colorinfo)
-        dipole_axis_line.set_data(np.array([[0],[0]]))
+        dipole_axis_line.set_data(np.array([[0], [0]]))
         dipole_axis_line.set_3d_properties(np.array([0]))
-        
+
         seconds = num + 1
         traj_plot.set_zorder(4)
 
@@ -420,7 +419,6 @@ def animate_2d_path(
 
 
 def animate_optimization_2d_path(environment, states, name="path"):
-
     fig = plt.figure()
 
     ax = fig.gca(projection="3d")
@@ -502,7 +500,6 @@ def draw_arrow(vector, color, ax, torque=False):
 def visualize_everything(
     all_magnets, magnets, vectors, errors, threshold, name, torque=False
 ):
-
     fig = plt.figure()
     fig.suptitle(name)
     ax = fig.add_subplot(111, projection="3d")
