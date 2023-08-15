@@ -52,14 +52,13 @@ if __name__ == "__main__":
     vel_noise = False
     control_noise = False
 
-    stein = True
-
+    stein = False
     num_magnets = 4
     env = SpaceProblem(SpaceEnvironments.REGULATOR, num_magnets)
     # env.magnets = env.magnets[:4]
     # env.trajectory_dimensions = 'xyz'
 
-    sim_time = 500#np.sum(env.times)
+    sim_time = np.sum(env.times)
 
     sigma_copper = 5.87e07
     sigma_al = 3.77e07
@@ -130,11 +129,12 @@ if __name__ == "__main__":
         env.magnets,
         "all",
         object_properties_approximate,
-        25,
+        10,
         adaptive_model,
         boat_properties,
         stein=stein
     )
+    np.random.seed(2)
 
     (
         states,
@@ -155,6 +155,7 @@ if __name__ == "__main__":
         cheat=cheat,
         run_adaptive=run_adaptive,
         inverse_dynamics=inverse_dynamics,
+        randomly_perturb_object_param = False
     )
 
     # print('Time spent doing forwad model ' + str(model.time))
@@ -201,17 +202,17 @@ if __name__ == "__main__":
     )
     npdesired_states = np.array(desired_states)
 
-    # plots = {
-    #     "Position (m)": np.transpose(positions),
-    #     "Velocity (m/s)": np.transpose(linear_velocity),
-    #     "Rot velocity (_/s)": np.transpose(rotational_velocity),
-    #     "Force ": np.transpose(np.array(wrenches)[:, :3, 0]),
-    #     "Torque ": np.transpose(np.array(wrenches)[:, 3:, 0]),
-    #     "Desired position (m)": np.transpose(npdesired_states[:, :3, 0]),
-    #     "Desired velocity (m/s) ": np.transpose(npdesired_states[:, 6:9, 0]),
-    # }
+    plots = {
+        "Position (m)": np.transpose(positions),
+        "Velocity (m/s)": np.transpose(linear_velocity),
+        "Rot velocity (_/s)": np.transpose(rotational_velocity),
+        "Force ": np.transpose(np.array(wrenches)[:, :3, 0]),
+        "Torque ": np.transpose(np.array(wrenches)[:, 3:, 0]),
+        "Desired position (m)": np.transpose(npdesired_states[:, :3, 0]),
+        "Desired velocity (m/s) ": np.transpose(npdesired_states[:, 6:9, 0]),
+    }
 
-    # visualization.plot_stuff(plots, "Controller")
+    visualization.plot_stuff(plots, "Controller")
 
     plots = {
         "Position Error(m)": np.abs(np.transpose(remaining_error[:, :3, 0])),
