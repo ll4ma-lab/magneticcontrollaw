@@ -113,7 +113,7 @@ if __name__ == "__main__":
             inverse_dynamics=inverse_dynamics,
             boat=controller_boat,
             num_processes=10,
-            stein=stein
+            stein=stein,
         )
 
     if inverse_dynamics:
@@ -133,7 +133,7 @@ if __name__ == "__main__":
         10,
         adaptive_model,
         boat_properties,
-        stein=stein
+        stein=stein,
     )
     np.random.seed(2)
 
@@ -156,7 +156,7 @@ if __name__ == "__main__":
         cheat=cheat,
         run_adaptive=run_adaptive,
         inverse_dynamics=inverse_dynamics,
-        randomly_perturb_object_param = False
+        randomly_perturb_object_param=False,
     )
 
     # print('Time spent doing forwad model ' + str(model.time))

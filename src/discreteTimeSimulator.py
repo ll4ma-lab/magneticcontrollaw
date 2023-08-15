@@ -9,7 +9,7 @@ import time
 from se3Utils import build_skew, repair_rot_matrix
 from tqdm import tqdm
 from solvers.modelOptimization import SphereControlCommand
-from ObjectProperties import build_mass_matrix,compute_sphere_properties
+from ObjectProperties import build_mass_matrix, compute_sphere_properties
 from se3Utils import build_tf
 
 
@@ -50,7 +50,7 @@ def simulate_experiment(
     debug_prints=True,
     run_adaptive=False,
     inverse_dynamics=False,
-    randomly_perturb_object_param = False
+    randomly_perturb_object_param=False,
 ):
     state = simulator.state
     states = []
@@ -65,25 +65,21 @@ def simulate_experiment(
     iterates = range(1, sim_time + 1)
     if debug_prints:
         iterates = tqdm(iterates)
-    
 
     for i in iterates:
         if randomly_perturb_object_param:
-            multipliers = np.random.uniform(1-randomly_perturb_object_param,
-                                            1+ randomly_perturb_object_param,2)
-            radius =  max(np.random.normal(0.02,0.008,1),0.001)
-            sigma =  max(np.random.normal(5.8e7,1.7e7,1),1e7)
-            
+            radius = max(np.random.normal(0.02, 0.008, 1), 0.001)
+            sigma = max(np.random.normal(5.8e7, 1.7e7, 1), 1e7)
+
             mass, MOI = compute_sphere_properties(8940, radius)
-            
-            model.object_properties.radius =radius
+
+            model.object_properties.radius = radius
             model.object_properties.sigma = sigma
             model.object_properties.mass = mass
-            model.object_properties.MOI = MOI    
+            model.object_properties.MOI = MOI
 
-            
         # if i == 300 and runAdaptive:
-        #    
+        #
         # arbitrarily change radius without updating mass
         desired_state = velocity_profile.get_desired_state(
             simulator.simulator_time, state

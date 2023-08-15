@@ -40,7 +40,6 @@ class RadiusSysid(Problem):
     ):
         super().__init__()
 
-        
         torch_dtype_func = torch.DoubleTensor
 
         if GPU:
@@ -179,7 +178,6 @@ class RadiusSysid(Problem):
 
         self.drag_wrenches = self.make_tensor(np.hstack((-drag_force, -drag_torque)))
         self.accelerations = self.make_tensor(np_a.T)
-
 
     def forward_acceleration(
         self, x, object_properties, dists, dipole_strengths, angles, rhos, zero

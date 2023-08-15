@@ -34,7 +34,6 @@ from scipy.spatial.transform import Rotation as R
 from extract_sys_id import extract_sys_id_data
 
 
-
 from Stein import SteinSysid as SteinWrapper
 
 # dataloader.load('C:/Users/tabor/OneDrive/Documents/magneticcontrollaw/data/sim_2160s_2022-09-27 17.51.31.467776',globals())
@@ -50,8 +49,8 @@ from Stein import SteinSysid as SteinWrapper
     boat,
     env,
 ) = extract_sys_id_data(
-# "C://Users//tabor//Downloads//IJRR/IJRR//known_sphere//real_2023-03-07 15_11_55.936480_MultiMagSolver"
- "C:/Users/tabor/OneDrive/Documents/magneticcontrollaw/data/sim_1800s_2023-08-10 09.54.50.649527"
+    # "C://Users//tabor//Downloads//IJRR/IJRR//known_sphere//real_2023-03-07 15_11_55.936480_MultiMagSolver"
+    "C:/Users/tabor/OneDrive/Documents/magneticcontrollaw/data/sim_1800s_2023-08-10 09.54.50.649527"
 )
 boat = False
 

@@ -39,12 +39,12 @@ def build_mass_matrix(object_properties, library=np, torque_top=True):
         MOIes = [object_properties.MOI]
     else:
         masses = object_properties.mass.reshape((-1))
-        MOIes = object_properties.MOI.reshape((-1,3,3))
+        MOIes = object_properties.MOI.reshape((-1, 3, 3))
     fulls = []
-    for mass,MOI in zip(masses,MOIes):
+    for mass, MOI in zip(masses, MOIes):
         mass_component = library.diag(library.stack([mass, mass, mass]).reshape((-1)))
         off_diagonal = library.zeros_like(MOI)
-    
+
         if torque_top:
             top = library.vstack((MOI, off_diagonal))
             bottom = library.vstack((off_diagonal, mass_component))
@@ -56,7 +56,7 @@ def build_mass_matrix(object_properties, library=np, torque_top=True):
     if len(fulls) < 2:
         return full
     else:
-        return library.stack(fulls,axis=0)
+        return library.stack(fulls, axis=0)
 
 
 def compute_sphere_properties(density, radius, library=np):
