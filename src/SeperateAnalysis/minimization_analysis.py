@@ -86,23 +86,11 @@ optimizerParams = {
     "rho": 0.5,
     "c1": 1e-9,
     "FP_PRECISION": 1e-5,
-    "min_alpha": 1e-10,
+    "min_alpha": 1e-15,
 }
 
 
 model = MultiMagModel(env.magnets, object_properties, True)
-# control = [1,2,np.random.random()*40,np.random.random()*360-180]
-control = [5, 2, 38, 173]
-control = SphereControlCommand(5, 2, 38, 173)
-# print(model.forward_pass(np.zeros((3, 1)), control))
-# np.random.seed(473)
-
-# desired_wrench = (np.random.random((6,1))-0.5)*1e-4
-# desired_wrench = (np.random.random((6,1))-0.5)*1e-7
-# desired_wrench = (np.random.random((6,1))-0.5)*1e-7
-# desired_wrench = (np.random.random((6,1))-0.5)*1e-7
-desired_wrench = (np.random.random((6, 1)) - 0.5) * 1e-4
-
 
 results = []
 
@@ -118,13 +106,14 @@ if __name__ == "__main__":
         state_cost_string=env.trajectory_dimensions,
         object_properties=object_properties,
         sphere_model=True,
+        inverse_dynamics=True,
         num_processes=0,
     )
 
     for _ in range(100):
         # np.random.seed(_)
-        desired_wrench = 2 * (np.random.random((6, 1)) - 0.5) * 1e-4
-        desired_wrench[3:, 0] *= 1e-1
+        desired_wrench = 2 * (np.random.random((6, 1)) - 0.5) * 1e-3
+        #desired_wrench[3:, 0] *= 1e-1
         desired_wrench[1, 0] *= -2
         print(desired_wrench)
 
@@ -160,7 +149,7 @@ if __name__ == "__main__":
 
         decisionVariablesList = []
 
-        func = np.abs
+        func = np.log
 
         for i in range(x.shape[0]):
             decisionVariables = np.array([x[i], y[i], z[i]]).reshape((3, 1))
@@ -220,14 +209,13 @@ if __name__ == "__main__":
         )
         print("")
         print("")
-        # if(cost2/costs[bestarg] >1 and cost/costs[bestarg] >1):
-        #     for params in [(90,90),(45,45),(45,0),(0,45),(90,0),(0,90),(180,0),(0,180)]:
-        #         solution3, cost3, converged3, iterates3 = optimizer.optimize(np.array([20,params[0],params[1]]).reshape((3,1)))
-        #         print(params,cost3/costs[bestarg])
+        if(result.cost/costs[bestarg] >1 and result2.cost/costs[bestarg] >1):
+            for params in [(90,90),(45,45),(45,0),(0,45),(90,0),(0,90),(180,0),(0,180)]:
+                solution3, cost3, converged3, iterates3 = optimizer.optimize(np.array([20,params[0],params[1]]).reshape((3,1)))
+                print(params,cost3/costs[bestarg])
+            break
 
-        #     #break
-
-        plot = True
+        plot = False
         saveAnimation = False
 
         if plot:
@@ -281,9 +269,8 @@ if __name__ == "__main__":
                         markersize=200,
                         linewidth=6,
                     )
-            # plt.show()
-        plt.show()
-        break
+            plt.show()
+            break
         # print('elapsed time ',time.time()-s)
 
         # producedControl = SphereControlCommand(
