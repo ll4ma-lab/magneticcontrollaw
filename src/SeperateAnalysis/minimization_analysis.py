@@ -10,11 +10,9 @@ os.environ["MKL_THREADING_LAYER"] = "GNU"
 from ll4ma_opt.problems import Problem
 import numpy as np
 
-
 import torch
 import torch.multiprocessing as multiprocessing
 from torch.autograd import Variable
-
 
 from ll4ma_opt.solvers.line_search import (
     GradientDescent,
@@ -54,7 +52,6 @@ env = SpaceProblem(SpaceEnvironments.REGULATOR)
 controller = PDController(env.start_state, 0.005, 0.00001, 0.005, 0.00001, 0.0, 0.000)
 velocityProfile = SplineProfile.SplineProfile(env, env.times)
 
-
 sigma_copper = 5.87e07
 sigma_al = 3.77e07
 
@@ -64,7 +61,6 @@ mass, MOI = compute_sphere_properties(8940, radius)
 object_properties = ObjectProperties(
     mass=mass, MOI=MOI, radius=radius, sigma=sigma_copper
 )
-
 
 optimizerParams = {
     "alpha": 1.0,
@@ -89,7 +85,6 @@ optimizerParams = {
     "min_alpha": 1e-15,
 }
 
-
 model = MultiMagModel(env.magnets, object_properties, True)
 
 results = []
@@ -113,28 +108,19 @@ if __name__ == "__main__":
     for _ in range(100):
         # np.random.seed(_)
         desired_wrench = 2 * (np.random.random((6, 1)) - 0.5) * 1e-3
-        #desired_wrench[3:, 0] *= 1e-1
+        # desired_wrench[3:, 0] *= 1e-1
         desired_wrench[1, 0] *= -2
-        print(desired_wrench)
 
         builder.modify_problems(desired_wrench, np.zeros((3, 1)))
-
-        # for i in range(len(builder.problems[:1])):
-        #     prob = builder.problems[control.mag_num]
-        #     val = 30
-        #     prob.min_bounds[0] = val - 1e-30
-        #     prob.max_bounds[0] = val + 1e-30
-
         prob = builder.problems[0]
 
         s = time.time()
         optimizer = NewtonMethod(problem=prob, **optimizerParams)
-        result = optimizer.optimize(
-            np.array([20, 0, 0]).reshape((3, 1)), max_iterations=25
-        )
-        result2 = optimizer.optimize(
-            np.array([20, 180, 180]).reshape((3, 1)), max_iterations=25
-        )
+
+        initial_positions = np.array([[20., 0, 0],
+                                      [20., 90, 180]])
+        results = [optimizer.optimize(
+            initial_position.reshape((3, 1)), max_iterations=25) for initial_position in initial_positions]
         print("elapsed newton time ", time.time() - s)
 
         # print(solution,cost,converged,iterates.shape)
@@ -185,46 +171,28 @@ if __name__ == "__main__":
             y[bestarg],
             z[bestarg],
             " with cost ",
-            costs[bestarg],
-        )
-        print(
-            "newton method best ",
-            result.solution[0],
-            result.solution[1],
-            result.solution[2],
-            "with cost ",
-            result.cost,
-            " ratio ",
-            result.cost / costs[bestarg],
-        )
-        print(
-            "newton method best ",
-            result2.solution[0],
-            result2.solution[1],
-            result2.solution[2],
-            "with cost ",
-            result2.cost,
-            " ratio ",
-            result2.cost / costs[bestarg],
-        )
+            costs[bestarg])
+
+        print('costs ', [result.cost for result in results])
+        print('ratios ', [result.cost / costs[bestarg] for result in results])
+        print('solutions ', [result.solution.flatten() for result in results])
+
         print("")
         print("")
-        if(result.cost/costs[bestarg] >1 and result2.cost/costs[bestarg] >1):
-            for params in [(90,90),(45,45),(45,0),(0,45),(90,0),(0,90),(180,0),(0,180)]:
-                solution3, cost3, converged3, iterates3 = optimizer.optimize(np.array([20,params[0],params[1]]).reshape((3,1)))
-                print(params,cost3/costs[bestarg])
+        print(_)
+        if (min([result.cost / costs[bestarg] for result in results]) > 1 and x[bestarg] > 0.5):
+            for params in [(90, 90), (45, 45), (45, 0), (0, 45), (90, 0), (0, 90), (180, 0), (0, 180)]:
+                solution3, cost3, converged3, iterates3 = optimizer.optimize(
+                    np.array([20, params[0], params[1]]).reshape((3, 1)))
+                print(params, cost3 / costs[bestarg])
             break
 
-        plot = False
+        plot = True
         saveAnimation = False
 
         if plot:
-            foundCosts = []
-            for j in range(result.iterates.shape[0]):
-                foundCosts.append(func(prob.cost(result.iterates[j, :, :])))
-            foundCosts2 = []
-            for j in range(result2.iterates.shape[0]):
-                foundCosts2.append(func(prob.cost(result2.iterates[j, :, :])))
+
+            foundCosts = [[func(prob.cost(iterate)) for iterate in result.iterates] for result in results]
 
             npCosts = np.array(costs)
             npc = np.array(colors)
@@ -237,7 +205,7 @@ if __name__ == "__main__":
                 fig.suptitle(str(streng) + " dipole", fontsize=16)
 
                 ax.scatter(
-                    y[indices], z[indices], npCosts[indices], s=1, c=npc[indices]
+                    y[indices], z[indices], func(npCosts[indices]), s=1, c=npc[indices]
                 )
 
                 if saveAnimation:
@@ -246,6 +214,7 @@ if __name__ == "__main__":
                         ax.view_init(elev=10.0, azim=i)
                         return (fig,)
 
+
                     # Animate
                     anim = animation.FuncAnimation(
                         fig, animate, frames=360, interval=20, blit=True
@@ -253,35 +222,14 @@ if __name__ == "__main__":
                     # Save
                     anim.save("basic_animation.mp4", fps=30)
                 else:
-                    ax.plot(
-                        fixmaxDegree(result.iterates[:, 1, 0]),
-                        fixmaxDegree(result.iterates[:, 2, 0]),
-                        foundCosts,
-                        c="r",
-                        markersize=200,
-                        linewidth=6,
-                    )
-                    ax.plot(
-                        fixmaxDegree(result2.iterates[:, 1, 0]),
-                        fixmaxDegree(result2.iterates[:, 2, 0]),
-                        foundCosts2,
-                        c="g",
-                        markersize=200,
-                        linewidth=6,
-                    )
+                    for result,found_costs in zip(results,foundCosts):
+                        ax.plot(
+                            fixmaxDegree(result.iterates[:, 1, 0]),
+                            fixmaxDegree(result.iterates[:, 2, 0]),
+                            found_costs,
+                            c="r",
+                            markersize=200,
+                            linewidth=6,
+                        )
             plt.show()
             break
-        # print('elapsed time ',time.time()-s)
-
-        # producedControl = SphereControlCommand(
-        #     0, result.solution[0, 0], result.solution[1, 0], result.solution[2, 0]
-        # )
-        # bestWrench = model.forward_pass(np.zeros((3, 1)), producedControl)
-        # print(bestWrench)
-        # print(desired_wrench)
-
-        # producedControl2 = SphereControlCommand(
-        #     0, result2.solution[0, 0], result2.solution[1, 0], result2.solution[2, 0]
-        # )
-        # bestWrench2 = model.forward_pass(np.zeros((3, 1)), producedControl2)
-        # print(bestWrench2)
