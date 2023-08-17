@@ -75,6 +75,27 @@ def compute_sphere_properties(density, radius, library=np):
     return mass, MOI
 
 
+def batch_sphere_properties(density,radii,sigmas):
+    masses = []
+    MOIs = []
+    for radius in radii:
+        mass, MOI = compute_sphere_properties(
+            density, radius, np
+        )
+        masses.append(mass)
+        MOIs.append(MOI)
+    mass = np.stack(masses).squeeze()
+    MOI = np.stack(MOIs).squeeze()
+
+    object_properties = ObjectProperties(
+        mass=mass,
+        MOI=MOI,
+        radius=radii,
+        sigma=sigmas,
+    )
+    return object_properties
+
+
 def compute_boat_properties(cylinder_mass, radius, cylinder_height, base_mass):
     base_x = (1 / 4) * base_mass * radius * radius
     base_y = base_x

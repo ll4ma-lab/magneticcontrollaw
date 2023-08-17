@@ -188,7 +188,7 @@ class SphericalAccelOptimization(SphericalOptimization):
 
     def tensor_cost(self, x):
         selected_wrench = self.get_wrench(x)
-        error = 1e12 * (self.desired - self.mass_matrix_inv @ selected_wrench)[0]
+        error = (self.desired - self.mass_matrix_inv @ selected_wrench)[0]
         cost = error.t() @ self.weights @ error
         return cost
 
@@ -218,7 +218,7 @@ class ExpectationControlOptimization(SphericalAccelOptimization):
         right = (self.weights @ error.squeeze()).unsqueeze(2).transpose(0, 1)
         left = error.transpose(0, 1).transpose(1, 2)
 
-        cost = torch.sum(torch.bmm(left, right))
+        cost = torch.mean(torch.bmm(left, right)).flatten()
         return cost
 
     def tensor_error(self, x):
@@ -270,7 +270,7 @@ class MultiMagSolver:
         inverse_dynamics=False,
         boat=None,
         num_processes=8,
-        stein=False,
+        expectation=False,
     ):
         self.model = model
         self.problems = []
@@ -295,7 +295,7 @@ class MultiMagSolver:
         if sphere_model:
             for i in range(2 * len(model.magnets)):
                 if inverse_dynamics:
-                    if stein:
+                    if expectation:
                         prob = ExpectationControlOptimization(qweights)
                     else:
                         prob = SphericalAccelOptimization(qweights)

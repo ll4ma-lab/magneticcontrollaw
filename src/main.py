@@ -53,7 +53,8 @@ if __name__ == "__main__":
     vel_noise = False
     control_noise = False
 
-    stein = False
+    stein_parameters = False and Adaptive
+    stein_control = False
     num_magnets = 4
     env = SpaceProblem(SpaceEnvironments.REGULATOR, num_magnets)
     # env.magnets = env.magnets[:4]
@@ -113,7 +114,7 @@ if __name__ == "__main__":
             inverse_dynamics=inverse_dynamics,
             boat=controller_boat,
             num_processes=10,
-            stein=stein,
+            expectation=stein_parameters,
         )
 
     if inverse_dynamics:
@@ -133,7 +134,7 @@ if __name__ == "__main__":
         10,
         adaptive_model,
         boat_properties,
-        stein=stein,
+        stein=stein_parameters,
     )
     np.random.seed(2)
 
