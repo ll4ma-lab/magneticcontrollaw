@@ -24,7 +24,7 @@ from matplotlib import animation
 import time
 
 import sys
-
+from ll4ma_opt.problems import SteinWrapper
 sys.path.append("..")  # Adds higher directory to python modules path.
 
 from PDController import PDController
@@ -53,12 +53,14 @@ controller = PDController(env.start_state, 0.005, 0.00001, 0.005, 0.00001, 0.0, 
 velocityProfile = SplineProfile.SplineProfile(env, env.times)
 
 
-optimizer_type = GradientDescent
+optimizer_type = NewtonMethod
 
 sigma_copper = 5.87e07
 sigma_al = 3.77e07
 
 expectation = False
+
+stein = True
 
 
 # simulator object
@@ -127,17 +129,19 @@ if __name__ == "__main__":
         optimizer = optimizer_type(problem=prob, **optimizerParams)
 
         initial_positions = np.array([[20., 0, 0],
-                                      [20., 90, 180]])
+                                      [20., 90, 180],
+                                      [20., 90, -90],
+                                      [20., 90, 45]])
         optimization_results = [optimizer.optimize(
             initial_position.reshape((3, 1)), max_iterations=max_iterations) for initial_position in initial_positions]
         print("elapsed newton time ", time.time() - s)
         print('converged ', [result.converged for result in optimization_results])
         print('solutions ', [result.solution.flatten() for result in optimization_results])
 
-        plt.figure()
-        plt.plot(optimization_results[0].iterates[:,:,0])
-        plt.figure()
-        plt.plot(optimization_results[1].iterates[:,:,0])
+        # plt.figure()
+        # plt.plot(optimization_results[0].iterates[:,:,0])
+        # plt.figure()
+        # plt.plot(optimization_results[1].iterates[:,:,0])
         # print(solution,cost,converged,iterates.shape)
 
         strength = np.linspace(0, 40, 21)
@@ -191,6 +195,27 @@ if __name__ == "__main__":
         print('costs ', [result.cost for result in optimization_results])
         print('ratios ', [result.cost / costs[bestarg] for result in optimization_results])
         print("")
+
+
+        if stein:
+            num_particles = 200
+            stein_prob = SteinWrapper(prob,num_particles,1e-4)
+            stein_optimizer = GradientDescent(stein_prob,alpha=1e3,FP_PRECISION=1e-8)
+
+            stein_initial = np.random.uniform(
+                np.array([0,-90,-180]).reshape((-1,1)),
+                np.array([40,90,180]).reshape((-1,1)),
+                (prob.size(), num_particles),
+            ).T.reshape((-1, 1))
+
+            stein_results = stein_optimizer.optimize(stein_initial, 5000)
+
+            ax = plt.figure().add_subplot(projection='3d')
+            particles = stein_results.solution.reshape((num_particles, 3))
+            ax.scatter(particles[:,0],particles[:,1],particles[:,2])
+            for result in results:
+                ax.scatter(result.solution[0], result.solution[0], result.solution[0],c='r')
+
         print("")
         print(_)
         if min([result.cost / costs[bestarg] for result in optimization_results]) > 1 and x[bestarg] > 0.5:
@@ -199,6 +224,7 @@ if __name__ == "__main__":
                     np.array([20, params[0], params[1]]).reshape((3, 1)))
                 print(params, alt_result.cost / costs[bestarg])
             break
+
 
         plot = False
         saveAnimation = False
