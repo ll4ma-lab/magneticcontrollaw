@@ -28,5 +28,5 @@ class SteinSysid(SteinWrapper):
         radii = particles[:, 0, 0]
         sigmas = particles[:, 1, 0] * self.problem.sigma_multiplier
 
-        object_properties = batch_sphere_properties(self.material_density, radii, sigmas)
+        object_properties = batch_sphere_properties(self.problem.material_density, radii, sigmas)
         return object_properties
