@@ -41,7 +41,7 @@ if __name__ == "__main__":
     use_sphere = True
     cheat = False
 
-    run_adaptive = False and use_sphere and not cheat
+    run_adaptive = True and use_sphere and not cheat
     inverse_dynamics = (
         True and use_sphere and not cheat and not use_special_case_solver
     )
@@ -64,21 +64,23 @@ if __name__ == "__main__":
     sigma_copper = 5.87e07
     sigma_al = 3.77e07
 
+    sigma = 4e7    
+
     # simulator object
-    radius = 0.02
+    radius = 0.05
     mass, MOI = compute_sphere_properties(8940, radius)
     object_properties = ObjectProperties(
-        mass=mass, MOI=MOI, radius=radius, sigma=sigma_copper
+        mass=mass, MOI=MOI, radius=radius, sigma=sigma
     )
 
     # controller object
-    initial_radius_guess = 0.02
+    initial_radius_guess = radius
     mass_initial, moi_initial = compute_sphere_properties(8940, radius)
     object_properties_approximate = ObjectProperties(
         mass=mass_initial,
         MOI=moi_initial,
         radius=initial_radius_guess,
-        sigma=sigma_copper,
+        sigma=sigma,
     )
 
     # boat object
@@ -130,7 +132,7 @@ if __name__ == "__main__":
         env.magnets,
         "all",
         object_properties_approximate,
-        10,
+        5,
         adaptive_model,
         boat_properties,
         stein=stein_parameters,
@@ -144,6 +146,7 @@ if __name__ == "__main__":
         desired_states,
         controls,
         minimization_costs,
+        params
     ) = simulate_experiment(
         simulator,
         controller,
@@ -156,7 +159,7 @@ if __name__ == "__main__":
         cheat=cheat,
         run_adaptive=run_adaptive,
         inverse_dynamics=inverse_dynamics,
-        randomly_perturb_object_param=False,
+        randomly_perturb_object_param=True,
     )
 
     # print('Time spent doing forwad model ' + str(model.time))

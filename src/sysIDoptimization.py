@@ -53,7 +53,7 @@ class RadiusSysid(Problem):
 
         self.error_multiplier = 1e6
 
-        self.regularization_multiplier = 1e7
+        self.regularization_multiplier = 0e7
         self.reset_current_solution(object_properties)
 
         self.min_bounds[0] = 1e-3
@@ -466,7 +466,7 @@ class RadiusSysid(Problem):
             interval=100,
             repeat=True,
         )
-        return anim
+        return anim,ax
 
     def visualize_predicted_acceleration(
         self,

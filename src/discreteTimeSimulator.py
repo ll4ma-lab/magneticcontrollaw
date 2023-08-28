@@ -65,12 +65,15 @@ def simulate_experiment(
     iterates = range(1, sim_time + 1)
     if debug_prints:
         iterates = tqdm(iterates)
-
+    
+    
+    true_params = []
+    
     for i in iterates:
         if randomly_perturb_object_param:
-            radius = max(np.random.normal(0.02, 0.008, 1), 0.001)
-            sigma = max(np.random.normal(5.8e7, 1.7e7, 1), 1e7)
-
+            radius = max(np.random.normal(0.05, 0.009, 1), 0.001)
+            sigma = max(np.random.normal(4e7, 9e6, 1), 1e7)
+            true_params.append((radius,sigma))
             mass, MOI = compute_sphere_properties(8940, radius)
 
             model.object_properties.radius = radius
@@ -131,12 +134,13 @@ def simulate_experiment(
         desired_states,
         controls,
         minimization_costs,
+        true_params
     )
 
 
 class DiscreteTimeSimulator:
     def __init__(self, state, object_properties):
-        self.dt = 0.002
+        self.dt = 0.0001
 
         body_to_world = build_tf(state[:3, 0], state[3:6, 0])
 

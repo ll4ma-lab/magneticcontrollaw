@@ -63,7 +63,7 @@ def cylinder_optimize(prob):
 
 
 def build_acceleration_q(state_cost_string):
-    return build_q(state_cost_string, 2e5, 1e1)
+    return build_q(state_cost_string, 2e5, 1e3)
 
 
 def build_force_q(state_cost_string):
@@ -188,7 +188,7 @@ class SphericalAccelOptimization(SphericalOptimization):
 
     def tensor_cost(self, x):
         selected_wrench = self.get_wrench(x)
-        error = (self.desired - self.mass_matrix_inv @ selected_wrench)[0]
+        error = 1e12 * (self.desired - self.mass_matrix_inv @ selected_wrench)[0]
         cost = error.t() @ self.weights @ error
         return cost
 
@@ -418,19 +418,19 @@ class MultiMagSolver:
         # results = [sphere_optimize(prob) for prob in self.problems]
         results = self.pool.map(sphere_optimize, self.problems)
 
-        iterations = [result.iterates.shape[0] for result in results]
+        # iterations = [result.iterates.shape[0] for result in results]
         # self.cost_time += np.sum([result[4] for result in results])
         # self.gradient_time += np.sum([result[5] for result in results])
         # self.hessian_time += np.sum([result[6] for result in results])
 
-        self.iterations.append((iterations))
+        # self.iterations.append((iterations))
         no_action_cost = self.problems[0].cost(np.zeros((3, 1)))
-        costs = [result.cost for result in results]
+        costs = [result.cost if result else np.inf for result in results]
         self.costs.append(costs)
 
         best_action = np.argmin(costs)
 
-        if costs[best_action] > no_action_cost:
+        if costs[best_action] > no_action_cost or costs[best_action] is np.inf:
             control = SphereControlCommand()
             # print('shit')
         else:
