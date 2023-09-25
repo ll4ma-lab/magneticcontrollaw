@@ -60,7 +60,7 @@ class RadiusSysid(Problem):
         self.max_bounds[0] = 1e-1
 
         self.min_bounds[1] = 2e6 / self.sigma_multiplier
-        self.max_bounds[1] = 8e7 / self.sigma_multiplier
+        self.max_bounds[1] = 12e7 / self.sigma_multiplier
 
         self.prior = self.make_tensor((self.max_bounds - self.min_bounds) / 2)
 
@@ -363,8 +363,9 @@ class RadiusSysid(Problem):
         ax.set_ylabel(self.param_names[1])
 
         ax.set_xticks(np.arange(0.01, 0.11, step=0.02))
-        ax.set_yticks(np.arange(1e7, 8e7, step=1e7))
-        ax.set_yticklabels([str(i) + "e7" for i in range(1, 8)])
+        yticks = np.arange(1e7, self.max_bounds[1] * self.sigma_multiplier , step=1e7)
+        ax.set_yticks(yticks)
+        ax.set_yticklabels([str(i) + "e7" for i in range(1, len(yticks)+1)])
 
         points = iterates[0].reshape((-1, 2))
         costs = [
@@ -379,17 +380,6 @@ class RadiusSysid(Problem):
                 30,
                 cmap="RdBu",
             )
-            # set the limits of the plot to the limits of the data
-            ax.set_xlim(
-                (-self.min_bounds[0], self.max_bounds[0] + 2 * self.min_bounds[0])
-            )
-            ax.set_ylim(
-                (
-                    (self.min_bounds[1] - 0.0014) * self.sigma_multiplier,
-                    (self.max_bounds[1] + 0.0014) * self.sigma_multiplier,
-                )
-            )
-
             fig.colorbar(c, ax=ax)
 
         if show_costs:
@@ -416,6 +406,20 @@ class RadiusSysid(Problem):
 
             # scat._offsets3d = (points_3d[:, 0], points_3d[:, 1], points_3d[:, 2])
         else:
+            
+            
+            # set the limits of the plot to the limits of the data
+            ax.set_xlim(
+                (-self.min_bounds[0], self.max_bounds[0] + 2 * self.min_bounds[0])
+            )
+            ax.set_ylim(
+                (
+                    (self.min_bounds[1] - 0.0014) * self.sigma_multiplier,
+                    (self.max_bounds[1] + 0.0028) * self.sigma_multiplier,
+                )
+            )
+            
+            
             scat = plt.scatter(
                 points[:, 0],
                 points[:, 1] * self.sigma_multiplier,

@@ -62,7 +62,7 @@ from ObjectProperties import (
 file_name = "/home/tabor/Downloads/IJRR/known_sphere/real_2023-03-07 16:03:45.715925_MultiMagSolver"
 file_name = "/home/tabor/Downloads/IJRR/known_sphere/real_2023-03-07 14:10:43.061701_MultiMagSolver"
 file_name = "C://Users//tabor//Downloads//IJRR/IJRR//known_sphere//real_2023-03-07 15_11_55.936480_MultiMagSolver"
-
+file_name = 'C:/Users/tabor/OneDrive/Documents/magneticcontrollaw/data/sim_800s_2023-08-29 11.30.01.210482'
 
 mode = 0
 

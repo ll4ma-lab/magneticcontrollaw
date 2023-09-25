@@ -53,7 +53,7 @@ if __name__ == "__main__":
     vel_noise = False
     control_noise = False
 
-    stein_parameters = True and Adaptive and inverse_dynamics
+    stein_parameters = True  and Adaptive and inverse_dynamics
     num_magnets = 4
     env = SpaceProblem(SpaceEnvironments.REGULATOR, num_magnets)
     # env.magnets = env.magnets[:4]

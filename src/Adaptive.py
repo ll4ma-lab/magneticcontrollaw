@@ -31,7 +31,7 @@ class Adaptive:
         print("adaptive weights ", Q)
         prob = internal_sys_id(Q, object_properties, boat=boat, drag_terms=drag_terms)
         if stein:
-            self.problem = SteinSysid(prob, 30, 1e3)
+            self.problem = SteinSysid(prob, 30, 1e5)
         else:
             self.problem = prob
         self.current_solution = self.problem.initial_solution

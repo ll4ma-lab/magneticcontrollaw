@@ -29,8 +29,10 @@ magnet_data_map = {
     -1: input_folder + "/IJRR_sim4/sim_1800s_2023-05-24 16.29.59.054348",
 }
 
-
-dataloader.load(magnet_data_map[-1], globals())
+# file_name = magnet_data_map[-1]
+file_name = 'C:/Users/tabor/OneDrive/Documents/magneticcontrollaw/data/sim_800s_2023-08-29 11.30.01.210482'
+#file_name = 'C:/Users/tabor/OneDrive/Documents/magneticcontrollaw/data/sim_800s_2023-08-29 11.24.42.513117'
+dataloader.load(file_name, globals())
 states_cheat = states[:sim_time]
 remaining_error_cheat = np.array(
     [
@@ -39,9 +41,11 @@ remaining_error_cheat = np.array(
     ]
 )
 
+#file_name = magnet_data_map[mags]
 
-dataloader.load(magnet_data_map[mags], globals())
 
+dataloader.load(file_name, globals())
+run_adaptive = False
 
 remaining_error = np.array(
     [
@@ -75,7 +79,7 @@ else:
 
 
 plt.rcParams["font.family"] = "Times New Roman"
-ts = np.array(range(sim_time)) / 60.0
+ts = np.array(range(sim_time)) 
 ts_desired = np.array(range(sim_time)) / 60.0
 colors = [Lanc1, Lanc2, Lanc3, Lanc1, Lanc2, Lanc3]
 stateNames = ["x", "y", "z", "x", "y", "z"]
@@ -208,14 +212,14 @@ def l2_data_plot(axis, dataset, lims):
         axs_2[i].set_ylim(lims[i])
 
     axs_2[0].legend(handles=plots[:3], loc="upper right", ncol=1)
-    axs_2[0].set_xlabel("Time (minutes)")
+    axs_2[0].set_xlabel("Time (seconds)")
     # axs_2[1].set_ylabel("Orientation (rad)")
     # axs_2[0].set_ylabel("Position (m)")
     # axs_2[1].legend(handles=plots[3:], title="Orientation", loc="upper right",ncol=3)
     # axs_2[0].set_ylim([-0.06,0.06])
     # axs_2[1].set_ylim([-1.5, 1.5])
-    axs_2[0].set_xlim([0, sim_time / 60])
-    axs_2[0].set_xlim([0, sim_time / 60])
+    axs_2[0].set_xlim([0, sim_time ])
+    axs_2[0].set_xlim([0, sim_time ])
     axs_2[0].spines["left"].set_edgecolor(l2_colors[0])  # y axis line
     axs_2[1].spines["right"].set_edgecolor(l2_colors[1])  # y axis line
 
@@ -262,17 +266,17 @@ if mags == -1:
     env.magnets = []
 
 env.visualization_boundary_y = (0.15, -0.15)
-anim, anim_fig = visualization.animate_2d_path(
-    env,
-    positions,
-    transforms,
-    controls,
-    object_parameters_over_time=object_parameters_over_time,
-    name="",
-    save_plot_steps=[1] + velocity_profile.switching_times,
-    save_location=folder,
-    mag_color=[164 / 256.0, 159 / 256.0, 12 / 256.0, 0.2],
-)
+# anim, anim_fig = visualization.animate_2d_path(
+#     env,
+#     positions,
+#     transforms,
+#     controls,
+#     object_parameters_over_time=object_parameters_over_time,
+#     name="",
+#     save_plot_steps=[1] + velocity_profile.switching_times,
+#     save_location=folder,
+#     mag_color=[164 / 256.0, 159 / 256.0, 12 / 256.0, 0.2],
+# )
 
 
 fig = plt.figure(figsize=plt.figaspect(2.0))
