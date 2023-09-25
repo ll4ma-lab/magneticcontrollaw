@@ -67,13 +67,11 @@ def simulate_experiment(
         iterates = tqdm(iterates)
     
     
-    true_params = []
     
     for i in iterates:
-        if randomly_perturb_object_param:
-            radius = max(np.random.normal(0.05, 0.009, 1), 0.001)
-            sigma = max(np.random.normal(4e7, 9e6, 1), 1e7)
-            true_params.append((radius,sigma))
+        if randomly_perturb_object_param is not False:
+            radius = randomly_perturb_object_param[i-1][0]
+            sigma = randomly_perturb_object_param[i-1][1]
             mass, MOI = compute_sphere_properties(8940, radius)
 
             model.object_properties.radius = radius
@@ -134,7 +132,6 @@ def simulate_experiment(
         desired_states,
         controls,
         minimization_costs,
-        true_params
     )
 
 

@@ -72,6 +72,22 @@ if __name__ == "__main__":
     object_properties = ObjectProperties(
         mass=mass, MOI=MOI, radius=radius, sigma=sigma
     )
+    
+    stochastic = False
+    if stochastic:
+        object_mean = (radius,sigma)
+        scale = 9
+        object_covariance = np.diag((scale*1e-3,scale *1e6))
+        stochastic = np.random.multivariate_normal(object_mean,object_covariance,sim_time)
+        min_radius = 0.0001
+        min_sigma = 1e7
+        stochastic[stochastic[:,0]<min_radius,0] = min_radius
+        stochastic[ stochastic[:,0] < min_sigma ,0] = min_sigma
+
+    
+    
+    
+    
 
     # controller object
     initial_radius_guess = radius
@@ -145,8 +161,7 @@ if __name__ == "__main__":
         desired_wrenchs,
         desired_states,
         controls,
-        minimization_costs,
-        params
+        minimization_costs
     ) = simulate_experiment(
         simulator,
         controller,
@@ -159,7 +174,7 @@ if __name__ == "__main__":
         cheat=cheat,
         run_adaptive=run_adaptive,
         inverse_dynamics=inverse_dynamics,
-        randomly_perturb_object_param=True,
+        randomly_perturb_object_param=stochastic,
     )
 
     # print('Time spent doing forwad model ' + str(model.time))
