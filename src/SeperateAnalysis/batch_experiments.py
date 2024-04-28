@@ -50,7 +50,7 @@ from tqdm import tqdm
 
 if __name__ == "__main__":
     use_special_case_solver = False
-    use_sphere = True
+    use_sphere = False
     cheat = False
 
     run_adaptive = False and use_sphere and not cheat
@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
     num_magnets = 2
     env = SpaceProblem(SpaceEnvironments.REGULATOR, num_magnets)
-    env.times = [900,0]
+    # env.times = [0,300]
     # env.magnets = env.magnets[:4]
     # env.trajectory_dimensions = 'xyz'
 
@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
 
     controller = PDController(
-        env.start_state, 0.0005, 0.000001, 0.0005, 0.000002, 0.0, 0.000
+        env.start_state, 0.002, 0.000001, 0.06, 0.00003, 0.0, 0.000
     )
     adaptive = Adaptive(
         env.magnets,
@@ -138,16 +138,11 @@ if __name__ == "__main__":
     )
 
 
-
-    all_states = []
-    remaining_errors = []
+    convergence_data = []
     
-    
-    points = np.linspace(-0.04,0.04,10)
-    starts = np.array(np.meshgrid(points,points,points)).reshape((3,-1)).T.reshape((-1,3,1))
-    
-    for start in tqdm(starts):
-        env.start_state = np.concatenate((start,env.start_state[3:]))
+    np.random.seed(473)
+    for start in tqdm(range(1000)):
+        env.start_state[:6,0] = np.random.uniform([-0.04]*3 + [-100*np.pi]*3,[0.04]*3 + [100*np.pi]*3)
         
         
         velocity_profile = SplineProfile.SplineProfile(env, env.times)
@@ -181,10 +176,14 @@ if __name__ == "__main__":
             [controller.compute_error(state[0], desired_final_tf) for state in states]
         )
         
-        all_states.append(states)
-        remaining_errors.append(remaining_error)
-        
-    
+
+        convergence_time = max((sim_time - np.argmax(np.flip(np.linalg.norm(remaining_error[:,:3],axis=1)>np.linalg.norm(remaining_error[0,:3])/100)),sim_time - np.argmax(np.flip(np.linalg.norm(remaining_error[:,3:],axis=1)>np.linalg.norm(remaining_error[0,3:])/100))))
+        steps = np.array(
+            [controller.compute_error(states[i][0], states[i+1][0]) for i in range(convergence_time)]
+        )
+        linear_path_length = np.sum(np.linalg.norm(steps[:,:3,0],axis=1))/np.linalg.norm(controller.compute_error(states[0][0], desired_final_tf)[:3])
+        rotational_path_length = np.sum(np.linalg.norm(steps[:,3:,0],axis=1))/np.linalg.norm(controller.compute_error(states[0][0], desired_final_tf)[3:])
+        convergence_data.append((convergence_time,linear_path_length,rotational_path_length))
    
 
     import dataloader

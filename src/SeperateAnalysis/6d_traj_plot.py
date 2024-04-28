@@ -18,15 +18,15 @@ from visualization import Lanc1, Lanc2, Lanc3
 
 sim_time = 0
 input_folder = "/home/tabor/Downloads"
-input_folder = "C:/Users/tabor/Downloads/IJRR_sim4"
+input_folder = "C:/Users/tabor/OneDrive/Documents/testing"
 
-mags = 4
+mags = 2
 magnet_data_map = {
-    2: input_folder + "/IJRR_sim4/sim_1800s_2023-05-24 13.43.29.561066",
-    3: input_folder + "/IJRR_sim4/sim_1800s_2023-05-24 13.48.25.239666",
+    2: input_folder + "/sim_900s_2024-01-26 22.33.17.873123",
+    3: input_folder + "/sim_900s_2024-01-26 22.35.17.747402",
     4: input_folder + "/IJRR_sim4/sim_1800s_2023-05-24 13.50.25.177242",
     6: input_folder + "/IJRR_sim4/sim_1800s_2023-05-24 13.52.37.079093",
-    -1: input_folder + "/IJRR_sim4/sim_1800s_2023-05-24 16.29.59.054348",
+    -1: input_folder + "/sim_900s_2024-01-26 22.33.08.055640",
 }
 
 
@@ -40,7 +40,10 @@ remaining_error_cheat = np.array(
 )
 
 
-dataloader.load(magnet_data_map[mags], globals())
+true_file = magnet_data_map[mags]
+#true_file = "C:/Users/tabor/OneDrive/Documents/magneticcontrollaw/data/sim_1800s_2024-01-26 16.26.30.829454"
+#true_file = "C:/Users/tabor/OneDrive/Documents/magneticcontrollaw/data/sim_1800s_2024-01-26 16.26.29.800482"
+dataloader.load(true_file, globals())
 
 
 remaining_error = np.array(
@@ -262,17 +265,17 @@ if mags == -1:
     env.magnets = []
 
 env.visualization_boundary_y = (0.15, -0.15)
-anim, anim_fig = visualization.animate_2d_path(
-    env,
-    positions,
-    transforms,
-    controls,
-    object_parameters_over_time=object_parameters_over_time,
-    name="",
-    save_plot_steps=[1] + velocity_profile.switching_times,
-    save_location=folder,
-    mag_color=[164 / 256.0, 159 / 256.0, 12 / 256.0, 0.2],
-)
+# anim, anim_fig = visualization.animate_2d_path(
+#     env,
+#     positions,
+#     transforms,
+#     controls,
+#     object_parameters_over_time=object_parameters_over_time,
+#     name="",
+#     save_plot_steps=[1] + velocity_profile.switching_times,
+#     save_location=folder,
+#     mag_color=[164 / 256.0, 159 / 256.0, 12 / 256.0, 0.2],
+# )
 
 
 fig = plt.figure(figsize=plt.figaspect(2.0))

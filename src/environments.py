@@ -514,7 +514,7 @@ class SpaceProblem:
             self.true_desired_state = np.zeros((12, 2))
 
             self.desired_state = self.true_desired_state
-            self.times = [1200, 600]
+            self.times = [0, 1200]
         if challenge_id == SpaceEnvironments.CUBE:  # floating square
             # self.magnets = [self.magnets[i] for i in [0, 1]]
             # self.magnets[0][1] += 1e-15
