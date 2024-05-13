@@ -59,6 +59,14 @@ class PDController:
         rotation_error_w = np.dot(current_transform[:3, :3], rotation_error)
         return np.concatenate((linear_error_w, rotation_error_w))
 
+    def get_feedforward_component(self,current,desired):
+        f_fstuff = np.zeros((6,1))
+        if self.last_desired is not None:
+            ff_error = desired - self.last_desired
+            f_fstuff = np.matmul(self.ff_dgains, ff_error[6:])
+        self.last_desired = np.copy(desired)
+        return f_fstuff
+            
     def get_desired_wrench(self, current, desired):
         current_tf = current[0]
         desired_tf = build_tf(desired[:3, 0], desired[3:6, 0])
@@ -74,10 +82,7 @@ class PDController:
         dstuff = np.matmul(self.dgains, vel_error)
 
         total = pstuff + dstuff
-        if self.last_desired is not None:
-            ff_error = desired - self.last_desired
-            f_fstuff = np.matmul(self.ff_dgains, ff_error[6:])
-            total += f_fstuff
+        f_fstuff = self.get_feedforward_component(current,desired)
+        total += f_fstuff
 
-        self.last_desired = np.copy(desired)
         return total, pstuff, dstuff
