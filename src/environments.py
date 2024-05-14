@@ -397,7 +397,7 @@ class SpaceProblem:
         deg_tolerance = 10.0
         rotational_tolerance = np.pi * deg_tolerance / 180.0
 
-        workspace_radius = 0.15
+        workspace_radius = 0.1375
 
         self.tolerances = (linear_tolerance, rotational_tolerance)
         self.radius = 0.065
@@ -423,10 +423,14 @@ class SpaceProblem:
                 )
             ).tolist()
         elif magnet_setup == 4:
-            z = 1 / np.sqrt(2)
-            self.magnets = (
+            #z = 1 / np.sqrt(2)
+            #self.magnets = (
+            #    workspace_radius
+            #    * np.array([(1, 0, -z), (-1, 0, -z), (0, 1, z), (0, -1, z)])
+            #).tolist()
+            self.magnets = self.magnets = (
                 workspace_radius
-                * np.array([(1, 0, -z), (-1, 0, -z), (0, 1, z), (0, -1, z)])
+                * np.array([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)])
             ).tolist()
 
         elif magnet_setup == 6:
